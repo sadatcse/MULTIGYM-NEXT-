@@ -7,6 +7,7 @@ import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
 import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
 import useRoleApi from "@/hooks/useRoleApi";
+import useUserPermissions from "@/hooks/useUserPermissions";
 import Swal from "sweetalert2";
 import {
   FiShield,
@@ -52,6 +53,12 @@ const rowVariants = {
 };
 
 export default function UserRolesPage() {
+  const { can } = useUserPermissions();
+  const canView = can("roles", "view");
+  const canAdd = can("roles", "add");
+  const canEdit = can("roles", "edit");
+  const canDelete = can("roles", "delete");
+
   const {
     roles,
     totalItems,
@@ -108,8 +115,32 @@ export default function UserRolesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isModalOpen, isSubmitting]);
 
+  // If view permission is denied
+  if (!canView) {
+    return (
+      <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10">
+        <Mtitle
+          title="User Role Configuration"
+          subtitle="Manage system access roles, display hierarchy order, and active user privileges."
+        />
+        <div className="bg-brand-white dark:bg-brand-charcoal p-12 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 rounded-3xl bg-brand-red/10 text-brand-red flex items-center justify-center text-3xl mx-auto font-bold">
+            <FiShield />
+          </div>
+          <h3 className="text-lg font-extrabold text-brand-black dark:text-brand-white">
+            Access Restricted
+          </h3>
+          <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light max-w-md mx-auto leading-relaxed">
+            You do not have view permission for User Role Configuration. Contact your System Administrator to request access.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Open Add Modal
   const handleOpenAdd = () => {
+    if (!canAdd) return;
     setEditingRole(null);
     const nextOrder = (stats.maxDisplayOrder || 0) + 1;
     setFormData({ ...INITIAL_FORM, order: nextOrder });
@@ -119,6 +150,7 @@ export default function UserRolesPage() {
 
   // Open Edit Modal
   const handleOpenEdit = (role) => {
+    if (!canEdit) return;
     setEditingRole(role);
     setFormData({
       name: role.name,
@@ -135,7 +167,7 @@ export default function UserRolesPage() {
     setIsModalOpen(false);
   };
 
-  // Frontend duplicate name & order validation
+  // Frontend duplicate validation
   const validateForm = () => {
     const trimmedName = formData.name.trim();
     if (!trimmedName) {
@@ -205,6 +237,7 @@ export default function UserRolesPage() {
 
   // Delete Handlers
   const handleOpenDelete = (role) => {
+    if (!canDelete) return;
     setDeletingRole(role);
     setIsDeleteModalOpen(true);
   };
@@ -242,13 +275,15 @@ export default function UserRolesPage() {
         title="User Role Configuration"
         subtitle="Manage system access roles, display hierarchy order, and active user privileges."
         rightcontent={
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl font-bold text-xs bg-brand-red hover:bg-brand-red-dark text-white shadow-lg shadow-brand-red/25 transition-all scale-100 hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <FiPlus className="text-lg" />
-            <span>Add User Role</span>
-          </button>
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-2xl font-bold text-xs bg-brand-red hover:bg-brand-red-dark text-white shadow-lg shadow-brand-red/25 transition-all scale-100 hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <FiPlus className="text-lg" />
+              <span>Add User Role</span>
+            </button>
+          ) : null
         }
       />
 
@@ -489,7 +524,7 @@ export default function UserRolesPage() {
                         </span>
                       </th>
                       <th className="py-4 px-6 font-extrabold text-center">Status</th>
-                      <th className="py-4 px-6 font-extrabold text-right">Actions</th>
+                      {(canEdit || canDelete) && <th className="py-4 px-6 font-extrabold text-right">Actions</th>}
                     </tr>
                   </thead>
 
@@ -555,33 +590,39 @@ export default function UserRolesPage() {
                               </td>
 
                               {/* Action Buttons */}
-                              <td className="py-4 px-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => handleOpenEdit(role)}
-                                    disabled={rowBusy}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs disabled:cursor-not-allowed disabled:hover:scale-100"
-                                    title="Edit Role"
-                                  >
-                                    <FiEdit3 className="text-xs" />
-                                    <span>Edit</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleOpenDelete(role)}
-                                    disabled={rowBusy}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs disabled:cursor-not-allowed disabled:hover:scale-100"
-                                    title="Delete Role"
-                                  >
-                                    {rowBusy ? (
-                                      <span className="w-3 h-3 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                      <FiTrash2 className="text-xs" />
+                              {(canEdit || canDelete) && (
+                                <td className="py-4 px-6 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    {canEdit && (
+                                      <button
+                                        onClick={() => handleOpenEdit(role)}
+                                        disabled={rowBusy}
+                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs disabled:cursor-not-allowed disabled:hover:scale-100"
+                                        title="Edit Role"
+                                      >
+                                        <FiEdit3 className="text-xs" />
+                                        <span>Edit</span>
+                                      </button>
                                     )}
-                                    <span>{rowBusy ? "Deleting..." : "Delete"}</span>
-                                  </button>
-                                </div>
-                              </td>
+
+                                    {canDelete && (
+                                      <button
+                                        onClick={() => handleOpenDelete(role)}
+                                        disabled={rowBusy}
+                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs disabled:cursor-not-allowed disabled:hover:scale-100"
+                                        title="Delete Role"
+                                      >
+                                        {rowBusy ? (
+                                          <span className="w-3 h-3 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                          <FiTrash2 className="text-xs" />
+                                        )}
+                                        <span>{rowBusy ? "Deleting..." : "Delete"}</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
                             </motion.tr>
                           );
                         })}
@@ -654,27 +695,33 @@ export default function UserRolesPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-beige/40 dark:border-brand-dark-grey/40">
-                          <button
-                            onClick={() => handleOpenEdit(role)}
-                            disabled={rowBusy}
-                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:scale-100"
-                          >
-                            <FiEdit3 /> Edit
-                          </button>
-                          <button
-                            onClick={() => handleOpenDelete(role)}
-                            disabled={rowBusy}
-                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white scale-100 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:scale-100"
-                          >
-                            {rowBusy ? (
-                              <span className="w-3 h-3 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <FiTrash2 />
+                        {(canEdit || canDelete) && (
+                          <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-beige/40 dark:border-brand-dark-grey/40">
+                            {canEdit && (
+                              <button
+                                onClick={() => handleOpenEdit(role)}
+                                disabled={rowBusy}
+                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:scale-100"
+                              >
+                                <FiEdit3 /> Edit
+                              </button>
                             )}
-                            {rowBusy ? "Deleting..." : "Delete"}
-                          </button>
-                        </div>
+                            {canDelete && (
+                              <button
+                                onClick={() => handleOpenDelete(role)}
+                                disabled={rowBusy}
+                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white scale-100 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:scale-100"
+                              >
+                                {rowBusy ? (
+                                  <span className="w-3 h-3 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <FiTrash2 />
+                                )}
+                                {rowBusy ? "Deleting..." : "Delete"}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </motion.div>
                     );
                   })}
