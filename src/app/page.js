@@ -13,7 +13,9 @@ import {
   FiUsers,
   FiAward,
   FiZap,
-  FiArrowRight
+  FiArrowRight,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
 
 // Import assets
@@ -47,18 +49,18 @@ const Login = () => {
     const savedEmail = localStorage.getItem("email");
     const savedPassword = localStorage.getItem("password");
     const savedTheme = localStorage.getItem("theme") || "dark";
-    
+
     if (savedEmail && savedPassword) {
       setEmail(savedEmail);
       setPassword(savedPassword);
       setRememberMe(true);
     }
-    
+
     setTheme(savedTheme);
     document.documentElement.classList.toggle("dark", savedTheme === "dark");
   }, [user, router]);
 
-  const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
+  const validateEmail = (emailStr) => /\S+@\S+\.\S+/.test(emailStr);
 
   const handleThemeToggle = () => {
     const newTheme = theme === "light" ? "dark" : "light";
@@ -70,7 +72,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Prevent double login or duplicate submit while request is pending
     if (isSubmitting || authLoading) return;
 
     let valid = true;
@@ -98,7 +99,6 @@ const Login = () => {
         localStorage.removeItem("email");
         localStorage.removeItem("password");
       }
-      // Keep isSubmitting true while redirecting to prevent duplicate clicks
       router.push("/dashboard/home");
     } catch (error) {
       setIsSubmitting(false);
@@ -106,9 +106,9 @@ const Login = () => {
         title: "Login Failed",
         text: error?.message || "Invalid email or password. Please try again.",
         icon: "error",
-        confirmButtonColor: "#059669",
-        background: theme === "dark" ? "#1f2937" : "#ffffff",
-        color: theme === "dark" ? "#f3f4f6" : "#111827",
+        confirmButtonColor: "#FF1818",
+        background: theme === "dark" ? "#18181B" : "#FFFFFF",
+        color: theme === "dark" ? "#FFFFFF" : "#000000",
       });
     }
   };
@@ -128,18 +128,18 @@ const Login = () => {
       title: "Reset Request Sent",
       text: "If an account exists, a password reset link has been dispatched.",
       icon: "success",
-      confirmButtonColor: "#059669",
-      background: theme === "dark" ? "#1f2937" : "#ffffff",
-      color: theme === "dark" ? "#f3f4f6" : "#111827",
+      confirmButtonColor: "#FF1818",
+      background: theme === "dark" ? "#18181B" : "#FFFFFF",
+      color: theme === "dark" ? "#FFFFFF" : "#000000",
     });
   };
 
   if (!mounted || authLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-brand-midnight text-brand-white">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-14 h-14 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-emerald-400 font-semibold tracking-widest text-xs uppercase animate-pulse">
+          <div className="w-14 h-14 border-4 border-brand-red border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-brand-gold font-bold tracking-widest text-xs uppercase animate-pulse">
             Loading Multigym HR System...
           </p>
         </div>
@@ -152,12 +152,12 @@ const Login = () => {
   return (
     <>
       {/* Full Page Container with Gym Background Image */}
-      <div 
-        className="min-h-screen relative flex items-center justify-center p-4 md:p-8 bg-cover bg-center bg-no-repeat font-sans overflow-x-hidden selection:bg-emerald-500 selection:text-white"
+      <div
+        className="min-h-screen relative flex items-center justify-center p-4 md:p-8 bg-cover bg-center bg-no-repeat font-sans overflow-x-hidden selection:bg-brand-red selection:text-white"
         style={{ backgroundImage: `url(${bgImageUrl})` }}
       >
         {/* Dark High-Tech Gradient Backdrop Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-slate-900/85 to-emerald-950/80 backdrop-blur-[4px] z-0" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-midnight/95 via-brand-charcoal/90 to-brand-midnight/95 backdrop-blur-[6px] z-0" />
 
         {/* Floating Top Navigation Header */}
         <header className="absolute top-6 left-6 right-6 z-20 flex justify-end items-center max-w-7xl mx-auto">
@@ -165,20 +165,20 @@ const Login = () => {
           <button
             type="button"
             onClick={handleThemeToggle}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-semibold backdrop-blur-md shadow-lg transition-all duration-300 cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold backdrop-blur-md shadow-lg transition-all duration-300 cursor-pointer ${
               theme === "dark"
-                ? "bg-slate-900/80 border-slate-700/60 text-slate-200 hover:bg-slate-800"
-                : "bg-white/90 border-slate-200 text-slate-800 hover:bg-white"
+                ? "bg-brand-charcoal/90 border-brand-dark-grey/70 text-brand-gold-light hover:bg-brand-dark-grey"
+                : "bg-white/90 border-brand-beige text-brand-black hover:bg-white"
             }`}
           >
             {theme === "dark" ? (
               <>
-                <span className="text-yellow-400">☀️</span>
+                <FiSun className="text-brand-gold text-sm" />
                 <span>Light Mode</span>
               </>
             ) : (
               <>
-                <span className="text-indigo-400">🌙</span>
+                <FiMoon className="text-brand-midnight text-sm" />
                 <span>Dark Mode</span>
               </>
             )}
@@ -189,11 +189,11 @@ const Login = () => {
         <motion.div
           initial={{ opacity: 0, y: 25, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
           className={`relative z-10 flex flex-col md:flex-row rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full border backdrop-blur-xl transition-all duration-300 mt-16 md:mt-0 ${
             theme === "dark"
-              ? "bg-slate-900/85 border-slate-800/80 text-white shadow-emerald-950/40"
-              : "bg-white/90 border-white/60 text-slate-900 shadow-slate-900/20"
+              ? "bg-brand-charcoal/90 border-brand-dark-grey/60 text-brand-white shadow-black/70"
+              : "bg-brand-white/95 border-brand-beige/60 text-brand-black shadow-black/20"
           }`}
         >
           {/* Left Panel: Hero Showcase with Gym Background & HR Metrics */}
@@ -202,7 +202,7 @@ const Login = () => {
             style={{ backgroundImage: `url(${bgImageUrl})` }}
           >
             {/* Gradient Overlay for Left Showcase Panel */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-emerald-950/50 backdrop-blur-[2px]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-midnight via-brand-midnight/80 to-brand-midnight/40 backdrop-blur-[2px]" />
 
             {/* Brand Logo on Left Showcase Panel */}
             <div className="relative z-10 pt-2">
@@ -217,33 +217,33 @@ const Login = () => {
             <div className="relative z-10 mt-auto space-y-4">
               <h1 className="text-3xl lg:text-4xl font-black text-white leading-tight tracking-tight">
                 Powering Peak <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold via-brand-gold-light to-brand-beige">
                   Fitness Teams
                 </span>
               </h1>
-              <p className="text-slate-300 text-xs sm:text-sm font-normal leading-relaxed max-w-sm">
+              <p className="text-brand-gold-light/90 text-xs sm:text-sm font-medium leading-relaxed max-w-sm">
                 Complete Human Resources & Staff Management solution designed specifically for gym facilities, personal trainers, and fitness operations.
               </p>
 
               {/* Gym HR Live Badges */}
               <div className="pt-2 grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-md flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+                <div className="p-3 rounded-2xl bg-brand-midnight/80 border border-brand-dark-grey/70 backdrop-blur-md flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-brand-gold/15 text-brand-gold">
                     <FiUsers className="text-lg" />
                   </div>
                   <div>
                     <span className="text-white font-bold text-xs block">Trainer Roster</span>
-                    <span className="text-emerald-400 text-[10px] font-semibold">Attendance & Shifts</span>
+                    <span className="text-brand-gold-light text-[10px] font-semibold">Attendance & Shifts</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-md flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-teal-500/20 text-teal-400">
+                <div className="p-3 rounded-2xl bg-brand-midnight/80 border border-brand-dark-grey/70 backdrop-blur-md flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-brand-red/15 text-brand-red">
                     <FiAward className="text-lg" />
                   </div>
                   <div>
                     <span className="text-white font-bold text-xs block">Payroll & KPI</span>
-                    <span className="text-teal-400 text-[10px] font-semibold">Automated Insights</span>
+                    <span className="text-brand-gold-light text-[10px] font-semibold">Automated Insights</span>
                   </div>
                 </div>
               </div>
@@ -252,10 +252,10 @@ const Login = () => {
 
           {/* Right Panel: Sleek Form Section */}
           <div className="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-center relative z-10">
-            {/* Logo Header */}
+            {/* Logo Header - Logo.src used for dark background mode, Logo_Dark.src for light background mode */}
             <div className="flex flex-col items-center mb-6 text-center">
               <img
-                src={theme === "dark" ? Logo_Dark.src : Logo.src}
+                src={theme === "dark" ? Logo.src : Logo_Dark.src}
                 alt="Multigym HR Logo"
                 className="h-14 w-auto object-contain mb-3 hover:scale-105 transition-transform duration-300"
               />
@@ -263,7 +263,7 @@ const Login = () => {
                 Sign In to Multigym HR
               </h2>
               <p className={`text-xs mt-1 font-medium ${
-                theme === "dark" ? "text-slate-400" : "text-slate-500"
+                theme === "dark" ? "text-brand-gold-light/80" : "text-brand-dark-grey"
               }`}>
                 Enter your credentials to access your staff dashboard
               </p>
@@ -272,17 +272,17 @@ const Login = () => {
             {/* Quick Demo Fill Credentials Shortcut */}
             <div className={`p-3 rounded-2xl mb-6 border flex items-center justify-between text-xs ${
               theme === "dark"
-                ? "bg-slate-800/60 border-slate-700/60 text-slate-300"
-                : "bg-slate-100 border-slate-200 text-slate-700"
+                ? "bg-brand-midnight/90 border-brand-dark-grey/80 text-brand-gold-light"
+                : "bg-brand-offwhite border-brand-beige/80 text-brand-black"
             }`}>
               <span className="font-semibold text-[11px] flex items-center gap-1.5">
-                <FiZap className="text-emerald-500" /> Demo Account:
+                <FiZap className="text-brand-gold text-sm" /> Demo Account:
               </span>
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => handleDemoFill("admin@gmail.com", "password123")}
-                className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-[11px] transition-all cursor-pointer shadow-sm disabled:cursor-not-allowed"
+                className="px-3 py-1.5 rounded-xl bg-brand-gold hover:bg-brand-gold-light disabled:opacity-50 text-brand-midnight font-black text-[11px] transition-all cursor-pointer shadow-sm disabled:cursor-not-allowed"
               >
                 Fill Admin Credentials
               </button>
@@ -292,16 +292,16 @@ const Login = () => {
             <form onSubmit={handleLogin} noValidate className="space-y-4">
               {/* Email Input */}
               <div>
-                <label 
+                <label
                   htmlFor="loginEmail"
-                  className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                    theme === "dark" ? "text-emerald-400" : "text-emerald-700"
+                  className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${
+                    theme === "dark" ? "text-brand-gold-light" : "text-brand-black"
                   }`}
                 >
                   Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-brand-gold">
                     <FiMail className="text-base" />
                   </div>
                   <input
@@ -311,33 +311,33 @@ const Login = () => {
                     value={email}
                     disabled={isSubmitting}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed ${
                       theme === "dark"
-                        ? "bg-slate-950/70 border-slate-700/80 text-white placeholder-slate-500"
-                        : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+                        ? "bg-brand-midnight/90 border-brand-dark-grey text-brand-white placeholder-brand-dark-grey"
+                        : "bg-brand-offwhite border-brand-beige text-brand-black placeholder-brand-dark-grey"
                     }`}
                     required
                   />
                 </div>
                 {emailError && (
-                  <p className="text-rose-500 text-xs mt-1 font-semibold">{emailError}</p>
+                  <p className="text-brand-red text-xs mt-1 font-bold">{emailError}</p>
                 )}
               </div>
 
               {/* Password Input */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label 
+                  <label
                     htmlFor="loginPassword"
-                    className={`block text-[11px] font-bold uppercase tracking-wider ${
-                      theme === "dark" ? "text-emerald-400" : "text-emerald-700"
+                    className={`block text-[11px] font-extrabold uppercase tracking-wider ${
+                      theme === "dark" ? "text-brand-gold-light" : "text-brand-black"
                     }`}
                   >
                     Password
                   </label>
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-brand-gold">
                     <FiLock className="text-base" />
                   </div>
                   <input
@@ -347,10 +347,10 @@ const Login = () => {
                     value={password}
                     disabled={isSubmitting}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full pl-10 pr-11 py-3 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed ${
+                    className={`w-full pl-10 pr-11 py-3 rounded-2xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed ${
                       theme === "dark"
-                        ? "bg-slate-950/70 border-slate-700/80 text-white placeholder-slate-500"
-                        : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+                        ? "bg-brand-midnight/90 border-brand-dark-grey text-brand-white placeholder-brand-dark-grey"
+                        : "bg-brand-offwhite border-brand-beige text-brand-black placeholder-brand-dark-grey"
                     }`}
                     required
                   />
@@ -358,13 +358,13 @@ const Login = () => {
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-brand-dark-grey hover:text-brand-gold transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     {showPassword ? <FiEyeOff className="text-base" /> : <FiEye className="text-base" />}
                   </button>
                 </div>
                 {passwordError && (
-                  <p className="text-rose-500 text-xs mt-1 font-semibold">{passwordError}</p>
+                  <p className="text-brand-red text-xs mt-1 font-bold">{passwordError}</p>
                 )}
               </div>
 
@@ -377,10 +377,10 @@ const Login = () => {
                     checked={rememberMe}
                     disabled={isSubmitting}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+                    className="h-4 w-4 rounded border-brand-dark-grey text-brand-red focus:ring-brand-red accent-brand-red cursor-pointer disabled:cursor-not-allowed"
                   />
-                  <span className={`ml-2 font-semibold ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  <span className={`ml-2 font-bold ${
+                    theme === "dark" ? "text-brand-gold-light" : "text-brand-black"
                   }`}>
                     Remember me
                   </span>
@@ -390,7 +390,7 @@ const Login = () => {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setShowForgotModal(true)}
-                  className="font-bold text-emerald-400 hover:text-emerald-300 hover:underline transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  className="font-bold text-brand-gold hover:text-brand-gold-light hover:underline transition-colors cursor-pointer disabled:cursor-not-allowed"
                 >
                   Forgot Password?
                 </button>
@@ -402,8 +402,8 @@ const Login = () => {
                 disabled={isSubmitting}
                 className={`w-full font-bold py-3.5 px-6 rounded-2xl text-white shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
                   isSubmitting
-                    ? "bg-emerald-700/80 cursor-not-allowed opacity-80 shadow-none pointer-events-none"
-                    : "bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0"
+                    ? "bg-brand-red-dark/80 cursor-not-allowed opacity-80 shadow-none pointer-events-none"
+                    : "bg-gradient-to-r from-brand-red via-brand-red to-brand-red-dark hover:from-brand-red-dark hover:to-brand-red hover:shadow-brand-red/30 hover:scale-[1.01] active:scale-95"
                 }`}
               >
                 {isSubmitting ? (
@@ -420,8 +420,8 @@ const Login = () => {
               </button>
             </form>
 
-            <div className="mt-6 pt-4 border-t border-slate-800/60 text-center">
-              <p className="text-[11px] text-slate-500 font-medium">
+            <div className="mt-6 pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 text-center">
+              <p className="text-[11px] text-brand-dark-grey dark:text-brand-gold-light/60 font-medium">
                 Multigym HR Operations & Management Platform &copy; 2026
               </p>
             </div>
@@ -437,7 +437,7 @@ const Login = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex justify-center items-center p-4"
+            className="fixed inset-0 bg-brand-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4"
           >
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -446,22 +446,22 @@ const Login = () => {
               transition={{ duration: 0.25, ease: "easeOut" }}
               className={`p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full relative border transition-all duration-300 ${
                 theme === "dark"
-                  ? "bg-slate-900 border-slate-800 text-white"
-                  : "bg-white border-slate-200 text-slate-900"
+                  ? "bg-brand-charcoal border-brand-dark-grey text-brand-white"
+                  : "bg-brand-white border-brand-beige text-brand-black"
               }`}
             >
               <button
                 type="button"
                 onClick={() => setShowForgotModal(false)}
-                className="absolute top-4 right-5 text-2xl font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="absolute top-4 right-5 text-2xl font-bold text-brand-dark-grey hover:text-brand-red transition-colors cursor-pointer"
               >
                 &times;
               </button>
-              <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-brand-red/10 text-brand-red rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <FiLock className="text-xl" />
               </div>
               <h3 className="text-xl font-bold mb-1 tracking-tight">Forgot Password?</h3>
-              <p className="mb-6 text-xs text-slate-400 leading-relaxed">
+              <p className="mb-6 text-xs text-brand-dark-grey dark:text-brand-gold-light leading-relaxed">
                 Enter your registered Multigym HR email address and we'll dispatch a reset link.
               </p>
               <form onSubmit={handlePasswordReset} className="space-y-4">
@@ -469,17 +469,17 @@ const Login = () => {
                   <input
                     type="email"
                     placeholder="admin@gmail.com"
-                    className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-300 ${
+                    className={`w-full px-4 py-3 rounded-2xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 transition-all duration-200 ${
                       theme === "dark"
-                        ? "bg-slate-950 border-slate-800 text-white placeholder-slate-500"
-                        : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+                        ? "bg-brand-midnight border-brand-dark-grey text-brand-white placeholder-brand-dark-grey"
+                        : "bg-brand-offwhite border-brand-beige text-brand-black placeholder-brand-dark-grey"
                     }`}
                     required
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 shadow-lg shadow-emerald-600/30 cursor-pointer"
+                  className="w-full bg-brand-red hover:bg-brand-red-dark text-white font-bold py-3 px-4 rounded-2xl transition-all duration-200 shadow-lg shadow-brand-red/30 cursor-pointer"
                 >
                   Send Reset Link
                 </button>
