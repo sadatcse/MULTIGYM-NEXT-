@@ -45,7 +45,7 @@ const useUserPermissions = () => {
 
   /**
    * Check if current user has permission for a specific module and action.
-   * @param {string} moduleKey - e.g. "departments", "roles", "branches", "user"
+   * @param {string} moduleKey - e.g. "job-positions", "departments", "roles", "branches", "user"
    * @param {"view" | "add" | "edit" | "delete"} action
    * @returns {boolean}
    */
@@ -55,11 +55,11 @@ const useUserPermissions = () => {
         return true;
       }
 
-      if (dbPermissions && dbPermissions[moduleKey]) {
+      if (dbPermissions && dbPermissions[moduleKey] !== undefined) {
         return Boolean(dbPermissions[moduleKey][action]);
       }
 
-      // Default to allowed if not yet configured
+      // Default to allowed if not yet configured for newly added modules
       return true;
     },
     [user, role, dbPermissions]
@@ -67,7 +67,7 @@ const useUserPermissions = () => {
 
   /**
    * Alias helper for route path or key permission checking
-   * @param {string} pathOrKey - e.g. "/dashboard/settings/departments" or "departments"
+   * @param {string} pathOrKey - e.g. "/dashboard/settings/job-positions" or "job-positions"
    * @param {"view" | "add" | "edit" | "delete"} action
    * @returns {boolean}
    */

@@ -2,6 +2,41 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
+import menuItems from "@/components/MenuItems";
+
+// Helper to extract system modules from central menuItems definition
+const getSystemModulesFromMenu = () => {
+  const rawMenu = menuItems();
+  const categories = [];
+
+  rawMenu.forEach((cat) => {
+    if (cat.children && cat.children.length > 0) {
+      const items = cat.children.map((child) => ({
+        key: child.key || child.path.split("/").pop(),
+        name: child.title,
+        description: child.description || `Manage ${child.title} access and features`,
+      }));
+
+      categories.push({
+        category: cat.title,
+        items,
+      });
+    } else if (cat.key !== "home" && cat.path !== "/dashboard/home") {
+      categories.push({
+        category: cat.title,
+        items: [
+          {
+            key: cat.key || cat.path.split("/").pop(),
+            name: cat.title,
+            description: cat.description || `Manage ${cat.title} access and features`,
+          },
+        ],
+      });
+    }
+  });
+
+  return categories;
+};
 
 export default function useRolePermissionApi(initialRole = "") {
   const axiosSecure = useAxiosSecure();
@@ -43,20 +78,37 @@ export default function useRolePermissionApi(initialRole = "") {
     }
   }, [axiosSecure]);
 
-  // Fetch permissions for selected role
+  // Fetch permissions for selected role, merging newly registered modules
   const fetchRolePermissions = useCallback(async (roleName) => {
     if (!roleName) return;
     setLoading(true);
     try {
       const res = await axiosSecure.get(`/role-permission?role=${encodeURIComponent(roleName)}`);
-      if (res?.data?.data?.permissions) {
-        setPermissions(res.data.data.permissions);
-      } else {
-        setPermissions({});
-      }
+      const fetchedPerms = res?.data?.data?.permissions || {};
+
+      // Ensure all system modules defined in MenuItems exist in permissions
+      const categories = getSystemModulesFromMenu();
+      const mergedPerms = { ...fetchedPerms };
+
+      categories.forEach((cat) => {
+        cat.items.forEach((item) => {
+          if (!mergedPerms[item.key]) {
+            mergedPerms[item.key] = { view: true, add: true, edit: true, delete: true };
+          }
+        });
+      });
+
+      setPermissions(mergedPerms);
     } catch (err) {
-      console.log(`No existing permissions for role "${roleName}", starting fresh.`);
-      setPermissions({});
+      console.log(`No existing permissions for role "${roleName}", initializing full defaults.`);
+      const categories = getSystemModulesFromMenu();
+      const defaultPerms = {};
+      categories.forEach((cat) => {
+        cat.items.forEach((item) => {
+          defaultPerms[item.key] = { view: true, add: true, edit: true, delete: true };
+        });
+      });
+      setPermissions(defaultPerms);
     } finally {
       setLoading(false);
     }
