@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import useRolePermissionApi from "@/hooks/useRolePermissionApi";
-import useRoleApi from "@/hooks/useRoleApi";
 import menuItems from "@/components/MenuItems";
 import Swal from "sweetalert2";
 import {
@@ -68,8 +67,8 @@ const cardVariants = {
 };
 
 export default function RolePermissionsPage() {
-  const { roles: apiRoles } = useRoleApi();
   const {
+    availableRoles,
     selectedRole,
     setSelectedRole,
     permissions,
@@ -78,25 +77,10 @@ export default function RolePermissionsPage() {
     loading,
     isSaving,
     savePermissions,
-  } = useRolePermissionApi("HR MANAGER");
+  } = useRolePermissionApi();
 
   // Dynamically derived system modules from central menuItems configuration
   const systemModules = useMemo(() => getSystemModulesFromMenu(), []);
-
-  // Fallback default roles if API is loading
-  const availableRoles = useMemo(() => {
-    if (apiRoles && apiRoles.length > 0) {
-      return apiRoles.map((r) => r.name);
-    }
-    return [
-      "Super Admin",
-      "HR Manager",
-      "Payroll Officer",
-      "Department Head",
-      "Trainer",
-      "General Staff",
-    ];
-  }, [apiRoles]);
 
   // Total count of modules across all categories
   const totalModuleCount = useMemo(() => {
@@ -288,7 +272,7 @@ export default function RolePermissionsPage() {
                 Target Role
               </span>
               <span className="text-base font-extrabold text-brand-gold mt-1 block truncate max-w-[150px]">
-                {selectedRole}
+                {selectedRole || "Loading..."}
               </span>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
