@@ -1,0 +1,30 @@
+{
+  "name": "multigym-hr-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node node_modules/next/dist/bin/next dev --webpack",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start",
+    "lint": "node node_modules/eslint/bin/eslint.js"
+  },
+  "dependencies": {
+    "axios": "^1.19.0",
+    "daisyui": "^5.5.20",
+    "date-fns": "^4.4.0",
+    "framer-motion": "^12.40.0",
+    "next": "16.2.7",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.79.0",
+    "react-icons": "^5.6.0",
+    "react-toastify": "^11.1.0",
+    "sweetalert2": "^11.26.25"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "tailwindcss": "^4"
+  }
+}
