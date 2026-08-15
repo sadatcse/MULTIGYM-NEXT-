@@ -59,15 +59,32 @@ const useUserPermissions = () => {
         return Boolean(dbPermissions[moduleKey][action]);
       }
 
-      // Default to allowed if not yet configured for dev ease
+      // Default to allowed if not yet configured
       return true;
     },
     [user, role, dbPermissions]
   );
 
+  /**
+   * Alias helper for route path or key permission checking
+   * @param {string} pathOrKey - e.g. "/dashboard/settings/departments" or "departments"
+   * @param {"view" | "add" | "edit" | "delete"} action
+   * @returns {boolean}
+   */
+  const hasPermission = useCallback(
+    (pathOrKey, action = "view") => {
+      if (!pathOrKey) return true;
+      const key = pathOrKey.includes("/") ? pathOrKey.split("/").pop() : pathOrKey;
+      return can(key, action);
+    },
+    [can]
+  );
+
   return {
     permissions: dbPermissions,
     can,
+    hasPermission,
+    allowedRoutes: ["*"],
     loading,
     role,
   };
