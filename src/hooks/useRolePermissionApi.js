@@ -52,7 +52,7 @@ export default function useRolePermissionApi(initialRole = "") {
 
   const saveLockRef = useRef(false);
 
-  // Fetch all active system roles dynamically from backend MongoDB API
+  // Fetch all active system roles dynamically from backend MongoDB API (100% real data)
   const fetchAvailableRoles = useCallback(async () => {
     setRolesLoading(true);
     try {
@@ -63,24 +63,17 @@ export default function useRolePermissionApi(initialRole = "") {
         setRolesList(fullRoles);
         setAvailableRoles(roleNames);
 
-        // Dynamically set selected role to first fetched role if not already specified
+        // Dynamically set selected role to first fetched role from real database records
         setSelectedRole((prev) => {
           if (prev && roleNames.includes(prev)) return prev;
-          return roleNames[0] || initialRole || "HR MANAGER";
+          return roleNames[0] || initialRole || "";
         });
       }
     } catch (err) {
       console.error("Error fetching dynamic system user roles:", err);
-      const fallbackNames = [
-        "Super Admin",
-        "HR Manager",
-        "Payroll Officer",
-        "Department Head",
-        "Trainer",
-        "General Staff",
-      ];
-      setAvailableRoles(fallbackNames);
-      setSelectedRole((prev) => (prev ? prev : fallbackNames[0]));
+      setRolesList([]);
+      setAvailableRoles([]);
+      setSelectedRole("");
     } finally {
       setRolesLoading(false);
     }
