@@ -11,6 +11,7 @@ import {
   MdReceiptLong,
   MdLocationOn,
   MdBadge,
+  MdAccessTime,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -48,6 +49,13 @@ const menuItems = () => {
           key: "job-positions",
           description: "Manage job titles, department assignments, hierarchy order, and active access",
           icon: <MdBadge className="text-base" />,
+        },
+        {
+          title: "Shift Configuration",
+          path: "/dashboard/settings/shifts",
+          key: "shifts",
+          description: "Manage work shift schedules, display order, and active status",
+          icon: <MdAccessTime className="text-base" />,
         },
         {
           title: "User Role Configuration",
