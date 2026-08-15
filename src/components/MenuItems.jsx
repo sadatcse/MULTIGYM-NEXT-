@@ -9,6 +9,7 @@ import {
   MdPeople,
   MdStorefront,
   MdReceiptLong,
+  MdLocationOn,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -26,6 +27,13 @@ const menuItems = () => {
       key: "configuration",
       icon: <MdSettings className="text-lg" />,
       children: [
+        {
+          title: "Branch Configuration",
+          path: "/dashboard/settings/branches",
+          key: "branches",
+          description: "Manage gym location branches, contact details, display order, and status",
+          icon: <MdLocationOn className="text-base" />,
+        },
         {
           title: "Department Configuration",
           path: "/dashboard/settings/departments",
@@ -50,7 +58,7 @@ const menuItems = () => {
       ],
     },
     {
-      title: "Staff & Employee Management",
+      title: "Employee Management",
       path: "/dashboard/user",
       key: "user-management",
       icon: <MdPeople className="text-lg" />,
@@ -61,36 +69,6 @@ const menuItems = () => {
           key: "user",
           description: "View, create, update, and manage employee profiles and credentials",
           icon: <MdPeople className="text-base" />,
-        },
-      ],
-    },
-    {
-      title: "Procurement & Operations",
-      path: "/dashboard/vendor",
-      key: "procurement",
-      icon: <MdStorefront className="text-lg" />,
-      children: [
-        {
-          title: "Vendor Management",
-          path: "/dashboard/vendor",
-          key: "vendor",
-          description: "Track suppliers, gym equipment vendors, and contact records",
-          icon: <MdStorefront className="text-base" />,
-        },
-      ],
-    },
-    {
-      title: "Financial & System Audit",
-      path: "/dashboard/transaction-logs",
-      key: "audit",
-      icon: <MdReceiptLong className="text-lg" />,
-      children: [
-        {
-          title: "Transaction Logs",
-          path: "/dashboard/transaction-logs",
-          key: "transaction-logs",
-          description: "Audit trail, action logs, system event history, and security logs",
-          icon: <MdReceiptLong className="text-base" />,
         },
       ],
     },
