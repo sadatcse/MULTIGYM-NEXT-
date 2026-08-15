@@ -10,6 +10,7 @@ import {
   MdStorefront,
   MdReceiptLong,
   MdLocationOn,
+  MdBadge,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -23,7 +24,7 @@ const menuItems = () => {
     },
     {
       title: "Configuration & Settings",
-      path: "/dashboard/settings/departments",
+      path: "/dashboard/settings/branches",
       key: "configuration",
       icon: <MdSettings className="text-lg" />,
       children: [
@@ -40,6 +41,13 @@ const menuItems = () => {
           key: "departments",
           description: "Manage organizational departments, display order, and status",
           icon: <MdWork className="text-base" />,
+        },
+        {
+          title: "Job Position Configuration",
+          path: "/dashboard/settings/job-positions",
+          key: "job-positions",
+          description: "Manage job titles, department assignments, hierarchy order, and active access",
+          icon: <MdBadge className="text-base" />,
         },
         {
           title: "User Role Configuration",
