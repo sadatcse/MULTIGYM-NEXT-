@@ -111,7 +111,7 @@ const AccordionItem = ({ item, isSidebarOpen }) => {
 const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
   const logo = mode === "dark" ? Logo_Dark : Logo;
   const { user } = useContext(AuthContext);
-  const { allowedRoutes, hasPermission, loading } = useUserPermissions();
+  const { can, role, loading } = useUserPermissions();
 
   /* ---------------- PERMISSION + FORCE LOGIC ---------------- */
   const filteredMenuItems = useMemo(() => {
@@ -119,29 +119,33 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
 
     const items = menuItems();
 
-    if (user?.role === "superadmin" || allowedRoutes.includes("*")) {
+    // Super Admin sees all menu items
+    if (role === "SUPER ADMIN" || role === "SUPERADMIN" || user?.role === "superadmin") {
       return items;
     }
 
     return items
       .map((item) => {
+        // Single menu item (e.g. Dashboard Home)
         if (!item.children) {
-          const isAllowed = allowedRoutes.includes(item.path) || hasPermission(item.path, "view");
+          if (item.key === "home" || item.path === "/dashboard/home") return item;
+          const key = item.key || item.path.split("/").pop();
+          const isAllowed = can(key, "view");
           return isAllowed ? item : null;
         }
 
-        // Parent item with submenus: filter valid children by permission
-        const validChildren = item.children.filter((child) =>
-          allowedRoutes.includes(child.path) || hasPermission(child.path, "view")
-        );
+        // Parent item with submenus: filter valid children by view permission
+        const validChildren = item.children.filter((child) => {
+          const childKey = child.key || child.path.split("/").pop();
+          return can(childKey, "view");
+        });
 
         if (validChildren.length === 0) return null;
 
-        // Keep parent and its matching child routes grouped
         return { ...item, children: validChildren };
       })
       .filter(Boolean);
-  }, [allowedRoutes, hasPermission, loading, user]);
+  }, [can, loading, role, user]);
 
   return (
     <>
