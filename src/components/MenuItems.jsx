@@ -30,6 +30,11 @@ const menuItems = () => {
           path: "/dashboard/settings/roles",
           icon: <MdSecurity className="text-base" />,
         },
+        {
+          title: "Role Access",
+          path: "/dashboard/settings/role-permissions",
+          icon: <MdSecurity className="text-base" />,
+        },
       ],
     },
   ];
