@@ -41,6 +41,7 @@ const getSystemModulesFromMenu = () => {
 export default function useRolePermissionApi(initialRole = "") {
   const axiosSecure = useAxiosSecure();
 
+  const [rolesList, setRolesList] = useState([]);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [permissions, setPermissions] = useState({});
@@ -51,19 +52,26 @@ export default function useRolePermissionApi(initialRole = "") {
 
   const saveLockRef = useRef(false);
 
-  // Fetch all active system roles from backend MongoDB API
+  // Fetch all active system roles dynamically from backend MongoDB API
   const fetchAvailableRoles = useCallback(async () => {
     setRolesLoading(true);
     try {
       const res = await axiosSecure.get("/role", { params: { limit: 100 } });
       if (res?.data?.data && Array.isArray(res.data.data)) {
-        const roleNames = res.data.data.map((r) => r.name);
+        const fullRoles = res.data.data;
+        const roleNames = fullRoles.map((r) => r.name);
+        setRolesList(fullRoles);
         setAvailableRoles(roleNames);
-        setSelectedRole((prev) => (prev ? prev : roleNames[0] || "HR MANAGER"));
+
+        // Dynamically set selected role to first fetched role if not already specified
+        setSelectedRole((prev) => {
+          if (prev && roleNames.includes(prev)) return prev;
+          return roleNames[0] || initialRole || "HR MANAGER";
+        });
       }
     } catch (err) {
-      console.error("Error fetching system user roles:", err);
-      const fallback = [
+      console.error("Error fetching dynamic system user roles:", err);
+      const fallbackNames = [
         "Super Admin",
         "HR Manager",
         "Payroll Officer",
@@ -71,12 +79,12 @@ export default function useRolePermissionApi(initialRole = "") {
         "Trainer",
         "General Staff",
       ];
-      setAvailableRoles(fallback);
-      setSelectedRole((prev) => (prev ? prev : fallback[0]));
+      setAvailableRoles(fallbackNames);
+      setSelectedRole((prev) => (prev ? prev : fallbackNames[0]));
     } finally {
       setRolesLoading(false);
     }
-  }, [axiosSecure]);
+  }, [axiosSecure, initialRole]);
 
   // Fetch permissions for selected role, merging newly registered modules
   const fetchRolePermissions = useCallback(async (roleName) => {
@@ -157,6 +165,7 @@ export default function useRolePermissionApi(initialRole = "") {
   };
 
   return {
+    rolesList,
     availableRoles,
     selectedRole,
     setSelectedRole,
