@@ -6,6 +6,7 @@ import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import useRolePermissionApi from "@/hooks/useRolePermissionApi";
 import useRoleApi from "@/hooks/useRoleApi";
+import menuItems from "@/components/MenuItems";
 import Swal from "sweetalert2";
 import {
   FiShield,
@@ -22,34 +23,39 @@ import {
   FiLayers,
 } from "react-icons/fi";
 
-const SYSTEM_MODULES = [
-  {
-    category: "Configuration & System Settings",
-    items: [
-      { key: "departments", name: "Department Configuration", description: "Manage organizational departments, display order, and status" },
-      { key: "roles", name: "User Role Configuration", description: "Create and manage system user roles and hierarchy order" },
-      { key: "role-permissions", name: "Role Access Control", description: "Configure module-level view/add/edit/delete access matrix" },
-    ],
-  },
-  {
-    category: "Staff & User Directory",
-    items: [
-      { key: "user", name: "Employee Directory", description: "View, create, update, and manage employee profiles and credentials" },
-    ],
-  },
-  {
-    category: "Procurement & Operations",
-    items: [
-      { key: "vendor", name: "Vendor Management", description: "Track suppliers, gym equipment vendors, and contact records" },
-    ],
-  },
-  {
-    category: "Financial & System Audit",
-    items: [
-      { key: "transaction-logs", name: "Transaction Logs", description: "Audit trail, action logs, system event history, and security logs" },
-    ],
-  },
-];
+// Dynamically generate system modules matrix from central menuItems definition
+const getSystemModulesFromMenu = () => {
+  const rawMenu = menuItems();
+  const categories = [];
+
+  rawMenu.forEach((cat) => {
+    if (cat.children && cat.children.length > 0) {
+      const items = cat.children.map((child) => ({
+        key: child.key || child.path.split("/").pop(),
+        name: child.title,
+        description: child.description || `Manage ${child.title} access and features`,
+      }));
+
+      categories.push({
+        category: cat.title,
+        items,
+      });
+    } else if (cat.key !== "home" && cat.path !== "/dashboard/home") {
+      categories.push({
+        category: cat.title,
+        items: [
+          {
+            key: cat.key || cat.path.split("/").pop(),
+            name: cat.title,
+            description: cat.description || `Manage ${cat.title} access and features`,
+          },
+        ],
+      });
+    }
+  });
+
+  return categories;
+};
 
 // Framer Motion variants
 const containerVariants = {
@@ -74,6 +80,9 @@ export default function RolePermissionsPage() {
     savePermissions,
   } = useRolePermissionApi("HR MANAGER");
 
+  // Dynamically derived system modules from central menuItems configuration
+  const systemModules = useMemo(() => getSystemModulesFromMenu(), []);
+
   // Fallback default roles if API is loading
   const availableRoles = useMemo(() => {
     if (apiRoles && apiRoles.length > 0) {
@@ -88,6 +97,15 @@ export default function RolePermissionsPage() {
       "General Staff",
     ];
   }, [apiRoles]);
+
+  // Total count of modules across all categories
+  const totalModuleCount = useMemo(() => {
+    let count = 0;
+    systemModules.forEach((cat) => {
+      count += cat.items.length;
+    });
+    return count;
+  }, [systemModules]);
 
   // Calculate statistics for selected role
   const activeModuleCount = useMemo(() => {
@@ -162,10 +180,10 @@ export default function RolePermissionsPage() {
     });
   };
 
-  // Enable all permissions across all modules
+  // Enable all permissions across all dynamic modules
   const handleSelectAll = () => {
     const fullPermissions = {};
-    SYSTEM_MODULES.forEach((cat) => {
+    systemModules.forEach((cat) => {
       cat.items.forEach((item) => {
         fullPermissions[item.key] = { view: true, add: true, edit: true, delete: true };
       });
@@ -176,7 +194,7 @@ export default function RolePermissionsPage() {
   // Clear all permissions
   const handleClearAll = () => {
     const emptyPermissions = {};
-    SYSTEM_MODULES.forEach((cat) => {
+    systemModules.forEach((cat) => {
       cat.items.forEach((item) => {
         emptyPermissions[item.key] = { view: false, add: false, edit: false, delete: false };
       });
@@ -290,7 +308,7 @@ export default function RolePermissionsPage() {
                 Module Access
               </span>
               <span className="text-2xl font-black text-emerald-500 mt-1 block">
-                {activeModuleCount} / 6
+                {activeModuleCount} / {totalModuleCount}
               </span>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
@@ -376,7 +394,7 @@ export default function RolePermissionsPage() {
         <SkeletonLoading variant="table" rows={6} />
       ) : (
         <div className="space-y-6">
-          {SYSTEM_MODULES.map((categoryGroup) => (
+          {systemModules.map((categoryGroup) => (
             <div
               key={categoryGroup.category}
               className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-lg shadow-black/5 overflow-hidden"
