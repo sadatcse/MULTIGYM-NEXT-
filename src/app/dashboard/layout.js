@@ -58,6 +58,7 @@ export default function DashboardLayout({ children }) {
   const hasViewPermission = isSuperadmin ||
     pathname === "/dashboard/home" ||
     pathname === "/dashboard/profile" ||
+    pathname === "/dashboard/chat" ||
     pathname === "/dashboard" ||
     hasPermission(pathname, "view");
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import AuthProvider from "@/providers/AuthProvider";
 import { TimeZoneProvider } from "@/providers/TimeZoneProvider";
 import { PermissionsProvider } from "@/providers/PermissionsProvider";
+import { ChatSocketProvider } from "@/providers/ChatSocketProvider";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -59,8 +60,10 @@ export default function Providers({ children }) {
     <AuthProvider>
       <TimeZoneProvider>
         <PermissionsProvider>
-          {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
-          <ToastContainer position="top-right" autoClose={3000} />
+          <ChatSocketProvider>
+            {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
+            <ToastContainer position="top-right" autoClose={3000} />
+          </ChatSocketProvider>
         </PermissionsProvider>
       </TimeZoneProvider>
     </AuthProvider>
