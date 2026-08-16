@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
+import { AuthContext } from "@/providers/AuthProvider";
 import timezonesData from "@/data/Timezone.json";
 
 const TimeZoneContext = createContext(null);
@@ -72,6 +73,9 @@ export function applyDateFormatPattern(d, formatPattern, timeZone = "Asia/Dhaka"
 
 export function TimeZoneProvider({ children }) {
   const axiosSecure = useAxiosSecure();
+  const auth = useContext(AuthContext);
+  const isAuthenticated = !!auth?.employee;
+  const authLoading = auth?.loading ?? false;
 
   const [settings, setSettings] = useState({
     timeZone: "Asia/Dhaka",
@@ -112,9 +116,20 @@ export function TimeZoneProvider({ children }) {
     }
   }, [axiosSecure]);
 
+  // Only fetch site settings once there's an authenticated session — this provider
+  // wraps the entire app including the public login page, and firing an authed
+  // /setting request before login just produces console noise and wasted requests.
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      // Nothing to fetch on a public/unauthenticated page — stop "loading" so
+      // consumers fall back to the default timezone/date format instead of hanging.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false);
+      return;
+    }
     fetchTimeZoneSettings();
-  }, [fetchTimeZoneSettings]);
+  }, [authLoading, isAuthenticated, fetchTimeZoneSettings]);
 
   const updateTimeZoneSettings = useCallback(
     async (newPayload) => {

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import AuthProvider from "@/providers/AuthProvider";
 import { TimeZoneProvider } from "@/providers/TimeZoneProvider";
+import { PermissionsProvider } from "@/providers/PermissionsProvider";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -57,8 +58,10 @@ export default function Providers({ children }) {
   return (
     <AuthProvider>
       <TimeZoneProvider>
-        {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
-        <ToastContainer position="top-right" autoClose={3000} />
+        <PermissionsProvider>
+          {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
+          <ToastContainer position="top-right" autoClose={3000} />
+        </PermissionsProvider>
       </TimeZoneProvider>
     </AuthProvider>
   );

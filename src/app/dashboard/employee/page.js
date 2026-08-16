@@ -348,7 +348,11 @@ export default function EmployeePage() {
     setIsSubmitting(true);
     try {
       if (editingEmployee) {
-        await updateEmployee(editingEmployee._id, formData);
+        const updatePayload = { ...formData };
+        if (!updatePayload.password || !updatePayload.password.trim()) {
+          delete updatePayload.password;
+        }
+        await updateEmployee(editingEmployee._id, updatePayload);
         Swal.fire({
           title: "Employee Profile Updated!",
           text: `Profile for "${formData.name}" has been updated.`,
