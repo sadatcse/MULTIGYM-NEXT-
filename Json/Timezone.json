@@ -1,0 +1,320 @@
+[
+    {
+        "value": "Pacific/Midway",
+        "label": "Midway Island (GMT-11:00)",
+        "city": "Midway Island",
+        "offset": "-11:00"
+    },
+    {
+        "value": "Pacific/Pago_Pago",
+        "label": "Pago Pago (GMT-11:00)",
+        "city": "Pago Pago",
+        "offset": "-11:00"
+    },
+    {
+        "value": "Pacific/Honolulu",
+        "label": "Honolulu (GMT-10:00)",
+        "city": "Honolulu",
+        "offset": "-10:00"
+    },
+    {
+        "value": "America/Anchorage",
+        "label": "Anchorage (GMT-09:00)",
+        "city": "Anchorage",
+        "offset": "-09:00"
+    },
+    {
+        "value": "America/Los_Angeles",
+        "label": "Los Angeles (GMT-08:00)",
+        "city": "Los Angeles",
+        "offset": "-08:00"
+    },
+    {
+        "value": "America/Vancouver",
+        "label": "Vancouver (GMT-08:00)",
+        "city": "Vancouver",
+        "offset": "-08:00"
+    },
+    {
+        "value": "America/Denver",
+        "label": "Denver (GMT-07:00)",
+        "city": "Denver",
+        "offset": "-07:00"
+    },
+    {
+        "value": "America/Phoenix",
+        "label": "Phoenix (GMT-07:00)",
+        "city": "Phoenix",
+        "offset": "-07:00"
+    },
+    {
+        "value": "America/Chicago",
+        "label": "Chicago (GMT-06:00)",
+        "city": "Chicago",
+        "offset": "-06:00"
+    },
+    {
+        "value": "America/Mexico_City",
+        "label": "Mexico City (GMT-06:00)",
+        "city": "Mexico City",
+        "offset": "-06:00"
+    },
+    {
+        "value": "America/New_York",
+        "label": "New York (GMT-05:00)",
+        "city": "New York",
+        "offset": "-05:00"
+    },
+    {
+        "value": "America/Toronto",
+        "label": "Toronto (GMT-05:00)",
+        "city": "Toronto",
+        "offset": "-05:00"
+    },
+    {
+        "value": "America/Bogota",
+        "label": "Bogota (GMT-05:00)",
+        "city": "Bogota",
+        "offset": "-05:00"
+    },
+    {
+        "value": "America/Caracas",
+        "label": "Caracas (GMT-04:00)",
+        "city": "Caracas",
+        "offset": "-04:00"
+    },
+    {
+        "value": "America/Halifax",
+        "label": "Halifax (GMT-04:00)",
+        "city": "Halifax",
+        "offset": "-04:00"
+    },
+    {
+        "value": "America/St_Johns",
+        "label": "St. John's (GMT-03:30)",
+        "city": "St. John's",
+        "offset": "-03:30"
+    },
+    {
+        "value": "America/Argentina/Buenos_Aires",
+        "label": "Buenos Aires (GMT-03:00)",
+        "city": "Buenos Aires",
+        "offset": "-03:00"
+    },
+    {
+        "value": "America/Sao_Paulo",
+        "label": "Sao Paulo (GMT-03:00)",
+        "city": "Sao Paulo",
+        "offset": "-03:00"
+    },
+    {
+        "value": "Atlantic/South_Georgia",
+        "label": "South Georgia (GMT-02:00)",
+        "city": "South Georgia",
+        "offset": "-02:00"
+    },
+    {
+        "value": "Atlantic/Azores",
+        "label": "Azores (GMT-01:00)",
+        "city": "Azores",
+        "offset": "-01:00"
+    },
+    {
+        "value": "UTC",
+        "label": "UTC (GMT+00:00)",
+        "city": "UTC",
+        "offset": "+00:00"
+    },
+    {
+        "value": "Europe/London",
+        "label": "London (GMT+00:00)",
+        "city": "London",
+        "offset": "+00:00"
+    },
+    {
+        "value": "Europe/Paris",
+        "label": "Paris (GMT+01:00)",
+        "city": "Paris",
+        "offset": "+01:00"
+    },
+    {
+        "value": "Europe/Berlin",
+        "label": "Berlin (GMT+01:00)",
+        "city": "Berlin",
+        "offset": "+01:00"
+    },
+    {
+        "value": "Africa/Lagos",
+        "label": "Lagos (GMT+01:00)",
+        "city": "Lagos",
+        "offset": "+01:00"
+    },
+    {
+        "value": "Europe/Athens",
+        "label": "Athens (GMT+02:00)",
+        "city": "Athens",
+        "offset": "+02:00"
+    },
+    {
+        "value": "Africa/Cairo",
+        "label": "Cairo (GMT+02:00)",
+        "city": "Cairo",
+        "offset": "+02:00"
+    },
+    {
+        "value": "Africa/Johannesburg",
+        "label": "Johannesburg (GMT+02:00)",
+        "city": "Johannesburg",
+        "offset": "+02:00"
+    },
+    {
+        "value": "Europe/Moscow",
+        "label": "Moscow (GMT+03:00)",
+        "city": "Moscow",
+        "offset": "+03:00"
+    },
+    {
+        "value": "Asia/Riyadh",
+        "label": "Riyadh (GMT+03:00)",
+        "city": "Riyadh",
+        "offset": "+03:00"
+    },
+    {
+        "value": "Asia/Tehran",
+        "label": "Tehran (GMT+03:30)",
+        "city": "Tehran",
+        "offset": "+03:30"
+    },
+    {
+        "value": "Asia/Dubai",
+        "label": "Dubai (GMT+04:00)",
+        "city": "Dubai",
+        "offset": "+04:00"
+    },
+    {
+        "value": "Asia/Kabul",
+        "label": "Kabul (GMT+04:30)",
+        "city": "Kabul",
+        "offset": "+04:30"
+    },
+    {
+        "value": "Asia/Karachi",
+        "label": "Karachi (GMT+05:00)",
+        "city": "Karachi",
+        "offset": "+05:00"
+    },
+    {
+        "value": "Asia/Kolkata",
+        "label": "Kolkata (GMT+05:30)",
+        "city": "Kolkata",
+        "offset": "+05:30"
+    },
+    {
+        "value": "Asia/Kathmandu",
+        "label": "Kathmandu (GMT+05:45)",
+        "city": "Kathmandu",
+        "offset": "+05:45"
+    },
+    {
+        "value": "Asia/Dhaka",
+        "label": "Dhaka (GMT+06:00)",
+        "city": "Dhaka",
+        "offset": "+06:00"
+    },
+    {
+        "value": "Asia/Almaty",
+        "label": "Almaty (GMT+06:00)",
+        "city": "Almaty",
+        "offset": "+06:00"
+    },
+    {
+        "value": "Asia/Yangon",
+        "label": "Yangon (GMT+06:30)",
+        "city": "Yangon",
+        "offset": "+06:30"
+    },
+    {
+        "value": "Asia/Bangkok",
+        "label": "Bangkok (GMT+07:00)",
+        "city": "Bangkok",
+        "offset": "+07:00"
+    },
+    {
+        "value": "Asia/Jakarta",
+        "label": "Jakarta (GMT+07:00)",
+        "city": "Jakarta",
+        "offset": "+07:00"
+    },
+    {
+        "value": "Asia/Singapore",
+        "label": "Singapore (GMT+08:00)",
+        "city": "Singapore",
+        "offset": "+08:00"
+    },
+    {
+        "value": "Asia/Hong_Kong",
+        "label": "Hong Kong (GMT+08:00)",
+        "city": "Hong Kong",
+        "offset": "+08:00"
+    },
+    {
+        "value": "Australia/Perth",
+        "label": "Perth (GMT+08:00)",
+        "city": "Perth",
+        "offset": "+08:00"
+    },
+    {
+        "value": "Asia/Tokyo",
+        "label": "Tokyo (GMT+09:00)",
+        "city": "Tokyo",
+        "offset": "+09:00"
+    },
+    {
+        "value": "Asia/Seoul",
+        "label": "Seoul (GMT+09:00)",
+        "city": "Seoul",
+        "offset": "+09:00"
+    },
+    {
+        "value": "Australia/Adelaide",
+        "label": "Adelaide (GMT+09:30)",
+        "city": "Adelaide",
+        "offset": "+09:30"
+    },
+    {
+        "value": "Australia/Sydney",
+        "label": "Sydney (GMT+10:00)",
+        "city": "Sydney",
+        "offset": "+10:00"
+    },
+    {
+        "value": "Pacific/Guam",
+        "label": "Guam (GMT+10:00)",
+        "city": "Guam",
+        "offset": "+10:00"
+    },
+    {
+        "value": "Pacific/Noumea",
+        "label": "Noumea (GMT+11:00)",
+        "city": "Noumea",
+        "offset": "+11:00"
+    },
+    {
+        "value": "Pacific/Auckland",
+        "label": "Auckland (GMT+12:00)",
+        "city": "Auckland",
+        "offset": "+12:00"
+    },
+    {
+        "value": "Pacific/Fiji",
+        "label": "Fiji (GMT+12:00)",
+        "city": "Fiji",
+        "offset": "+12:00"
+    },
+    {
+        "value": "Pacific/Tongatapu",
+        "label": "Tongatapu (GMT+13:00)",
+        "city": "Tongatapu",
+        "offset": "+13:00"
+    }
+]

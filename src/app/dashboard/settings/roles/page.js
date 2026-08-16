@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
@@ -92,6 +92,11 @@ export default function UserRolesPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingRole, setDeletingRole] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Synchronous locks (defense-in-depth against rapid double-click/double-Enter
+  // firing two requests before the isSubmitting/isDeleting state re-render commits)
+  const submitLockRef = useRef(false);
+  const deleteLockRef = useRef(false);
 
   // Auto-detect mobile screen and switch to card view
   useEffect(() => {
@@ -204,9 +209,10 @@ export default function UserRolesPage() {
   // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (submitLockRef.current || isSubmitting) return;
     if (!validateForm()) return;
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
     try {
       if (editingRole) {
@@ -231,6 +237,7 @@ export default function UserRolesPage() {
       const msg = err?.response?.data?.message || "Failed to save user role.";
       setFormError(msg);
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -243,7 +250,8 @@ export default function UserRolesPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingRole || isDeleting) return;
+    if (!deletingRole || deleteLockRef.current || isDeleting) return;
+    deleteLockRef.current = true;
     setIsDeleting(true);
     try {
       await deleteRole(deletingRole._id);
@@ -263,6 +271,7 @@ export default function UserRolesPage() {
         confirmButtonColor: "#FF1818",
       });
     } finally {
+      deleteLockRef.current = false;
       setIsDeleting(false);
       setDeletingRole(null);
     }

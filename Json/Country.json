@@ -1,0 +1,1418 @@
+[
+  {
+    "Serial": 1,
+    "Name": "Afghanistan",
+    "Code": "AF",
+    "Phone Code": "+93"
+  },
+  {
+    "Serial": 2,
+    "Name": "Albania",
+    "Code": "AL",
+    "Phone Code": "+355"
+  },
+  {
+    "Serial": 3,
+    "Name": "Algeria",
+    "Code": "DZ",
+    "Phone Code": "+213"
+  },
+  {
+    "Serial": 4,
+    "Name": "Andorra",
+    "Code": "AD",
+    "Phone Code": "+376"
+  },
+  {
+    "Serial": 5,
+    "Name": "Angola",
+    "Code": "AO",
+    "Phone Code": "+244"
+  },
+  {
+    "Serial": 6,
+    "Name": "Antigua and Barbuda",
+    "Code": "AG",
+    "Phone Code": "+1-268"
+  },
+  {
+    "Serial": 7,
+    "Name": "Argentina",
+    "Code": "AR",
+    "Phone Code": "+54"
+  },
+  {
+    "Serial": 8,
+    "Name": "Armenia",
+    "Code": "AM",
+    "Phone Code": "+374"
+  },
+  {
+    "Serial": 9,
+    "Name": "Aruba",
+    "Code": "AW",
+    "Phone Code": "+297"
+  },
+  {
+    "Serial": 10,
+    "Name": "Australia",
+    "Code": "AU",
+    "Phone Code": "+61"
+  },
+  {
+    "Serial": 11,
+    "Name": "Austria",
+    "Code": "AT",
+    "Phone Code": "+43"
+  },
+  {
+    "Serial": 12,
+    "Name": "Azerbaijan",
+    "Code": "AZ",
+    "Phone Code": "+994"
+  },
+  {
+    "Serial": 13,
+    "Name": "Bahamas",
+    "Code": "BS",
+    "Phone Code": "+1-242"
+  },
+  {
+    "Serial": 14,
+    "Name": "Bahrain",
+    "Code": "BH",
+    "Phone Code": "+973"
+  },
+  {
+    "Serial": 15,
+    "Name": "Bangladesh",
+    "Code": "BD",
+    "Phone Code": "+880"
+  },
+  {
+    "Serial": 16,
+    "Name": "Barbados",
+    "Code": "BB",
+    "Phone Code": "+1-246"
+  },
+  {
+    "Serial": 17,
+    "Name": "Belarus",
+    "Code": "BY",
+    "Phone Code": "+375"
+  },
+  {
+    "Serial": 18,
+    "Name": "Belgium",
+    "Code": "BE",
+    "Phone Code": "+32"
+  },
+  {
+    "Serial": 19,
+    "Name": "Belize",
+    "Code": "BZ",
+    "Phone Code": "+501"
+  },
+  {
+    "Serial": 20,
+    "Name": "Benin",
+    "Code": "BJ",
+    "Phone Code": "+229"
+  },
+  {
+    "Serial": 21,
+    "Name": "Bermuda",
+    "Code": "BM",
+    "Phone Code": "+1-441"
+  },
+  {
+    "Serial": 22,
+    "Name": "Bhutan",
+    "Code": "BT",
+    "Phone Code": "+975"
+  },
+  {
+    "Serial": 23,
+    "Name": "Bolivia",
+    "Code": "BO",
+    "Phone Code": "+591"
+  },
+  {
+    "Serial": 24,
+    "Name": "Bonaire, Sint Eustatius and Saba",
+    "Code": "BQ",
+    "Phone Code": "+599"
+  },
+  {
+    "Serial": 25,
+    "Name": "Bosnia and Herzegovina",
+    "Code": "BA",
+    "Phone Code": "+387"
+  },
+  {
+    "Serial": 26,
+    "Name": "Botswana",
+    "Code": "BW",
+    "Phone Code": "+267"
+  },
+  {
+    "Serial": 27,
+    "Name": "Brazil",
+    "Code": "BR",
+    "Phone Code": "+55"
+  },
+  {
+    "Serial": 28,
+    "Name": "British Indian Ocean Territory",
+    "Code": "IO",
+    "Phone Code": "+246"
+  },
+  {
+    "Serial": 29,
+    "Name": "British Virgin Islands",
+    "Code": "VG",
+    "Phone Code": "+1-284"
+  },
+  {
+    "Serial": 30,
+    "Name": "Brunei Darussalam",
+    "Code": "BN",
+    "Phone Code": "+673"
+  },
+  {
+    "Serial": 31,
+    "Name": "Bulgaria",
+    "Code": "BG",
+    "Phone Code": "+359"
+  },
+  {
+    "Serial": 32,
+    "Name": "Burkina Faso",
+    "Code": "BF",
+    "Phone Code": "+226"
+  },
+  {
+    "Serial": 33,
+    "Name": "Burundi",
+    "Code": "BI",
+    "Phone Code": "+257"
+  },
+  {
+    "Serial": 34,
+    "Name": "Cambodia",
+    "Code": "KH",
+    "Phone Code": "+855"
+  },
+  {
+    "Serial": 35,
+    "Name": "Canada",
+    "Code": "CA",
+    "Phone Code": "+1"
+  },
+  {
+    "Serial": 36,
+    "Name": "Cape Verde",
+    "Code": "CV",
+    "Phone Code": "+238"
+  },
+  {
+    "Serial": 37,
+    "Name": "Cayman Islands",
+    "Code": "KY",
+    "Phone Code": "+1-345"
+  },
+  {
+    "Serial": 38,
+    "Name": "Central African Republic",
+    "Code": "CF",
+    "Phone Code": "+236"
+  },
+  {
+    "Serial": 39,
+    "Name": "Chad",
+    "Code": "TD",
+    "Phone Code": "+235"
+  },
+  {
+    "Serial": 40,
+    "Name": "Chile",
+    "Code": "CL",
+    "Phone Code": "+56"
+  },
+  {
+    "Serial": 41,
+    "Name": "China",
+    "Code": "CN",
+    "Phone Code": "+86"
+  },
+  {
+    "Serial": 42,
+    "Name": "Christmas Island",
+    "Code": "CX",
+    "Phone Code": "+61"
+  },
+  {
+    "Serial": 43,
+    "Name": "Cocos Islands",
+    "Code": "CC",
+    "Phone Code": "+61"
+  },
+  {
+    "Serial": 44,
+    "Name": "Colombia",
+    "Code": "CO",
+    "Phone Code": "+57"
+  },
+  {
+    "Serial": 45,
+    "Name": "Comoros",
+    "Code": "KM",
+    "Phone Code": "+269"
+  },
+  {
+    "Serial": 46,
+    "Name": "Cook Islands",
+    "Code": "CK",
+    "Phone Code": "+682"
+  },
+  {
+    "Serial": 47,
+    "Name": "Costa Rica",
+    "Code": "CR",
+    "Phone Code": "+506"
+  },
+  {
+    "Serial": 48,
+    "Name": "Croatia",
+    "Code": "HR",
+    "Phone Code": "+385"
+  },
+  {
+    "Serial": 49,
+    "Name": "Cuba",
+    "Code": "CU",
+    "Phone Code": "+53"
+  },
+  {
+    "Serial": 50,
+    "Name": "Cyprus",
+    "Code": "CY",
+    "Phone Code": "+357"
+  },
+  {
+    "Serial": 51,
+    "Name": "Czech Republic",
+    "Code": "CZ",
+    "Phone Code": "+420"
+  },
+  {
+    "Serial": 52,
+    "Name": "Democratic Republic of the Congo",
+    "Code": "CD",
+    "Phone Code": "+243"
+  },
+  {
+    "Serial": 53,
+    "Name": "Denmark",
+    "Code": "DK",
+    "Phone Code": "+45"
+  },
+  {
+    "Serial": 54,
+    "Name": "Djibouti",
+    "Code": "DJ",
+    "Phone Code": "+253"
+  },
+  {
+    "Serial": 55,
+    "Name": "Dominica",
+    "Code": "DM",
+    "Phone Code": "+1-767"
+  },
+  {
+    "Serial": 56,
+    "Name": "Dominican Republic",
+    "Code": "DO",
+    "Phone Code": "+1-809"
+  },
+  {
+    "Serial": 57,
+    "Name": "East Caribbean",
+    "Code": "XC",
+    "Phone Code": "+1"
+  },
+  {
+    "Serial": 58,
+    "Name": "East Timor",
+    "Code": "TL",
+    "Phone Code": "+670"
+  },
+  {
+    "Serial": 59,
+    "Name": "Ecuador",
+    "Code": "EC",
+    "Phone Code": "+593"
+  },
+  {
+    "Serial": 60,
+    "Name": "Egypt",
+    "Code": "EG",
+    "Phone Code": "+20"
+  },
+  {
+    "Serial": 61,
+    "Name": "El Salvador",
+    "Code": "SV",
+    "Phone Code": "+503"
+  },
+  {
+    "Serial": 62,
+    "Name": "Equatorial Guinea",
+    "Code": "GQ",
+    "Phone Code": "+240"
+  },
+  {
+    "Serial": 63,
+    "Name": "Eritrea",
+    "Code": "ER",
+    "Phone Code": "+291"
+  },
+  {
+    "Serial": 64,
+    "Name": "Estonia",
+    "Code": "EE",
+    "Phone Code": "+372"
+  },
+  {
+    "Serial": 65,
+    "Name": "Ethiopia",
+    "Code": "ET",
+    "Phone Code": "+251"
+  },
+  {
+    "Serial": 66,
+    "Name": "Falkland Islands",
+    "Code": "FK",
+    "Phone Code": "+500"
+  },
+  {
+    "Serial": 67,
+    "Name": "Faroe Islands",
+    "Code": "FO",
+    "Phone Code": "+298"
+  },
+  {
+    "Serial": 68,
+    "Name": "Fiji",
+    "Code": "FJ",
+    "Phone Code": "+679"
+  },
+  {
+    "Serial": 69,
+    "Name": "Finland",
+    "Code": "FI",
+    "Phone Code": "+358"
+  },
+  {
+    "Serial": 70,
+    "Name": "France",
+    "Code": "FR",
+    "Phone Code": "+33"
+  },
+  {
+    "Serial": 71,
+    "Name": "French Polynesia",
+    "Code": "PF",
+    "Phone Code": "+689"
+  },
+  {
+    "Serial": 72,
+    "Name": "Gabon",
+    "Code": "GA",
+    "Phone Code": "+241"
+  },
+  {
+    "Serial": 73,
+    "Name": "Gambia",
+    "Code": "GM",
+    "Phone Code": "+220"
+  },
+  {
+    "Serial": 74,
+    "Name": "Georgia",
+    "Code": "GE",
+    "Phone Code": "+995"
+  },
+  {
+    "Serial": 75,
+    "Name": "Germany",
+    "Code": "DE",
+    "Phone Code": "+49"
+  },
+  {
+    "Serial": 76,
+    "Name": "Ghana",
+    "Code": "GH",
+    "Phone Code": "+233"
+  },
+  {
+    "Serial": 77,
+    "Name": "Gibraltar",
+    "Code": "GI",
+    "Phone Code": "+350"
+  },
+  {
+    "Serial": 78,
+    "Name": "Greece",
+    "Code": "GR",
+    "Phone Code": "+30"
+  },
+  {
+    "Serial": 79,
+    "Name": "Greenland",
+    "Code": "GL",
+    "Phone Code": "+299"
+  },
+  {
+    "Serial": 80,
+    "Name": "Grenada",
+    "Code": "GD",
+    "Phone Code": "+1-473"
+  },
+  {
+    "Serial": 81,
+    "Name": "Guadeloupe",
+    "Code": "GP",
+    "Phone Code": "+590"
+  },
+  {
+    "Serial": 82,
+    "Name": "Guam",
+    "Code": "GU",
+    "Phone Code": "+1-671"
+  },
+  {
+    "Serial": 83,
+    "Name": "Guatemala",
+    "Code": "GT",
+    "Phone Code": "+502"
+  },
+  {
+    "Serial": 84,
+    "Name": "Guernsey",
+    "Code": "GG",
+    "Phone Code": "+44-1481"
+  },
+  {
+    "Serial": 85,
+    "Name": "Guinea",
+    "Code": "GN",
+    "Phone Code": "+224"
+  },
+  {
+    "Serial": 86,
+    "Name": "Guinea-Bissau",
+    "Code": "GW",
+    "Phone Code": "+245"
+  },
+  {
+    "Serial": 87,
+    "Name": "Guyana",
+    "Code": "GY",
+    "Phone Code": "+592"
+  },
+  {
+    "Serial": 88,
+    "Name": "Haiti",
+    "Code": "HT",
+    "Phone Code": "+509"
+  },
+  {
+    "Serial": 89,
+    "Name": "Honduras",
+    "Code": "HN",
+    "Phone Code": "+504"
+  },
+  {
+    "Serial": 90,
+    "Name": "Hong Kong",
+    "Code": "HK",
+    "Phone Code": "+852"
+  },
+  {
+    "Serial": 91,
+    "Name": "Hungary",
+    "Code": "HU",
+    "Phone Code": "+36"
+  },
+  {
+    "Serial": 92,
+    "Name": "Iceland",
+    "Code": "IS",
+    "Phone Code": "+354"
+  },
+  {
+    "Serial": 93,
+    "Name": "India",
+    "Code": "IN",
+    "Phone Code": "+91"
+  },
+  {
+    "Serial": 94,
+    "Name": "Indonesia",
+    "Code": "ID",
+    "Phone Code": "+62"
+  },
+  {
+    "Serial": 95,
+    "Name": "Iran",
+    "Code": "IR",
+    "Phone Code": "+98"
+  },
+  {
+    "Serial": 96,
+    "Name": "Iraq",
+    "Code": "IQ",
+    "Phone Code": "+964"
+  },
+  {
+    "Serial": 97,
+    "Name": "Ireland",
+    "Code": "IE",
+    "Phone Code": "+353"
+  },
+  {
+    "Serial": 98,
+    "Name": "Isle of Man",
+    "Code": "IM",
+    "Phone Code": "+44-1624"
+  },
+  {
+    "Serial": 99,
+    "Name": "Israel",
+    "Code": "IL",
+    "Phone Code": "+972"
+  },
+  {
+    "Serial": 100,
+    "Name": "Italy",
+    "Code": "IT",
+    "Phone Code": "+39"
+  },
+  {
+    "Serial": 101,
+    "Name": "Jamaica",
+    "Code": "JM",
+    "Phone Code": "+1-876"
+  },
+  {
+    "Serial": 102,
+    "Name": "Japan",
+    "Code": "JP",
+    "Phone Code": "+81"
+  },
+  {
+    "Serial": 103,
+    "Name": "Jersey",
+    "Code": "JE",
+    "Phone Code": "+44-1534"
+  },
+  {
+    "Serial": 104,
+    "Name": "Jordan",
+    "Code": "JO",
+    "Phone Code": "+962"
+  },
+  {
+    "Serial": 105,
+    "Name": "Kazakhstan",
+    "Code": "KZ",
+    "Phone Code": "+7"
+  },
+  {
+    "Serial": 106,
+    "Name": "Kenya",
+    "Code": "KE",
+    "Phone Code": "+254"
+  },
+  {
+    "Serial": 107,
+    "Name": "Kiribati",
+    "Code": "KI",
+    "Phone Code": "+686"
+  },
+  {
+    "Serial": 108,
+    "Name": "Kosovo",
+    "Code": "XK",
+    "Phone Code": "+383"
+  },
+  {
+    "Serial": 109,
+    "Name": "Kuwait",
+    "Code": "KW",
+    "Phone Code": "+965"
+  },
+  {
+    "Serial": 110,
+    "Name": "Kyrgyzstan",
+    "Code": "KG",
+    "Phone Code": "+996"
+  },
+  {
+    "Serial": 111,
+    "Name": "Laos",
+    "Code": "LA",
+    "Phone Code": "+856"
+  },
+  {
+    "Serial": 112,
+    "Name": "Latvia",
+    "Code": "LV",
+    "Phone Code": "+371"
+  },
+  {
+    "Serial": 113,
+    "Name": "Lebanon",
+    "Code": "LB",
+    "Phone Code": "+961"
+  },
+  {
+    "Serial": 114,
+    "Name": "Lesotho",
+    "Code": "LS",
+    "Phone Code": "+266"
+  },
+  {
+    "Serial": 115,
+    "Name": "Liberia",
+    "Code": "LR",
+    "Phone Code": "+231"
+  },
+  {
+    "Serial": 116,
+    "Name": "Libya",
+    "Code": "LY",
+    "Phone Code": "+218"
+  },
+  {
+    "Serial": 117,
+    "Name": "Liechtenstein",
+    "Code": "LI",
+    "Phone Code": "+423"
+  },
+  {
+    "Serial": 118,
+    "Name": "Lithuania",
+    "Code": "LT",
+    "Phone Code": "+370"
+  },
+  {
+    "Serial": 119,
+    "Name": "Luxembourg",
+    "Code": "LU",
+    "Phone Code": "+352"
+  },
+  {
+    "Serial": 120,
+    "Name": "Macau",
+    "Code": "MO",
+    "Phone Code": "+853"
+  },
+  {
+    "Serial": 121,
+    "Name": "Macedonia",
+    "Code": "MK",
+    "Phone Code": "+389"
+  },
+  {
+    "Serial": 122,
+    "Name": "Madagascar",
+    "Code": "MG",
+    "Phone Code": "+261"
+  },
+  {
+    "Serial": 123,
+    "Name": "Malawi",
+    "Code": "MW",
+    "Phone Code": "+265"
+  },
+  {
+    "Serial": 124,
+    "Name": "Malaysia",
+    "Code": "MY",
+    "Phone Code": "+60"
+  },
+  {
+    "Serial": 125,
+    "Name": "Maldives",
+    "Code": "MV",
+    "Phone Code": "+960"
+  },
+  {
+    "Serial": 126,
+    "Name": "Mali",
+    "Code": "ML",
+    "Phone Code": "+223"
+  },
+  {
+    "Serial": 127,
+    "Name": "Malta",
+    "Code": "MT",
+    "Phone Code": "+356"
+  },
+  {
+    "Serial": 128,
+    "Name": "Marshall Islands",
+    "Code": "MH",
+    "Phone Code": "+692"
+  },
+  {
+    "Serial": 129,
+    "Name": "Martinique",
+    "Code": "MQ",
+    "Phone Code": "+596"
+  },
+  {
+    "Serial": 130,
+    "Name": "Mauritania",
+    "Code": "MR",
+    "Phone Code": "+222"
+  },
+  {
+    "Serial": 131,
+    "Name": "Mauritius",
+    "Code": "MU",
+    "Phone Code": "+230"
+  },
+  {
+    "Serial": 132,
+    "Name": "Mayotte",
+    "Code": "YT",
+    "Phone Code": "+262"
+  },
+  {
+    "Serial": 133,
+    "Name": "Mexico",
+    "Code": "MX",
+    "Phone Code": "+52"
+  },
+  {
+    "Serial": 134,
+    "Name": "Micronesia",
+    "Code": "FM",
+    "Phone Code": "+691"
+  },
+  {
+    "Serial": 135,
+    "Name": "Moldova",
+    "Code": "MD",
+    "Phone Code": "+373"
+  },
+  {
+    "Serial": 136,
+    "Name": "Monaco",
+    "Code": "MC",
+    "Phone Code": "+377"
+  },
+  {
+    "Serial": 137,
+    "Name": "Mongolia",
+    "Code": "MN",
+    "Phone Code": "+976"
+  },
+  {
+    "Serial": 138,
+    "Name": "Montenegro",
+    "Code": "ME",
+    "Phone Code": "+382"
+  },
+  {
+    "Serial": 139,
+    "Name": "Montserrat",
+    "Code": "MS",
+    "Phone Code": "+1-664"
+  },
+  {
+    "Serial": 140,
+    "Name": "Morocco",
+    "Code": "MA",
+    "Phone Code": "+212"
+  },
+  {
+    "Serial": 141,
+    "Name": "Mozambique",
+    "Code": "MZ",
+    "Phone Code": "+258"
+  },
+  {
+    "Serial": 142,
+    "Name": "Myanmar",
+    "Code": "MM",
+    "Phone Code": "+95"
+  },
+  {
+    "Serial": 143,
+    "Name": "Namibia",
+    "Code": "NA",
+    "Phone Code": "+264"
+  },
+  {
+    "Serial": 144,
+    "Name": "Nauru",
+    "Code": "NR",
+    "Phone Code": "+674"
+  },
+  {
+    "Serial": 145,
+    "Name": "Nepal",
+    "Code": "NP",
+    "Phone Code": "+977"
+  },
+  {
+    "Serial": 146,
+    "Name": "Netherlands",
+    "Code": "NL",
+    "Phone Code": "+31"
+  },
+  {
+    "Serial": 147,
+    "Name": "Netherlands Antilles",
+    "Code": "AN",
+    "Phone Code": "+599"
+  },
+  {
+    "Serial": 148,
+    "Name": "New Caledonia",
+    "Code": "NC",
+    "Phone Code": "+687"
+  },
+  {
+    "Serial": 149,
+    "Name": "New Zealand",
+    "Code": "NZ",
+    "Phone Code": "+64"
+  },
+  {
+    "Serial": 150,
+    "Name": "Nicaragua",
+    "Code": "NI",
+    "Phone Code": "+505"
+  },
+  {
+    "Serial": 151,
+    "Name": "Niger",
+    "Code": "NE",
+    "Phone Code": "+227"
+  },
+  {
+    "Serial": 152,
+    "Name": "Nigeria",
+    "Code": "NG",
+    "Phone Code": "+234"
+  },
+  {
+    "Serial": 153,
+    "Name": "Niue",
+    "Code": "NU",
+    "Phone Code": "+683"
+  },
+  {
+    "Serial": 154,
+    "Name": "Norfolk Island",
+    "Code": "NF",
+    "Phone Code": "+672"
+  },
+  {
+    "Serial": 155,
+    "Name": "North Korea",
+    "Code": "KP",
+    "Phone Code": "+850"
+  },
+  {
+    "Serial": 156,
+    "Name": "Northern Mariana Islands",
+    "Code": "MP",
+    "Phone Code": "+1-670"
+  },
+  {
+    "Serial": 157,
+    "Name": "Norway",
+    "Code": "NO",
+    "Phone Code": "+47"
+  },
+  {
+    "Serial": 158,
+    "Name": "Oman",
+    "Code": "OM",
+    "Phone Code": "+968"
+  },
+  {
+    "Serial": 159,
+    "Name": "Pakistan",
+    "Code": "PK",
+    "Phone Code": "+92"
+  },
+  {
+    "Serial": 160,
+    "Name": "Palau",
+    "Code": "PW",
+    "Phone Code": "+680"
+  },
+  {
+    "Serial": 161,
+    "Name": "Palestinian Territory",
+    "Code": "PS",
+    "Phone Code": "+970"
+  },
+  {
+    "Serial": 162,
+    "Name": "Panama",
+    "Code": "PA",
+    "Phone Code": "+507"
+  },
+  {
+    "Serial": 163,
+    "Name": "Papua New Guinea",
+    "Code": "PG",
+    "Phone Code": "+675"
+  },
+  {
+    "Serial": 164,
+    "Name": "Paraguay",
+    "Code": "PY",
+    "Phone Code": "+595"
+  },
+  {
+    "Serial": 165,
+    "Name": "Peru",
+    "Code": "PE",
+    "Phone Code": "+51"
+  },
+  {
+    "Serial": 166,
+    "Name": "Philippines",
+    "Code": "PH",
+    "Phone Code": "+63"
+  },
+  {
+    "Serial": 167,
+    "Name": "Pitcairn",
+    "Code": "PN",
+    "Phone Code": "+64"
+  },
+  {
+    "Serial": 168,
+    "Name": "Poland",
+    "Code": "PL",
+    "Phone Code": "+48"
+  },
+  {
+    "Serial": 169,
+    "Name": "Portugal",
+    "Code": "PT",
+    "Phone Code": "+351"
+  },
+  {
+    "Serial": 170,
+    "Name": "Puerto Rico",
+    "Code": "PR",
+    "Phone Code": "+1-787"
+  },
+  {
+    "Serial": 171,
+    "Name": "Qatar",
+    "Code": "QA",
+    "Phone Code": "+974"
+  },
+  {
+    "Serial": 172,
+    "Name": "Republic of the Congo",
+    "Code": "CG",
+    "Phone Code": "+242"
+  },
+  {
+    "Serial": 173,
+    "Name": "Reunion",
+    "Code": "RE",
+    "Phone Code": "+262"
+  },
+  {
+    "Serial": 174,
+    "Name": "Romania",
+    "Code": "RO",
+    "Phone Code": "+40"
+  },
+  {
+    "Serial": 175,
+    "Name": "Russia",
+    "Code": "RU",
+    "Phone Code": "+7"
+  },
+  {
+    "Serial": 176,
+    "Name": "Rwanda",
+    "Code": "RW",
+    "Phone Code": "+250"
+  },
+  {
+    "Serial": 177,
+    "Name": "Saint Barthelemy",
+    "Code": "BL",
+    "Phone Code": "+590"
+  },
+  {
+    "Serial": 178,
+    "Name": "Saint Helena",
+    "Code": "SH",
+    "Phone Code": "+290"
+  },
+  {
+    "Serial": 179,
+    "Name": "Saint Kitts and Nevis",
+    "Code": "KN",
+    "Phone Code": "+1-869"
+  },
+  {
+    "Serial": 180,
+    "Name": "Saint Lucia",
+    "Code": "LC",
+    "Phone Code": "+1-758"
+  },
+  {
+    "Serial": 181,
+    "Name": "Saint Martin",
+    "Code": "MF",
+    "Phone Code": "+590"
+  },
+  {
+    "Serial": 182,
+    "Name": "Saint Pierre and Miquelon",
+    "Code": "PM",
+    "Phone Code": "+508"
+  },
+  {
+    "Serial": 183,
+    "Name": "Saint Vincent and the Grenadines",
+    "Code": "VC",
+    "Phone Code": "+1-784"
+  },
+  {
+    "Serial": 184,
+    "Name": "Samoa",
+    "Code": "WS",
+    "Phone Code": "+685"
+  },
+  {
+    "Serial": 185,
+    "Name": "San Marino",
+    "Code": "SM",
+    "Phone Code": "+378"
+  },
+  {
+    "Serial": 186,
+    "Name": "Sao Tome and Principe",
+    "Code": "ST",
+    "Phone Code": "+239"
+  },
+  {
+    "Serial": 187,
+    "Name": "Saudi Arabia",
+    "Code": "SA",
+    "Phone Code": "+966"
+  },
+  {
+    "Serial": 188,
+    "Name": "Senegal",
+    "Code": "SN",
+    "Phone Code": "+221"
+  },
+  {
+    "Serial": 189,
+    "Name": "Serbia",
+    "Code": "RS",
+    "Phone Code": "+381"
+  },
+  {
+    "Serial": 190,
+    "Name": "Seychelles",
+    "Code": "SC",
+    "Phone Code": "+248"
+  },
+  {
+    "Serial": 191,
+    "Name": "Singapore",
+    "Code": "SG",
+    "Phone Code": "+65"
+  },
+  {
+    "Serial": 192,
+    "Name": "Sint Maarten",
+    "Code": "SX",
+    "Phone Code": "+1-721"
+  },
+  {
+    "Serial": 193,
+    "Name": "Slovakia",
+    "Code": "SK",
+    "Phone Code": "+421"
+  },
+  {
+    "Serial": 194,
+    "Name": "Slovenia",
+    "Code": "SI",
+    "Phone Code": "+386"
+  },
+  {
+    "Serial": 195,
+    "Name": "Solomon Islands",
+    "Code": "SB",
+    "Phone Code": "+677"
+  },
+  {
+    "Serial": 196,
+    "Name": "Somalia",
+    "Code": "SO",
+    "Phone Code": "+252"
+  },
+  {
+    "Serial": 197,
+    "Name": "South Africa",
+    "Code": "ZA",
+    "Phone Code": "+27"
+  },
+  {
+    "Serial": 198,
+    "Name": "South Georgia and the South Sandwich Islands",
+    "Code": "GS",
+    "Phone Code": "+500"
+  },
+  {
+    "Serial": 199,
+    "Name": "South Korea",
+    "Code": "KR",
+    "Phone Code": "+82"
+  },
+  {
+    "Serial": 200,
+    "Name": "South Sudan",
+    "Code": "SS",
+    "Phone Code": "+211"
+  },
+  {
+    "Serial": 201,
+    "Name": "Spain",
+    "Code": "ES",
+    "Phone Code": "+34"
+  },
+  {
+    "Serial": 202,
+    "Name": "Sri Lanka",
+    "Code": "LK",
+    "Phone Code": "+94"
+  },
+  {
+    "Serial": 203,
+    "Name": "Sudan",
+    "Code": "SD",
+    "Phone Code": "+249"
+  },
+  {
+    "Serial": 204,
+    "Name": "Suriname",
+    "Code": "SR",
+    "Phone Code": "+597"
+  },
+  {
+    "Serial": 205,
+    "Name": "Swaziland",
+    "Code": "SZ",
+    "Phone Code": "+268"
+  },
+  {
+    "Serial": 206,
+    "Name": "Sweden",
+    "Code": "SE",
+    "Phone Code": "+46"
+  },
+  {
+    "Serial": 207,
+    "Name": "Switzerland",
+    "Code": "CH",
+    "Phone Code": "+41"
+  },
+  {
+    "Serial": 208,
+    "Name": "Syria",
+    "Code": "SY",
+    "Phone Code": "+963"
+  },
+  {
+    "Serial": 209,
+    "Name": "Taiwan",
+    "Code": "TW",
+    "Phone Code": "+886"
+  },
+  {
+    "Serial": 210,
+    "Name": "Tajikistan",
+    "Code": "TJ",
+    "Phone Code": "+992"
+  },
+  {
+    "Serial": 211,
+    "Name": "Tanzania",
+    "Code": "TZ",
+    "Phone Code": "+255"
+  },
+  {
+    "Serial": 212,
+    "Name": "Thailand",
+    "Code": "TH",
+    "Phone Code": "+66"
+  },
+  {
+    "Serial": 213,
+    "Name": "Togo",
+    "Code": "TG",
+    "Phone Code": "+228"
+  },
+  {
+    "Serial": 214,
+    "Name": "Tokelau",
+    "Code": "TK",
+    "Phone Code": "+690"
+  },
+  {
+    "Serial": 215,
+    "Name": "Tonga",
+    "Code": "TO",
+    "Phone Code": "+676"
+  },
+  {
+    "Serial": 216,
+    "Name": "Trinidad and Tobago",
+    "Code": "TT",
+    "Phone Code": "+1-868"
+  },
+  {
+    "Serial": 217,
+    "Name": "Tunisia",
+    "Code": "TN",
+    "Phone Code": "+216"
+  },
+  {
+    "Serial": 218,
+    "Name": "Turkey",
+    "Code": "TR",
+    "Phone Code": "+90"
+  },
+  {
+    "Serial": 219,
+    "Name": "Turkmenistan",
+    "Code": "TM",
+    "Phone Code": "+993"
+  },
+  {
+    "Serial": 220,
+    "Name": "Tuvalu",
+    "Code": "TV",
+    "Phone Code": "+688"
+  },
+  {
+    "Serial": 221,
+    "Name": "Uganda",
+    "Code": "UG",
+    "Phone Code": "+256"
+  },
+  {
+    "Serial": 222,
+    "Name": "Ukraine",
+    "Code": "UA",
+    "Phone Code": "+380"
+  },
+  {
+    "Serial": 223,
+    "Name": "United Arab Emirates",
+    "Code": "AE",
+    "Phone Code": "+971"
+  },
+  {
+    "Serial": 224,
+    "Name": "United Kingdom",
+    "Code": "GB",
+    "Phone Code": "+44"
+  },
+  {
+    "Serial": 225,
+    "Name": "United States",
+    "Code": "US",
+    "Phone Code": "+1"
+  },
+  {
+    "Serial": 226,
+    "Name": "United States Minor Outlying Islands",
+    "Code": "UM",
+    "Phone Code": "+1"
+  },
+  {
+    "Serial": 227,
+    "Name": "Uruguay",
+    "Code": "UY",
+    "Phone Code": "+598"
+  },
+  {
+    "Serial": 228,
+    "Name": "Uzbekistan",
+    "Code": "UZ",
+    "Phone Code": "+998"
+  },
+  {
+    "Serial": 229,
+    "Name": "Vanuatu",
+    "Code": "VU",
+    "Phone Code": "+678"
+  },
+  {
+    "Serial": 230,
+    "Name": "Vatican City",
+    "Code": "VA",
+    "Phone Code": "+379"
+  },
+  {
+    "Serial": 231,
+    "Name": "Venezuela",
+    "Code": "VE",
+    "Phone Code": "+58"
+  },
+  {
+    "Serial": 232,
+    "Name": "Vietnam",
+    "Code": "VN",
+    "Phone Code": "+84"
+  },
+  {
+    "Serial": 233,
+    "Name": "Wallis and Futuna",
+    "Code": "WF",
+    "Phone Code": "+681"
+  },
+  {
+    "Serial": 234,
+    "Name": "Yemen",
+    "Code": "YE",
+    "Phone Code": "+967"
+  },
+  {
+    "Serial": 235,
+    "Name": "Zambia",
+    "Code": "ZM",
+    "Phone Code": "+260"
+  },
+  {
+    "Serial": 236,
+    "Name": "Zimbabwe",
+    "Code": "ZW",
+    "Phone Code": "+263"
+  }
+]

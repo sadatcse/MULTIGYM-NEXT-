@@ -462,7 +462,7 @@ const Login = () => {
               </div>
               <h3 className="text-xl font-bold mb-1 tracking-tight">Forgot Password?</h3>
               <p className="mb-6 text-xs text-brand-dark-grey dark:text-brand-gold-light leading-relaxed">
-                Enter your registered Multigym HR email address and we'll dispatch a reset link.
+                Enter your registered Multigym HR email address and we&apos;ll dispatch a reset link.
               </p>
               <form onSubmit={handlePasswordReset} className="space-y-4">
                 <div>

@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
 import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
 import useJobPositionApi from "@/hooks/useJobPositionApi";
+import useDepartmentApi from "@/hooks/useDepartmentApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import Swal from "sweetalert2";
 import {
@@ -36,6 +37,16 @@ const containerVariants = {
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+const rowVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: "easeOut", delay: Math.min(i, 8) * 0.035 },
+  }),
+  exit: { opacity: 0, transition: { duration: 0.15 } },
 };
 
 export default function JobPositionsPage() {
@@ -63,7 +74,20 @@ export default function JobPositionsPage() {
     createJobPosition,
     updateJobPosition,
     deleteJobPosition,
-  } = useJobPositionApi();
+  } = useJobPositionApi(100);
+
+  const { departments } = useDepartmentApi(100);
+
+  // Department Filter State
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+
+  // Filtered Job Positions by Department
+  const displayPositions = useMemo(() => {
+    if (!departmentFilter || departmentFilter === "all") return jobPositions;
+    return jobPositions.filter(
+      (item) => item.department && item.department.toLowerCase() === departmentFilter.toLowerCase()
+    );
+  }, [jobPositions, departmentFilter]);
 
   // Layout View Mode (Table / Card Grid)
   const [viewMode, setViewMode] = useState("table");
@@ -100,6 +124,21 @@ export default function JobPositionsPage() {
   const [deletingPosition, setDeletingPosition] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Synchronous locks (belt-and-suspenders against a rapid double-click firing
+  // two requests before React re-renders the `disabled` attribute)
+  const submitLockRef = useRef(false);
+  const deleteLockRef = useRef(false);
+
+  // Allow Escape to close the modal (blocked while a save is in flight)
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !isSubmitting) setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, isSubmitting]);
+
   // Open Add Modal
   const handleOpenAdd = () => {
     setEditingPosition(null);
@@ -127,6 +166,12 @@ export default function JobPositionsPage() {
     });
     setFormErrors({});
     setIsModalOpen(true);
+  };
+
+  // Guarded modal close: no-ops while a save is in flight
+  const handleCloseModal = () => {
+    if (isSubmitting) return;
+    setIsModalOpen(false);
   };
 
   // Validate Form Client-Side
@@ -167,8 +212,10 @@ export default function JobPositionsPage() {
   // Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting || submitLockRef.current) return;
     if (!validateForm()) return;
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
     try {
       const payload = {
@@ -209,6 +256,7 @@ export default function JobPositionsPage() {
       });
     } finally {
       setIsSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 
@@ -220,7 +268,9 @@ export default function JobPositionsPage() {
 
   // Confirm Delete Handler
   const handleConfirmDelete = async () => {
-    if (!deletingPosition) return;
+    if (!deletingPosition || isDeleting || deleteLockRef.current) return;
+
+    deleteLockRef.current = true;
     setIsDeleting(true);
     try {
       await deleteJobPosition(deletingPosition._id);
@@ -232,7 +282,6 @@ export default function JobPositionsPage() {
         timer: 2000,
       });
       setIsDeleteModalOpen(false);
-      setDeletingPosition(null);
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to delete job position.";
       Swal.fire({
@@ -243,6 +292,8 @@ export default function JobPositionsPage() {
       });
     } finally {
       setIsDeleting(false);
+      setDeletingPosition(null);
+      deleteLockRef.current = false;
     }
   };
 
@@ -398,8 +449,33 @@ export default function JobPositionsPage() {
           )}
         </div>
 
-        {/* Right Options: Status Tabs + Page Limit + View Switcher */}
+        {/* Right Options: Department Filter + Status Tabs + Page Limit + View Switcher */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+          {/* Department Filter Dropdown */}
+          <div className="flex items-center gap-2 bg-brand-offwhite dark:bg-brand-midnight px-3.5 py-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50">
+            <FiTag className="text-brand-gold text-xs shrink-0" />
+            <span className="text-xs font-extrabold text-brand-dark-grey dark:text-brand-gold-light whitespace-nowrap">
+              Dept:
+            </span>
+            <select
+              value={departmentFilter}
+              onChange={(e) => {
+                setDepartmentFilter(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent text-brand-black dark:text-brand-white text-xs font-black outline-none cursor-pointer max-w-[180px]"
+            >
+              <option value="all">🏢 All Departments ({jobPositions.length})</option>
+              {departments.map((dept) => {
+                const count = jobPositions.filter((p) => p.department === dept.name).length;
+                return (
+                  <option key={dept._id || dept.name} value={dept.name}>
+                    {dept.name} ({count})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
           {/* Status Filter Tabs */}
           <div className="bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center gap-1">
             {["all", "active", "inactive"].map((tab) => (
@@ -429,10 +505,10 @@ export default function JobPositionsPage() {
             }}
             className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer"
           >
-            <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={20}>20 per page</option>
             <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
           </select>
 
           {/* Table / Grid View Switcher */}
@@ -466,7 +542,7 @@ export default function JobPositionsPage() {
       {/* Main Content Area */}
       {loading ? (
         <SkeletonLoading variant={viewMode === "table" ? "table" : "card"} rows={5} />
-      ) : jobPositions.length === 0 ? (
+      ) : displayPositions.length === 0 ? (
         <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl p-12 border border-brand-beige/50 dark:border-brand-dark-grey/50 text-center max-w-lg mx-auto shadow-sm">
           <div className="w-16 h-16 bg-brand-gold/10 text-brand-gold rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
             <FiBriefcase />
@@ -475,8 +551,8 @@ export default function JobPositionsPage() {
             No Job Positions Found
           </h3>
           <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mb-6">
-            {searchInput || statusFilter !== "all"
-              ? "No job positions match your active search filters."
+            {searchInput || statusFilter !== "all" || departmentFilter !== "all"
+              ? "No job positions match your active department or search filters."
               : "No job positions have been configured in the system yet."}
           </p>
           {canAdd && (
@@ -506,10 +582,21 @@ export default function JobPositionsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-beige/30 dark:divide-brand-dark-grey/30 text-xs">
-                    {jobPositions.map((position) => (
-                      <tr
+                    <AnimatePresence initial={false}>
+                      {displayPositions.map((position, idx) => {
+                        const rowBusy = isDeleting && deletingPosition?._id === position._id;
+                        return (
+                      <motion.tr
                         key={position._id}
-                        className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-colors duration-150"
+                        custom={idx}
+                        variants={rowVariants}
+                        initial="hidden"
+                        animate="show"
+                        exit="exit"
+                        layout
+                        className={`hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-all duration-150 ${
+                          rowBusy ? "opacity-50 pointer-events-none" : ""
+                        }`}
                       >
                         {/* Order Badge */}
                         <td className="py-4 px-6 text-center">
@@ -560,7 +647,8 @@ export default function JobPositionsPage() {
                             {canEdit && (
                               <button
                                 onClick={() => handleOpenEdit(position)}
-                                className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer"
+                                disabled={rowBusy}
+                                className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-gold/10 disabled:hover:text-brand-gold"
                                 title="Edit Job Position"
                               >
                                 <FiEdit3 className="text-sm" />
@@ -569,16 +657,23 @@ export default function JobPositionsPage() {
                             {canDelete && (
                               <button
                                 onClick={() => handleOpenDelete(position)}
-                                className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer"
+                                disabled={rowBusy}
+                                className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-red/10 disabled:hover:text-brand-red"
                                 title="Delete Job Position"
                               >
-                                <FiTrash2 className="text-sm" />
+                                {rowBusy ? (
+                                  <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <FiTrash2 className="text-sm" />
+                                )}
                               </button>
                             )}
                           </div>
                         </td>
-                      </tr>
-                    ))}
+                      </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
                   </tbody>
                 </table>
               </div>
@@ -593,11 +688,20 @@ export default function JobPositionsPage() {
               animate="show"
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             >
-              {jobPositions.map((position) => (
+              <AnimatePresence initial={false}>
+                {displayPositions.map((position) => {
+                  const rowBusy = isDeleting && deletingPosition?._id === position._id;
+                  return (
                 <motion.div
                   key={position._id}
                   variants={itemVariants}
-                  className="bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+                  initial="hidden"
+                  animate="show"
+                  exit="exit"
+                  layout
+                  className={`bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group ${
+                    rowBusy ? "opacity-50 pointer-events-none" : ""
+                  }`}
                 >
                   <div>
                     {/* Header: Title + Order Badge */}
@@ -650,7 +754,8 @@ export default function JobPositionsPage() {
                       {canEdit && (
                         <button
                           onClick={() => handleOpenEdit(position)}
-                          className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer"
+                          disabled={rowBusy}
+                          className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-gold/10 disabled:hover:text-brand-gold"
                           title="Edit Job Position"
                         >
                           <FiEdit3 className="text-sm" />
@@ -659,16 +764,23 @@ export default function JobPositionsPage() {
                       {canDelete && (
                         <button
                           onClick={() => handleOpenDelete(position)}
-                          className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer"
+                          disabled={rowBusy}
+                          className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-red/10 disabled:hover:text-brand-red"
                           title="Delete Job Position"
                         >
-                          <FiTrash2 className="text-sm" />
+                          {rowBusy ? (
+                            <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <FiTrash2 className="text-sm" />
+                          )}
                         </button>
                       )}
                     </div>
                   </div>
                 </motion.div>
-              ))}
+                  );
+                })}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -708,8 +820,11 @@ export default function JobPositionsPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 rounded-xl text-brand-dark-grey hover:text-brand-black dark:hover:text-white transition-colors"
+                  type="button"
+                  onClick={handleCloseModal}
+                  disabled={isSubmitting}
+                  title={isSubmitting ? "Please wait for the save to finish" : "Close"}
+                  className="p-1.5 rounded-xl text-brand-dark-grey hover:text-brand-black dark:hover:text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-brand-dark-grey"
                 >
                   <FiX className="text-lg" />
                 </button>
@@ -725,6 +840,7 @@ export default function JobPositionsPage() {
                   <input
                     type="text"
                     value={formData.title}
+                    disabled={isSubmitting}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, title: e.target.value }))
                     }
@@ -733,7 +849,7 @@ export default function JobPositionsPage() {
                       formErrors.title
                         ? "border-brand-red focus:ring-brand-red/50"
                         : "border-brand-beige/60 dark:border-brand-dark-grey focus:ring-brand-gold/50"
-                    } text-brand-black dark:text-brand-white outline-none focus:ring-2`}
+                    } text-brand-black dark:text-brand-white outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   {formErrors.title && (
                     <p className="text-brand-red text-[11px] mt-1 font-bold">
@@ -753,6 +869,7 @@ export default function JobPositionsPage() {
                       type="number"
                       min={1}
                       value={formData.order}
+                      disabled={isSubmitting}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, order: e.target.value }))
                       }
@@ -761,7 +878,7 @@ export default function JobPositionsPage() {
                         formErrors.order
                           ? "border-brand-red focus:ring-brand-red/50"
                           : "border-brand-beige/60 dark:border-brand-dark-grey focus:ring-brand-gold/50"
-                      } text-brand-black dark:text-brand-white outline-none focus:ring-2`}
+                      } text-brand-black dark:text-brand-white outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed`}
                     />
                     {formErrors.order && (
                       <p className="text-brand-red text-[11px] mt-1 font-bold">
@@ -777,16 +894,18 @@ export default function JobPositionsPage() {
                     </label>
                     <select
                       value={formData.department}
+                      disabled={isSubmitting}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, department: e.target.value }))
                       }
-                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <option value="Fitness & Training">Fitness & Training</option>
-                      <option value="Front Desk Operations">Front Desk Operations</option>
-                      <option value="Management & Operations">Management & Operations</option>
-                      <option value="Human Resources">Human Resources</option>
-                      <option value="General">General</option>
+                      <option value="">Select Department</option>
+                      {departments.map((d) => (
+                        <option key={d._id} value={d.name}>
+                          {d.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -799,11 +918,12 @@ export default function JobPositionsPage() {
                   <textarea
                     rows={3}
                     value={formData.description}
+                    disabled={isSubmitting}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, description: e.target.value }))
                     }
                     placeholder="Brief summary of duties and responsibilities..."
-                    className="w-full px-4 py-2.5 rounded-2xl text-xs font-medium bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none"
+                    className="w-full px-4 py-2.5 rounded-2xl text-xs font-medium bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -819,10 +939,11 @@ export default function JobPositionsPage() {
                         name="status"
                         value="active"
                         checked={formData.status === "active"}
+                        disabled={isSubmitting}
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, status: e.target.value }))
                         }
-                        className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                        className="w-4 h-4 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                       />
                       <span className="text-xs font-bold text-emerald-500">Active</span>
                     </label>
@@ -832,10 +953,11 @@ export default function JobPositionsPage() {
                         name="status"
                         value="inactive"
                         checked={formData.status === "inactive"}
+                        disabled={isSubmitting}
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, status: e.target.value }))
                         }
-                        className="w-4 h-4 accent-rose-500 cursor-pointer"
+                        className="w-4 h-4 accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                       />
                       <span className="text-xs font-bold text-rose-500">Inactive</span>
                     </label>
@@ -846,8 +968,9 @@ export default function JobPositionsPage() {
                 <div className="pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-2xl text-xs font-bold bg-brand-beige/30 dark:bg-brand-midnight text-brand-black dark:text-brand-gold-light hover:bg-brand-beige/60 dark:hover:bg-brand-dark-grey transition-colors cursor-pointer"
+                    onClick={handleCloseModal}
+                    disabled={isSubmitting}
+                    className="px-4 py-2 rounded-2xl text-xs font-bold bg-brand-beige/30 dark:bg-brand-midnight text-brand-black dark:text-brand-gold-light hover:bg-brand-beige/60 dark:hover:bg-brand-dark-grey transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
@@ -875,14 +998,10 @@ export default function JobPositionsPage() {
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
         isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setDeletingPosition(null);
-        }}
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Delete Job Position"
-        message={`Are you sure you want to delete job position "${deletingPosition?.title}"? This action cannot be undone.`}
-        isLoading={isDeleting}
+        itemName={deletingPosition?.title || "Job Position"}
+        isDeleting={isDeleting}
       />
     </div>
   );

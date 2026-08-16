@@ -5,18 +5,19 @@ import { AuthContext } from "../providers/AuthProvider";
 import { axiosPublic } from "./useAxiosPublic";
 
 const useUserPermissions = () => {
-  const { user } = useContext(AuthContext);
+  const { employee, user } = useContext(AuthContext);
+  const currentAuth = employee || user;
   const [dbPermissions, setDbPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const role = user?.role ? user.role.toUpperCase() : "SUPER ADMIN";
+  const role = currentAuth?.role ? currentAuth.role.toUpperCase() : "SUPER ADMIN";
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchPermissions = async () => {
       // Super admin always has full privileges without querying
-      if (!user || role === "SUPER ADMIN" || role === "SUPERADMIN") {
+      if (!currentAuth || role === "SUPER ADMIN" || role === "SUPERADMIN") {
         if (isMounted) setLoading(false);
         return;
       }
@@ -28,8 +29,8 @@ const useUserPermissions = () => {
           setDbPermissions(res.data.data.permissions);
         }
       } catch (err) {
-        if (isMounted && user?.permissions) {
-          setDbPermissions(user.permissions);
+        if (isMounted && currentAuth?.permissions) {
+          setDbPermissions(currentAuth.permissions);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -41,33 +42,41 @@ const useUserPermissions = () => {
     return () => {
       isMounted = false;
     };
-  }, [user, role]);
+  }, [currentAuth, role]);
 
   /**
-   * Check if current user has permission for a specific module and action.
-   * @param {string} moduleKey - e.g. "job-positions", "departments", "roles", "branches", "user"
+   * Check if current employee/user has permission for a specific module and action.
+   * @param {string} moduleKey - e.g. "employee", "user", "job-positions", "departments", "roles", "branches"
    * @param {"view" | "add" | "edit" | "delete"} action
    * @returns {boolean}
    */
   const can = useCallback(
     (moduleKey, action = "view") => {
-      if (!user || role === "SUPER ADMIN" || role === "SUPERADMIN") {
+      if (!currentAuth || role === "SUPER ADMIN" || role === "SUPERADMIN") {
         return true;
       }
 
-      if (dbPermissions && dbPermissions[moduleKey] !== undefined) {
-        return Boolean(dbPermissions[moduleKey][action]);
+      if (dbPermissions) {
+        if (dbPermissions[moduleKey] !== undefined) {
+          return Boolean(dbPermissions[moduleKey][action]);
+        }
+        // Fallback for key mapping: "employee" vs "user"
+        if (moduleKey === "employee" && dbPermissions["user"] !== undefined) {
+          return Boolean(dbPermissions["user"][action]);
+        }
+        if (moduleKey === "user" && dbPermissions["employee"] !== undefined) {
+          return Boolean(dbPermissions["employee"][action]);
+        }
       }
 
-      // Default to allowed if not yet configured for newly added modules
       return true;
     },
-    [user, role, dbPermissions]
+    [currentAuth, role, dbPermissions]
   );
 
   /**
    * Alias helper for route path or key permission checking
-   * @param {string} pathOrKey - e.g. "/dashboard/settings/job-positions" or "job-positions"
+   * @param {string} pathOrKey - e.g. "/dashboard/employee" or "employee"
    * @param {"view" | "add" | "edit" | "delete"} action
    * @returns {boolean}
    */
@@ -90,4 +99,5 @@ const useUserPermissions = () => {
   };
 };
 
+export { useUserPermissions as useEmployeePermissions };
 export default useUserPermissions;

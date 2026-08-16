@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
@@ -9,6 +9,7 @@ import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
 import useBranchApi from "@/hooks/useBranchApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import Swal from "sweetalert2";
+import Link from "next/link";
 import {
   FiMapPin,
   FiPhone,
@@ -23,10 +24,69 @@ import {
   FiHash,
   FiInfo,
   FiGrid,
+  FiCalendar,
   FiList,
   FiLoader,
   FiShield,
+  FiClock,
 } from "react-icons/fi";
+
+const DEFAULT_OPERATING_HOURS = {
+  saturday: { open: "", close: "", isClosed: false },
+  sunday: { open: "", close: "", isClosed: false },
+  monday: { open: "", close: "", isClosed: false },
+  tuesday: { open: "", close: "", isClosed: false },
+  wednesday: { open: "", close: "", isClosed: false },
+  thursday: { open: "", close: "", isClosed: false },
+  friday: { open: "", close: "", isClosed: false },
+};
+
+const WEEKDAYS = [
+  { key: "saturday", label: "Saturday" },
+  { key: "sunday", label: "Sunday" },
+  { key: "monday", label: "Monday" },
+  { key: "tuesday", label: "Tuesday" },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday", label: "Thursday" },
+  { key: "friday", label: "Friday" },
+];
+
+function formatBranchHoursSummary(branch) {
+  if (!branch) return "Hours Not Set";
+  const hours = branch.operatingHours || {};
+  const defaultOpen = branch.openingTime || "";
+  const defaultClose = branch.closingTime || "";
+
+  const closedDays = WEEKDAYS.filter((d) => hours[d.key]?.isClosed).map((d) => d.label.slice(0, 3));
+  if (closedDays.length === 7) return "All Days Closed";
+
+  const customDays = WEEKDAYS.filter((d) => {
+    const dayCfg = hours[d.key];
+    if (!dayCfg || dayCfg.isClosed) return false;
+    const dayOpen = dayCfg.open || "";
+    const dayClose = dayCfg.close || "";
+    return (defaultOpen && dayOpen && dayOpen !== defaultOpen) || (defaultClose && dayClose && dayClose !== defaultClose);
+  });
+
+  const baseStr = defaultOpen && defaultClose ? `Sat – Fri: ${defaultOpen} – ${defaultClose}` : (defaultOpen || defaultClose || "Configured Schedule");
+
+  if (closedDays.length === 0 && customDays.length === 0) {
+    return baseStr;
+  }
+
+  const parts = [];
+  if (closedDays.length > 0) {
+    parts.push(`${closedDays.join(", ")}: Off`);
+  }
+  customDays.forEach((d) => {
+    const dayCfg = hours[d.key];
+    const openVal = dayCfg.open || defaultOpen;
+    const closeVal = dayCfg.close || defaultClose;
+    parts.push(`${d.label.slice(0, 3)}: ${openVal} – ${closeVal}`);
+  });
+
+  return `${baseStr} (${parts.join(" | ")})`;
+}
 
 const INITIAL_FORM = {
   name: "",
@@ -35,6 +95,9 @@ const INITIAL_FORM = {
   phone: "",
   website: "",
   status: "active",
+  openingTime: "",
+  closingTime: "",
+  operatingHours: DEFAULT_OPERATING_HOURS,
 };
 
 // Framer Motion variants
@@ -97,6 +160,11 @@ export default function BranchesPage() {
   const [deletingBranch, setDeletingBranch] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Synchronous locks (defense-in-depth against rapid double-click/double-Enter
+  // firing two requests before the isSubmitting/isDeleting state re-render commits)
+  const submitLockRef = useRef(false);
+  const deleteLockRef = useRef(false);
+
   // Auto-detect mobile screen and switch to card view
   useEffect(() => {
     const handleResize = () => {
@@ -156,6 +224,20 @@ export default function BranchesPage() {
   const handleOpenEdit = (branch) => {
     if (!canEdit) return;
     setEditingBranch(branch);
+
+    const defaultOpen = branch.openingTime || "";
+    const defaultClose = branch.closingTime || "";
+    const existingHours = branch.operatingHours || {};
+    const mergedHours = {};
+
+    WEEKDAYS.forEach((d) => {
+      mergedHours[d.key] = {
+        open: existingHours[d.key]?.open || defaultOpen,
+        close: existingHours[d.key]?.close || defaultClose,
+        isClosed: Boolean(existingHours[d.key]?.isClosed),
+      };
+    });
+
     setFormData({
       name: branch.name,
       order: branch.order || 1,
@@ -163,6 +245,9 @@ export default function BranchesPage() {
       phone: branch.phone || "",
       website: branch.website || "",
       status: branch.status || "active",
+      openingTime: defaultOpen,
+      closingTime: defaultClose,
+      operatingHours: mergedHours,
     });
     setFormError("");
     setIsModalOpen(true);
@@ -218,9 +303,10 @@ export default function BranchesPage() {
   // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (submitLockRef.current || isSubmitting) return;
     if (!validateForm()) return;
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
     try {
       if (editingBranch) {
@@ -245,6 +331,7 @@ export default function BranchesPage() {
       const msg = err?.response?.data?.message || "Failed to save branch.";
       setFormError(msg);
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -257,7 +344,8 @@ export default function BranchesPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingBranch || isDeleting) return;
+    if (!deletingBranch || deleteLockRef.current || isDeleting) return;
+    deleteLockRef.current = true;
     setIsDeleting(true);
     try {
       await deleteBranch(deletingBranch._id);
@@ -277,6 +365,7 @@ export default function BranchesPage() {
         confirmButtonColor: "#FF1818",
       });
     } finally {
+      deleteLockRef.current = false;
       setIsDeleting(false);
       setDeletingBranch(null);
     }
@@ -538,6 +627,7 @@ export default function BranchesPage() {
                         </span>
                       </th>
                       <th className="py-4 px-6">Contact Info</th>
+                      <th className="py-4 px-6">Operating Hours</th>
                       <th className="py-4 px-6 font-extrabold text-center">Status</th>
                       {(canEdit || canDelete) && <th className="py-4 px-6 font-extrabold text-right">Actions</th>}
                     </tr>
@@ -609,6 +699,39 @@ export default function BranchesPage() {
                                 </div>
                               </td>
 
+                              {/* Operating Hours Summary */}
+                              <td className="py-4 px-6">
+                                <div className="space-y-1">
+                                  {(() => {
+                                    const hours = branch.operatingHours || {};
+                                    const defaultOpen = branch.openingTime || "";
+                                    const defaultClose = branch.closingTime || "";
+
+                                    const hasClosed = WEEKDAYS.some((d) => hours[d.key]?.isClosed);
+                                    const hasCustomTimes = WEEKDAYS.some((d) => {
+                                      const dayCfg = hours[d.key];
+                                      if (!dayCfg || dayCfg.isClosed) return false;
+                                      return (defaultOpen && dayCfg.open && dayCfg.open !== defaultOpen) || (defaultClose && dayCfg.close && dayCfg.close !== defaultClose);
+                                    });
+
+                                    const isCustom = hasClosed || hasCustomTimes;
+
+                                    return (
+                                      <span
+                                        className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-xl border w-fit ${
+                                          isCustom
+                                            ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
+                                            : "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                                        }`}
+                                      >
+                                        <FiClock className="text-xs shrink-0" />
+                                        <span>{formatBranchHoursSummary(branch)}</span>
+                                      </span>
+                                    );
+                                  })()}
+                                </div>
+                              </td>
+
                               {/* Status Pill */}
                               <td className="py-4 px-6 text-center">
                                 <span
@@ -628,20 +751,28 @@ export default function BranchesPage() {
                               </td>
 
                               {/* Action Buttons */}
-                              {(canEdit || canDelete) && (
-                                <td className="py-4 px-6 text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    {canEdit && (
-                                      <button
-                                        onClick={() => handleOpenEdit(branch)}
-                                        disabled={rowBusy}
-                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs disabled:cursor-not-allowed disabled:hover:scale-100"
-                                        title="Edit Branch"
-                                      >
-                                        <FiEdit3 className="text-xs" />
-                                        <span>Edit</span>
-                                      </button>
-                                    )}
+                              <td className="py-4 px-6 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Link
+                                    href={`/dashboard/calendar?branchId=${branch._id}`}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-sky-400 bg-sky-500/10 hover:bg-sky-500 hover:text-white scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs"
+                                    title="View Branch Calendar"
+                                  >
+                                    <FiCalendar className="text-xs" />
+                                    <span>Calendar</span>
+                                  </Link>
+
+                                      {canEdit && (
+                                        <button
+                                          onClick={() => handleOpenEdit(branch)}
+                                          disabled={rowBusy}
+                                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs disabled:cursor-not-allowed disabled:hover:scale-100"
+                                          title="Edit Branch"
+                                        >
+                                          <FiEdit3 className="text-xs" />
+                                          <span>Edit</span>
+                                        </button>
+                                      )}
 
                                     {canDelete && (
                                       <button
@@ -658,9 +789,8 @@ export default function BranchesPage() {
                                         <span>{rowBusy ? "Deleting..." : "Delete"}</span>
                                       </button>
                                     )}
-                                  </div>
-                                </td>
-                              )}
+                                </div>
+                              </td>
                             </motion.tr>
                           );
                         })}
@@ -752,19 +882,54 @@ export default function BranchesPage() {
                               </a>
                             )}
                           </div>
+
+                          <div className="pt-1">
+                            {(() => {
+                              const hours = branch.operatingHours || {};
+                              const defaultOpen = branch.openingTime || "";
+                              const defaultClose = branch.closingTime || "";
+
+                              const hasClosed = WEEKDAYS.some((d) => hours[d.key]?.isClosed);
+                              const hasCustomTimes = WEEKDAYS.some((d) => {
+                                const dayCfg = hours[d.key];
+                                if (!dayCfg || dayCfg.isClosed) return false;
+                                return (defaultOpen && dayCfg.open && dayCfg.open !== defaultOpen) || (defaultClose && dayCfg.close && dayCfg.close !== defaultClose);
+                              });
+
+                              const isCustom = hasClosed || hasCustomTimes;
+
+                              return (
+                                <span
+                                  className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-xl border w-fit ${
+                                    isCustom
+                                      ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
+                                      : "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                                  }`}
+                                >
+                                  <FiClock className="text-xs shrink-0" />
+                                  <span>{formatBranchHoursSummary(branch)}</span>
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
 
-                        {(canEdit || canDelete) && (
-                          <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-beige/40 dark:border-brand-dark-grey/40">
-                            {canEdit && (
-                              <button
-                                onClick={() => handleOpenEdit(branch)}
-                                disabled={rowBusy}
-                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:scale-100"
-                              >
-                                <FiEdit3 /> Edit
-                              </button>
-                            )}
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-beige/40 dark:border-brand-dark-grey/40">
+                          <Link
+                            href={`/dashboard/calendar?branchId=${branch._id}`}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-sky-400 bg-sky-500/10 hover:bg-sky-500 hover:text-white scale-100 hover:scale-105 transition-all cursor-pointer"
+                          >
+                            <FiCalendar /> Calendar
+                          </Link>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(branch)}
+                              disabled={rowBusy}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight scale-100 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:scale-100"
+                            >
+                              <FiEdit3 /> Edit
+                            </button>
+                          )}
                             {canDelete && (
                               <button
                                 onClick={() => handleOpenDelete(branch)}
@@ -779,8 +944,7 @@ export default function BranchesPage() {
                                 {rowBusy ? "Deleting..." : "Delete"}
                               </button>
                             )}
-                          </div>
-                        )}
+                        </div>
                       </motion.div>
                     );
                   })}
@@ -822,12 +986,12 @@ export default function BranchesPage() {
               exit={{ opacity: 0, y: 10, scale: 0.97 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-2xl w-full max-w-lg overflow-hidden relative"
+              className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden relative"
             >
-              <div className="h-1.5 bg-gradient-to-r from-brand-red via-brand-gold to-brand-gold-light" />
+              <div className="h-1.5 bg-gradient-to-r from-brand-red via-brand-gold to-brand-gold-light shrink-0" />
 
               {/* Modal Header */}
-              <div className="p-5 bg-brand-offwhite dark:bg-brand-midnight border-b border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center justify-between">
+              <div className="p-5 bg-brand-offwhite dark:bg-brand-midnight border-b border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center justify-between shrink-0">
                 <h3 className="text-base font-bold text-brand-black dark:text-brand-white flex items-center gap-2">
                   <FiMapPin className="text-brand-gold" />
                   {editingBranch ? "Edit Branch Location" : "Add New Branch Location"}
@@ -844,7 +1008,7 @@ export default function BranchesPage() {
               </div>
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-80px)]">
                 <AnimatePresence>
                   {formError && (
                     <motion.div
@@ -939,6 +1103,154 @@ export default function BranchesPage() {
                       placeholder="e.g. https://powerfitbd.com"
                       className="w-full px-4 py-2.5 rounded-xl text-xs bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey focus:outline-none focus:ring-2 focus:ring-brand-gold/50 text-brand-black dark:text-brand-white disabled:opacity-60 disabled:cursor-not-allowed"
                     />
+                  </div>
+                </div>
+
+                {/* OPERATING HOURS & DYNAMIC DAY-BY-DAY SCHEDULE */}
+                <div className="p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-extrabold uppercase text-brand-gold tracking-wider flex items-center gap-1.5">
+                      <FiClock className="text-emerald-500" /> Branch Operating Hours & Schedule
+                    </h4>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        const open = formData.openingTime || "";
+                        const close = formData.closingTime || "";
+                        const updated = {};
+                        WEEKDAYS.forEach((d) => {
+                          updated[d.key] = { open, close, isClosed: false };
+                        });
+                        setFormData({
+                          ...formData,
+                          operatingHours: updated,
+                        });
+                      }}
+                      className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white px-2.5 py-1 rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-500/10 disabled:hover:text-emerald-500"
+                    >
+                      Apply Open/Close Time to All Days
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
+                        Opening Time
+                      </label>
+                      <input
+                        type="time"
+                        disabled={isSubmitting}
+                        value={formData.openingTime}
+                        onChange={(e) => setFormData({ ...formData, openingTime: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-white dark:bg-brand-charcoal border border-brand-beige dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
+                        Closing Time
+                      </label>
+                      <input
+                        type="time"
+                        disabled={isSubmitting}
+                        value={formData.closingTime}
+                        onChange={(e) => setFormData({ ...formData, closingTime: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-white dark:bg-brand-charcoal border border-brand-beige dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Day-by-Day Dynamic Schedule */}
+                  <div className="space-y-2 pt-2 border-t border-brand-beige/40 dark:border-brand-dark-grey/40">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                      Custom Day-By-Day Schedule:
+                    </span>
+                    <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                      {WEEKDAYS.map((day) => {
+                        const dayConfig = formData.operatingHours?.[day.key] || {
+                          open: "",
+                          close: "",
+                          isClosed: false,
+                        };
+
+                        return (
+                          <div
+                            key={day.key}
+                            className="flex items-center justify-between gap-2 p-2 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs"
+                          >
+                            <span className="font-extrabold w-24 text-brand-black dark:text-brand-white shrink-0">
+                              {day.label}
+                            </span>
+
+                            <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                              <input
+                                type="checkbox"
+                                disabled={isSubmitting}
+                                checked={dayConfig.isClosed}
+                                onChange={(e) => {
+                                  setFormData({
+                                    ...formData,
+                                    operatingHours: {
+                                      ...formData.operatingHours,
+                                      [day.key]: {
+                                        ...dayConfig,
+                                        isClosed: e.target.checked,
+                                      },
+                                    },
+                                  });
+                                }}
+                                className="w-3.5 h-3.5 accent-brand-red rounded cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                              />
+                              <span className={`text-[10px] font-bold uppercase ${dayConfig.isClosed ? "text-brand-red font-black" : "text-emerald-500"}`}>
+                                {dayConfig.isClosed ? "Closed" : "Open"}
+                              </span>
+                            </label>
+
+                            {!dayConfig.isClosed && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <input
+                                  type="time"
+                                  disabled={isSubmitting}
+                                  value={dayConfig.open}
+                                  onChange={(e) => {
+                                    setFormData({
+                                      ...formData,
+                                      operatingHours: {
+                                        ...formData.operatingHours,
+                                        [day.key]: {
+                                          ...dayConfig,
+                                          open: e.target.value,
+                                        },
+                                      },
+                                    });
+                                  }}
+                                  className="px-2 py-1 rounded-lg bg-brand-offwhite dark:bg-brand-midnight text-[11px] font-bold border border-brand-beige dark:border-brand-dark-grey text-brand-black dark:text-brand-white disabled:opacity-60 disabled:cursor-not-allowed"
+                                />
+                                <span className="text-brand-dark-grey">-</span>
+                                <input
+                                  type="time"
+                                  disabled={isSubmitting}
+                                  value={dayConfig.close}
+                                  onChange={(e) => {
+                                    setFormData({
+                                      ...formData,
+                                      operatingHours: {
+                                        ...formData.operatingHours,
+                                        [day.key]: {
+                                          ...dayConfig,
+                                          close: e.target.value,
+                                        },
+                                      },
+                                    });
+                                  }}
+                                  className="px-2 py-1 rounded-lg bg-brand-offwhite dark:bg-brand-midnight text-[11px] font-bold border border-brand-beige dark:border-brand-dark-grey text-brand-black dark:text-brand-white disabled:opacity-60 disabled:cursor-not-allowed"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 

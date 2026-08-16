@@ -15,6 +15,8 @@ export default function useThemeMode() {
     const savedMode = localStorage.getItem(THEME_KEY);
     const savedManual = localStorage.getItem(MANUAL_KEY) === "true";
 
+    // Syncing from localStorage (an external store) on mount is an intentional effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsManual(savedManual);
 
     if (savedMode) {

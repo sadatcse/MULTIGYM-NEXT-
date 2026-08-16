@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
@@ -37,6 +37,28 @@ const itemVariants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
 };
+const rowVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: "easeOut", delay: Math.min(i, 8) * 0.035 },
+  }),
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+
+// Helper to format 24h time ("09:00", "14:00") into 12h time ("09:00 AM", "02:00 PM")
+function format12HourTime(time24) {
+  if (!time24) return "—";
+  const [hStr, mStr] = time24.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr || "0", 10);
+  if (isNaN(h)) return time24;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(h12)}:${pad(m)} ${period}`;
+}
 
 export default function ShiftsPage() {
   const { can } = useUserPermissions();
@@ -88,16 +110,34 @@ export default function ShiftsPage() {
   const [formData, setFormData] = useState({
     name: "",
     order: "",
+    startTime: "09:00",
+    endTime: "17:00",
     description: "",
     status: "active",
   });
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Synchronous lock (belt-and-suspenders alongside isSubmitting state) so a
+  // rapid double-click can't fire two submit requests before React re-renders
+  // the disabled attribute on the submit/close buttons.
+  const submitLockRef = useRef(false);
 
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingShift, setDeletingShift] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Synchronous lock mirroring submitLockRef, for the delete flow.
+  const deleteLockRef = useRef(false);
+
+  // Allow Escape to close the modal (blocked while a save is in flight)
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !isSubmitting) setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, isSubmitting]);
 
   // Open Add Modal
   const handleOpenAdd = () => {
@@ -106,6 +146,8 @@ export default function ShiftsPage() {
     setFormData({
       name: "",
       order: nextOrder,
+      startTime: "09:00",
+      endTime: "17:00",
       description: "",
       status: "active",
     });
@@ -119,11 +161,19 @@ export default function ShiftsPage() {
     setFormData({
       name: shift.name || "",
       order: shift.order ?? 1,
+      startTime: shift.startTime || "09:00",
+      endTime: shift.endTime || "17:00",
       description: shift.description || "",
       status: shift.status || "active",
     });
     setFormErrors({});
     setIsModalOpen(true);
+  };
+
+  // Guarded modal close — no-ops while a save request is in flight
+  const handleCloseModal = () => {
+    if (isSubmitting) return;
+    setIsModalOpen(false);
   };
 
   // Validate Form Client-Side
@@ -164,13 +214,21 @@ export default function ShiftsPage() {
   // Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (isSubmitting || submitLockRef.current) return;
+    submitLockRef.current = true;
+
+    if (!validateForm()) {
+      submitLockRef.current = false;
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const payload = {
         name: formData.name.trim(),
         order: Number(formData.order),
+        startTime: formData.startTime || "09:00",
+        endTime: formData.endTime || "17:00",
         description: formData.description.trim(),
         status: formData.status,
       };
@@ -205,6 +263,7 @@ export default function ShiftsPage() {
       });
     } finally {
       setIsSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 
@@ -216,7 +275,8 @@ export default function ShiftsPage() {
 
   // Confirm Delete Handler
   const handleConfirmDelete = async () => {
-    if (!deletingShift) return;
+    if (!deletingShift || isDeleting || deleteLockRef.current) return;
+    deleteLockRef.current = true;
     setIsDeleting(true);
     try {
       await deleteShift(deletingShift._id);
@@ -239,6 +299,7 @@ export default function ShiftsPage() {
       });
     } finally {
       setIsDeleting(false);
+      deleteLockRef.current = false;
     }
   };
 
@@ -495,80 +556,110 @@ export default function ShiftsPage() {
                     <tr>
                       <th className="py-4 px-6 text-center w-20">Order</th>
                       <th className="py-4 px-6">Shift Name</th>
+                      <th className="py-4 px-6">Shift Timing (Start – End)</th>
                       <th className="py-4 px-6">Description</th>
                       <th className="py-4 px-6 text-center w-28">Status</th>
                       <th className="py-4 px-6 text-center w-28">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-beige/30 dark:divide-brand-dark-grey/30 text-xs">
-                    {shifts.map((shift) => (
-                      <tr
-                        key={shift._id}
-                        className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-colors duration-150"
-                      >
-                        {/* Order Badge */}
-                        <td className="py-4 px-6 text-center">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-brand-gold/10 text-brand-gold font-black text-xs">
-                            #{shift.order}
-                          </span>
-                        </td>
-
-                        {/* Shift Name */}
-                        <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white text-sm">
-                          <div className="flex items-center gap-2">
-                            <FiClock className="text-brand-gold text-sm shrink-0" />
-                            <span>{shift.name}</span>
-                          </div>
-                        </td>
-
-                        {/* Description */}
-                        <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium max-w-xs truncate">
-                          {shift.description || "—"}
-                        </td>
-
-                        {/* Status Pill */}
-                        <td className="py-4 px-6 text-center">
-                          <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold capitalize ${
-                              shift.status === "active"
-                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                                : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                    <AnimatePresence initial={false}>
+                      {shifts.map((shift, idx) => {
+                        const rowBusy = isDeleting && deletingShift?._id === shift._id;
+                        return (
+                          <motion.tr
+                            key={shift._id}
+                            custom={idx}
+                            variants={rowVariants}
+                            initial="hidden"
+                            animate="show"
+                            exit="exit"
+                            layout
+                            className={`hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-all duration-150 ${
+                              rowBusy ? "opacity-50 pointer-events-none" : ""
                             }`}
                           >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                shift.status === "active" ? "bg-emerald-500" : "bg-rose-500"
-                              }`}
-                            />
-                            {shift.status}
-                          </span>
-                        </td>
+                            {/* Order Badge */}
+                            <td className="py-4 px-6 text-center">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-brand-gold/10 text-brand-gold font-black text-xs">
+                                #{shift.order}
+                              </span>
+                            </td>
 
-                        {/* Actions */}
-                        <td className="py-4 px-6 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            {canEdit && (
-                              <button
-                                onClick={() => handleOpenEdit(shift)}
-                                className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer"
-                                title="Edit Shift"
+                            {/* Shift Name */}
+                            <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white text-sm">
+                              <div className="flex items-center gap-2">
+                                <FiClock className="text-brand-gold text-sm shrink-0" />
+                                <span>{shift.name}</span>
+                              </div>
+                            </td>
+
+                            {/* Shift Timing */}
+                            <td className="py-4 px-6">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs border border-amber-500/20">
+                                <FiClock className="text-xs" />
+                                <span>
+                                  {format12HourTime(shift.startTime)} – {format12HourTime(shift.endTime)}
+                                </span>
+                              </span>
+                            </td>
+
+                            {/* Description */}
+                            <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium max-w-xs truncate">
+                              {shift.description || "—"}
+                            </td>
+
+                            {/* Status Pill */}
+                            <td className="py-4 px-6 text-center">
+                              <span
+                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold capitalize ${
+                                  shift.status === "active"
+                                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                    : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                                }`}
                               >
-                                <FiEdit3 className="text-sm" />
-                              </button>
-                            )}
-                            {canDelete && (
-                              <button
-                                onClick={() => handleOpenDelete(shift)}
-                                className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer"
-                                title="Delete Shift"
-                              >
-                                <FiTrash2 className="text-sm" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    shift.status === "active" ? "bg-emerald-500" : "bg-rose-500"
+                                  }`}
+                                />
+                                {shift.status}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                {canEdit && (
+                                  <button
+                                    onClick={() => handleOpenEdit(shift)}
+                                    disabled={rowBusy}
+                                    className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-brand-gold/10 disabled:hover:text-brand-gold"
+                                    title="Edit Shift"
+                                  >
+                                    <FiEdit3 className="text-sm" />
+                                  </button>
+                                )}
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleOpenDelete(shift)}
+                                    disabled={rowBusy}
+                                    className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-brand-red/10 disabled:hover:text-brand-red"
+                                    title="Delete Shift"
+                                  >
+                                    {rowBusy ? (
+                                      <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <FiTrash2 className="text-sm" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
                   </tbody>
                 </table>
               </div>
@@ -583,79 +674,107 @@ export default function ShiftsPage() {
               animate="show"
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             >
-              {shifts.map((shift) => (
-                <motion.div
-                  key={shift._id}
-                  variants={itemVariants}
-                  className="bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
-                >
-                  <div>
-                    {/* Header: Shift Name + Order Badge */}
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-lg font-bold shrink-0">
-                          <FiClock />
-                        </div>
-                        <div>
-                          <span className="text-[10px] uppercase tracking-widest text-brand-dark-grey dark:text-brand-gold-light font-extrabold block">
-                            Shift Name
-                          </span>
-                          <h3 className="text-base font-black text-brand-black dark:text-brand-white">
-                            {shift.name}
-                          </h3>
-                        </div>
-                      </div>
-                      <span className="shrink-0 w-8 h-8 rounded-2xl bg-brand-gold/10 text-brand-gold font-black text-xs flex items-center justify-center">
-                        #{shift.order}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light/90 font-medium leading-relaxed mb-4 line-clamp-2">
-                      {shift.description || "No description provided."}
-                    </p>
-                  </div>
-
-                  {/* Footer: Status + Actions */}
-                  <div className="pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-between">
-                    <span
-                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold capitalize ${
-                        shift.status === "active"
-                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                          : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+              <AnimatePresence initial={false}>
+                {shifts.map((shift, idx) => {
+                  const rowBusy = isDeleting && deletingShift?._id === shift._id;
+                  return (
+                    <motion.div
+                      key={shift._id}
+                      custom={idx}
+                      variants={rowVariants}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
+                      layout
+                      className={`bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group ${
+                        rowBusy ? "opacity-50 pointer-events-none" : ""
                       }`}
                     >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          shift.status === "active" ? "bg-emerald-500" : "bg-rose-500"
-                        }`}
-                      />
-                      {shift.status}
-                    </span>
+                      <div>
+                        {/* Header: Shift Name + Order Badge */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-lg font-bold shrink-0">
+                              <FiClock />
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase tracking-widest text-brand-dark-grey dark:text-brand-gold-light font-extrabold block">
+                                Shift Name
+                              </span>
+                              <h3 className="text-base font-black text-brand-black dark:text-brand-white">
+                                {shift.name}
+                              </h3>
+                            </div>
+                          </div>
+                          <span className="shrink-0 w-8 h-8 rounded-2xl bg-brand-gold/10 text-brand-gold font-black text-xs flex items-center justify-center">
+                            #{shift.order}
+                          </span>
+                        </div>
 
-                    <div className="flex items-center gap-2">
-                      {canEdit && (
-                        <button
-                          onClick={() => handleOpenEdit(shift)}
-                          className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer"
-                          title="Edit Shift"
+                        {/* Shift Timing Badge */}
+                        <div className="mb-3">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs border border-amber-500/20">
+                            <FiClock className="text-xs shrink-0" />
+                            <span>
+                              {format12HourTime(shift.startTime)} – {format12HourTime(shift.endTime)}
+                            </span>
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light/90 font-medium leading-relaxed mb-4 line-clamp-2">
+                          {shift.description || "No description provided."}
+                        </p>
+                      </div>
+
+                      {/* Footer: Status + Actions */}
+                      <div className="pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-between">
+                        <span
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold capitalize ${
+                            shift.status === "active"
+                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                              : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                          }`}
                         >
-                          <FiEdit3 className="text-sm" />
-                        </button>
-                      )}
-                      {canDelete && (
-                        <button
-                          onClick={() => handleOpenDelete(shift)}
-                          className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer"
-                          title="Delete Shift"
-                        >
-                          <FiTrash2 className="text-sm" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              shift.status === "active" ? "bg-emerald-500" : "bg-rose-500"
+                            }`}
+                          />
+                          {shift.status}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(shift)}
+                              disabled={rowBusy}
+                              className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-brand-gold/10 disabled:hover:text-brand-gold"
+                              title="Edit Shift"
+                            >
+                              <FiEdit3 className="text-sm" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleOpenDelete(shift)}
+                              disabled={rowBusy}
+                              className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-brand-red/10 disabled:hover:text-brand-red"
+                              title="Delete Shift"
+                            >
+                              {rowBusy ? (
+                                <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <FiTrash2 className="text-sm" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -671,12 +790,21 @@ export default function ShiftsPage() {
       {/* Add / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 backdrop-blur-sm">
+          <motion.div
+            key="shift-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={handleCloseModal}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 backdrop-blur-sm"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
               className="bg-brand-white dark:bg-brand-charcoal w-full max-w-md rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
@@ -695,8 +823,11 @@ export default function ShiftsPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 rounded-xl text-brand-dark-grey hover:text-brand-black dark:hover:text-white transition-colors"
+                  type="button"
+                  onClick={handleCloseModal}
+                  disabled={isSubmitting}
+                  title={isSubmitting ? "Please wait for the save to finish" : "Close"}
+                  className="p-1.5 rounded-xl text-brand-dark-grey hover:text-brand-black dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-brand-dark-grey"
                 >
                   <FiX className="text-lg" />
                 </button>
@@ -711,6 +842,7 @@ export default function ShiftsPage() {
                   </label>
                   <input
                     type="text"
+                    disabled={isSubmitting}
                     value={formData.name}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, name: e.target.value }))
@@ -720,13 +852,52 @@ export default function ShiftsPage() {
                       formErrors.name
                         ? "border-brand-red focus:ring-brand-red/50"
                         : "border-brand-beige/60 dark:border-brand-dark-grey focus:ring-brand-gold/50"
-                    } text-brand-black dark:text-brand-white outline-none focus:ring-2`}
+                    } text-brand-black dark:text-brand-white outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   {formErrors.name && (
                     <p className="text-brand-red text-[11px] mt-1 font-bold">
                       {formErrors.name}
                     </p>
                   )}
+                </div>
+
+                {/* Start Time & End Time */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Start Time <span className="text-brand-red">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      disabled={isSubmitting}
+                      value={formData.startTime}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, startTime: e.target.value }))
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey focus:ring-2 focus:ring-brand-gold/50 text-brand-black dark:text-brand-white outline-none cursor-pointer disabled:opacity-60"
+                    />
+                    <span className="text-[10px] font-bold text-amber-500 mt-1 block">
+                      {format12HourTime(formData.startTime)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      End Time <span className="text-brand-red">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      disabled={isSubmitting}
+                      value={formData.endTime}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, endTime: e.target.value }))
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey focus:ring-2 focus:ring-brand-gold/50 text-brand-black dark:text-brand-white outline-none cursor-pointer disabled:opacity-60"
+                    />
+                    <span className="text-[10px] font-bold text-amber-500 mt-1 block">
+                      {format12HourTime(formData.endTime)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Display Order */}
@@ -737,6 +908,7 @@ export default function ShiftsPage() {
                   <input
                     type="number"
                     min={1}
+                    disabled={isSubmitting}
                     value={formData.order}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, order: e.target.value }))
@@ -746,7 +918,7 @@ export default function ShiftsPage() {
                       formErrors.order
                         ? "border-brand-red focus:ring-brand-red/50"
                         : "border-brand-beige/60 dark:border-brand-dark-grey focus:ring-brand-gold/50"
-                    } text-brand-black dark:text-brand-white outline-none focus:ring-2`}
+                    } text-brand-black dark:text-brand-white outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   {formErrors.order && (
                     <p className="text-brand-red text-[11px] mt-1 font-bold">
@@ -762,12 +934,13 @@ export default function ShiftsPage() {
                   </label>
                   <textarea
                     rows={3}
+                    disabled={isSubmitting}
                     value={formData.description}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, description: e.target.value }))
                     }
                     placeholder="Brief description of shift hours or duties..."
-                    className="w-full px-4 py-2.5 rounded-2xl text-xs font-medium bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none"
+                    className="w-full px-4 py-2.5 rounded-2xl text-xs font-medium bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -782,11 +955,12 @@ export default function ShiftsPage() {
                         type="radio"
                         name="status"
                         value="active"
+                        disabled={isSubmitting}
                         checked={formData.status === "active"}
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, status: e.target.value }))
                         }
-                        className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                        className="w-4 h-4 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                       />
                       <span className="text-xs font-bold text-emerald-500">Active</span>
                     </label>
@@ -795,11 +969,12 @@ export default function ShiftsPage() {
                         type="radio"
                         name="status"
                         value="inactive"
+                        disabled={isSubmitting}
                         checked={formData.status === "inactive"}
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, status: e.target.value }))
                         }
-                        className="w-4 h-4 accent-rose-500 cursor-pointer"
+                        className="w-4 h-4 accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                       />
                       <span className="text-xs font-bold text-rose-500">Inactive</span>
                     </label>
@@ -810,8 +985,9 @@ export default function ShiftsPage() {
                 <div className="pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-2xl text-xs font-bold bg-brand-beige/30 dark:bg-brand-midnight text-brand-black dark:text-brand-gold-light hover:bg-brand-beige/60 dark:hover:bg-brand-dark-grey transition-colors cursor-pointer"
+                    onClick={handleCloseModal}
+                    disabled={isSubmitting}
+                    className="px-4 py-2 rounded-2xl text-xs font-bold bg-brand-beige/30 dark:bg-brand-midnight text-brand-black dark:text-brand-gold-light hover:bg-brand-beige/60 dark:hover:bg-brand-dark-grey transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
@@ -832,7 +1008,7 @@ export default function ShiftsPage() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -840,13 +1016,13 @@ export default function ShiftsPage() {
       <ConfirmDeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
+          if (isDeleting) return;
           setIsDeleteModalOpen(false);
           setDeletingShift(null);
         }}
         onConfirm={handleConfirmDelete}
-        title="Delete Shift"
-        message={`Are you sure you want to delete shift "${deletingShift?.name}"? This action cannot be undone.`}
-        isLoading={isDeleting}
+        itemName={deletingShift?.name}
+        isDeleting={isDeleting}
       />
     </div>
   );

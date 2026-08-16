@@ -11,7 +11,7 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, itemName, isDeleting }
         <h2 className="text-xl font-black text-brand-black dark:text-brand-white mb-2 pt-2">Confirm Deletion</h2>
         
         <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mb-6 leading-relaxed">
-          Are you sure you want to delete <span className="font-extrabold text-brand-red">"{itemName}"</span>? 
+          Are you sure you want to delete <span className="font-extrabold text-brand-red">&quot;{itemName}&quot;</span>?
           This action cannot be undone.
         </p>
 

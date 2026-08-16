@@ -5,7 +5,7 @@ import useAxiosSecure from "@/hooks/useAxiosSecure";
 
 const SEARCH_DEBOUNCE_MS = 400;
 
-export default function useRoleApi() {
+export default function useRoleApi(initialLimit = 100) {
   const axiosSecure = useAxiosSecure();
 
   const [roles, setRoles] = useState([]);
@@ -25,7 +25,7 @@ export default function useRoleApi() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(initialLimit);
 
   const submitLockRef = useRef(false);
   const deleteLockRef = useRef(false);
@@ -85,6 +85,9 @@ export default function useRoleApi() {
   }, [axiosSecure, currentPage, itemsPerPage, search, statusFilter]);
 
   useEffect(() => {
+    // Data fetching is an intentional effect; the abort-on-cleanup below is what
+    // actually protects against races, not deferring this call.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRoles();
     return () => abortControllerRef.current?.abort();
   }, [fetchRoles]);

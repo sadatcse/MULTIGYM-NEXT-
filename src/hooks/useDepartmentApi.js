@@ -5,7 +5,7 @@ import useAxiosSecure from "@/hooks/useAxiosSecure";
 
 const SEARCH_DEBOUNCE_MS = 400;
 
-export default function useDepartmentApi() {
+export default function useDepartmentApi(initialLimit = 100) {
   const axiosSecure = useAxiosSecure();
 
   const [departments, setDepartments] = useState([]);
@@ -25,7 +25,7 @@ export default function useDepartmentApi() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(initialLimit);
 
   const submitLockRef = useRef(false);
   const deleteLockRef = useRef(false);
@@ -85,6 +85,9 @@ export default function useDepartmentApi() {
   }, [axiosSecure, currentPage, itemsPerPage, search, statusFilter]);
 
   useEffect(() => {
+    // Data fetching is an intentional effect (https://react.dev/learn/you-might-not-need-an-effect#fetching-data).
+    // The abort-on-cleanup below is what actually protects against races, not deferring this call.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDepartments();
     return () => abortControllerRef.current?.abort();
   }, [fetchDepartments]);

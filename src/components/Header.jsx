@@ -6,9 +6,10 @@ import Link from "next/link";
 import { FaUserCircle } from "react-icons/fa";
 import { RiMenuFold4Fill as RiFoldIcon } from "react-icons/ri";
 import { MdMenu, MdSearch, MdDarkMode, MdLightMode, MdTableRestaurant, MdReceiptLong, MdDashboard } from "react-icons/md";
-import { FiBell, FiCheck } from "react-icons/fi";
+import { FiBell, FiCheck, FiClock } from "react-icons/fi";
 import { AuthContext } from "@/providers/AuthProvider";
 import useThemeMode from "@/hooks/useThemeMode";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import ProfileDropdown from "@/components/Comon/ProfileDropdown";
 
 const getMockNotifications = () => [
@@ -44,6 +45,14 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { mode, toggleMode, loading } = useThemeMode();
+  const { formatDateTime, currentTimeZoneObj } = useSystemTimeZone();
+  const [now, setNow] = useState(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleMarkAsRead = (id) => {
     setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
@@ -74,6 +83,16 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-4">
+        {/* LIVE SYSTEM TIME ZONE CLOCK */}
+        {now && (
+          <div className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-brand-gold/10 text-brand-gold border border-brand-gold/20 text-xs font-extrabold shadow-xs">
+            <FiClock className="text-sm shrink-0 text-brand-gold animate-pulse" />
+            <span>
+              {currentTimeZoneObj?.city || "Zoned"}: {formatDateTime(now)}
+            </span>
+          </div>
+        )}
+
         {/* Profile Dropdown */}
         <ProfileDropdown
           user={{

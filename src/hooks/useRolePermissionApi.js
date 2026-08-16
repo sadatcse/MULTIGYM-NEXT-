@@ -51,12 +51,23 @@ export default function useRolePermissionApi(initialRole = "") {
   const [isSaving, setIsSaving] = useState(false);
 
   const saveLockRef = useRef(false);
+  const rolesAbortRef = useRef(null);
+  const permissionsAbortRef = useRef(null);
+  const allPermsAbortRef = useRef(null);
 
   // Fetch all active system roles dynamically from backend MongoDB API (100% real data)
   const fetchAvailableRoles = useCallback(async () => {
+    // Cancel any previous in-flight roles request before starting a new one
+    rolesAbortRef.current?.abort();
+    const controller = new AbortController();
+    rolesAbortRef.current = controller;
+
     setRolesLoading(true);
     try {
-      const res = await axiosSecure.get("/role", { params: { limit: 100 } });
+      const res = await axiosSecure.get("/role", {
+        params: { limit: 100 },
+        signal: controller.signal,
+      });
       if (res?.data?.data && Array.isArray(res.data.data)) {
         const fullRoles = res.data.data;
         const roleNames = fullRoles.map((r) => r.name);
@@ -70,21 +81,32 @@ export default function useRolePermissionApi(initialRole = "") {
         });
       }
     } catch (err) {
+      if (err?.code === "ERR_CANCELED") return; // superseded by a newer request, ignore silently
       console.error("Error fetching dynamic system user roles:", err);
       setRolesList([]);
       setAvailableRoles([]);
       setSelectedRole("");
     } finally {
-      setRolesLoading(false);
+      if (rolesAbortRef.current === controller) {
+        setRolesLoading(false);
+      }
     }
   }, [axiosSecure, initialRole]);
 
   // Fetch permissions for selected role, merging newly registered modules
   const fetchRolePermissions = useCallback(async (roleName) => {
     if (!roleName) return;
+    // Abort any previous in-flight permissions request so an out-of-order response
+    // for a previously selected role can never overwrite the currently selected one
+    permissionsAbortRef.current?.abort();
+    const controller = new AbortController();
+    permissionsAbortRef.current = controller;
+
     setLoading(true);
     try {
-      const res = await axiosSecure.get(`/role-permission?role=${encodeURIComponent(roleName)}`);
+      const res = await axiosSecure.get(`/role-permission?role=${encodeURIComponent(roleName)}`, {
+        signal: controller.signal,
+      });
       const fetchedPerms = res?.data?.data?.permissions || {};
 
       // Ensure all system modules defined in MenuItems exist in permissions
@@ -101,6 +123,7 @@ export default function useRolePermissionApi(initialRole = "") {
 
       setPermissions(mergedPerms);
     } catch (err) {
+      if (err?.code === "ERR_CANCELED") return; // superseded by a newer role selection, ignore silently
       console.log(`No existing permissions for role "${roleName}", initializing full defaults.`);
       const categories = getSystemModulesFromMenu();
       const defaultPerms = {};
@@ -111,29 +134,46 @@ export default function useRolePermissionApi(initialRole = "") {
       });
       setPermissions(defaultPerms);
     } finally {
-      setLoading(false);
+      if (permissionsAbortRef.current === controller) {
+        setLoading(false);
+      }
     }
   }, [axiosSecure]);
 
   // Fetch all role permission records
   const fetchAllRolePermissions = useCallback(async () => {
+    allPermsAbortRef.current?.abort();
+    const controller = new AbortController();
+    allPermsAbortRef.current = controller;
+
     try {
-      const res = await axiosSecure.get("/role-permission/all");
+      const res = await axiosSecure.get("/role-permission/all", { signal: controller.signal });
       if (res?.data?.data) {
         setAllRolePermissions(res.data.data);
       }
     } catch (err) {
+      if (err?.code === "ERR_CANCELED") return; // superseded by a newer request, ignore silently
       console.error("Error fetching all role permissions:", err);
     }
   }, [axiosSecure]);
 
   useEffect(() => {
+    // Legitimate initial data fetch on mount; setState inside is intentional.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAvailableRoles();
     fetchAllRolePermissions();
+    // Abort any still-pending requests on unmount so late responses never touch state
+    return () => {
+      rolesAbortRef.current?.abort();
+      permissionsAbortRef.current?.abort();
+      allPermsAbortRef.current?.abort();
+    };
   }, [fetchAvailableRoles, fetchAllRolePermissions]);
 
   useEffect(() => {
     if (selectedRole) {
+      // Legitimate data fetch whenever the selected role changes; setState inside is intentional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRolePermissions(selectedRole);
     }
   }, [selectedRole, fetchRolePermissions]);

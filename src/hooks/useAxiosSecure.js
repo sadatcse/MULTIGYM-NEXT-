@@ -23,6 +23,8 @@ const useAxiosSecure = () => {
       const storedIp = localStorage.getItem("userIp");
       if (storedIp) {
         cachedUserIp = storedIp;
+        // Syncing from localStorage (an external store) on mount is an intentional effect.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUserIp(storedIp);
       } else if (!cachedUserIp) {
         fetch("https://api.ipify.org?format=json")

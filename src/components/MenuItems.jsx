@@ -7,11 +7,10 @@ import {
   MdSettings,
   MdSecurity,
   MdPeople,
-  MdStorefront,
-  MdReceiptLong,
   MdLocationOn,
   MdBadge,
   MdAccessTime,
+  MdCalendarMonth,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -29,6 +28,20 @@ const menuItems = () => {
       key: "configuration",
       icon: <MdSettings className="text-lg" />,
       children: [
+        {
+          title: "Site & General Settings",
+          path: "/dashboard/settings",
+          key: "settings",
+          description: "Manage company info, time zone, print header/footer margins, and HR policies",
+          icon: <MdSettings className="text-base" />,
+        },
+        {
+          title: "Gym Calendar ",
+          path: "/dashboard/calendar",
+          key: "calendar",
+          description: "Manage gym calendar, holidays, operating schedules, and payroll calculation metadata",
+          icon: <MdCalendarMonth className="text-base" />,
+        },
         {
           title: "Branch Configuration",
           path: "/dashboard/settings/branches",
@@ -75,14 +88,14 @@ const menuItems = () => {
     },
     {
       title: "Employee Management",
-      path: "/dashboard/user",
-      key: "user-management",
+      path: "/dashboard/employee",
+      key: "employee-management",
       icon: <MdPeople className="text-lg" />,
       children: [
         {
           title: "Employee Directory",
-          path: "/dashboard/user",
-          key: "user",
+          path: "/dashboard/employee",
+          key: "employee",
           description: "View, create, update, and manage employee profiles and credentials",
           icon: <MdPeople className="text-base" />,
         },

@@ -3,14 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
 
-export default function useJobPositionApi() {
+export default function useJobPositionApi(initialLimit = 100) {
   const axiosSecure = useAxiosSecure();
 
   const [jobPositions, setJobPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(initialLimit);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -75,6 +75,8 @@ export default function useJobPositionApi() {
   }, [axiosSecure, search, statusFilter, page, limit]);
 
   useEffect(() => {
+    // Data fetching is an intentional effect (https://react.dev/learn/you-might-not-need-an-effect#fetching-data).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobPositions();
   }, [fetchJobPositions]);
 

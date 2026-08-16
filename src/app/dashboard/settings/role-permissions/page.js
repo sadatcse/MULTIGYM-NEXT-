@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
@@ -79,8 +79,19 @@ export default function RolePermissionsPage() {
     savePermissions,
   } = useRolePermissionApi();
 
+  // Synchronous double-click guard for the Save action: checked/set at the very top
+  // of the handler (before any await) so a rapid double-click can't fire two
+  // overlapping saves — a `disabled` prop only takes effect after React re-renders,
+  // so `isSaving` state alone isn't enough to stop a same-tick second invocation.
+  const saveLockRef = useRef(false);
+
   // Dynamically derived system modules from central menuItems configuration
   const systemModules = useMemo(() => getSystemModulesFromMenu(), []);
+
+  // Whether we already have permissions data on screen (true after the first
+  // successful load) — used to distinguish the very first load (full skeleton)
+  // from a role switch (dim + spinner overlay on top of the existing matrix).
+  const hasPermissionsData = Object.keys(permissions || {}).length > 0;
 
   // Total count of modules across all categories
   const totalModuleCount = useMemo(() => {
@@ -188,6 +199,12 @@ export default function RolePermissionsPage() {
 
   // Save permissions handler
   const handleSave = async () => {
+    // Defense-in-depth: without this, a same-tick double-click would see stale
+    // `isSaving === false` in both closures, let both calls through, and (since
+    // the hook's own lock silently no-ops the second call) fire a premature
+    // "Saved!" success alert before the first save has even landed.
+    if (saveLockRef.current) return;
+    saveLockRef.current = true;
     try {
       await savePermissions();
       Swal.fire({
@@ -204,6 +221,8 @@ export default function RolePermissionsPage() {
         icon: "error",
         confirmButtonColor: "#FF1818",
       });
+    } finally {
+      saveLockRef.current = false;
     }
   };
 
@@ -332,7 +351,7 @@ export default function RolePermissionsPage() {
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 rounded-2xl px-4 py-2 text-xs font-extrabold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer shadow-xs"
+            className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 rounded-2xl px-4 py-2 text-xs font-extrabold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer shadow-xs transition-all duration-200"
           >
             {availableRoles.map((roleName) => (
               <option key={roleName} value={roleName}>
@@ -374,15 +393,35 @@ export default function RolePermissionsPage() {
       </div>
 
       {/* Permissions Matrix */}
-      {loading ? (
+      {loading && !hasPermissionsData ? (
+        // Very first load (no data on screen yet): full skeleton, same as before.
         <SkeletonLoading variant="table" rows={6} />
       ) : (
-        <div className="space-y-6">
-          {systemModules.map((categoryGroup) => (
-            <div
-              key={categoryGroup.category}
-              className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-lg shadow-black/5 overflow-hidden"
+        <div className="relative">
+          {/* Matrix content: dims + goes pointer-events-none while a newly-selected
+              role's permissions are (re)loading, or while a save is in flight — this
+              stops the user from toggling checkboxes against a stale/mid-flight
+              snapshot, which would otherwise silently drop out of the save. */}
+          <motion.div
+            animate={{ opacity: loading || isSaving ? 0.45 : 1 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className={`space-y-6 ${loading || isSaving ? "pointer-events-none" : ""}`}
+          >
+            {/* Keyed by role so the matrix fades + slides back in every time a
+                role's permissions finish loading (initial load and role switches). */}
+            <motion.div
+              key={selectedRole}
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="space-y-6"
             >
+              {systemModules.map((categoryGroup) => (
+                <motion.div
+                  key={categoryGroup.category}
+                  variants={cardVariants}
+                  className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-lg shadow-black/5 overflow-hidden"
+                >
               {/* Category Header */}
               <div className="bg-brand-offwhite dark:bg-brand-midnight px-6 py-4 border-b border-brand-beige/60 dark:border-brand-dark-grey/60 flex items-center justify-between">
                 <h4 className="text-xs font-black uppercase tracking-widest text-brand-dark-grey dark:text-brand-gold-light flex items-center gap-2">
@@ -513,8 +552,31 @@ export default function RolePermissionsPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          ))}
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
+
+          {/* Loading overlay: shown while fetching a newly-selected role's permissions,
+              so the user gets a clear "loading" signal instead of a blank flash or
+              (worse) silently-wrong checkboxes left over from the previous role. */}
+          <AnimatePresence>
+            {loading && (
+              <motion.div
+                key="matrix-loading-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <span className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-brand-white/90 dark:bg-brand-charcoal/90 border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-lg text-xs font-bold text-brand-dark-grey dark:text-brand-gold-light">
+                  <span className="w-4 h-4 border-2 border-brand-gold border-t-transparent rounded-full animate-spin" />
+                  Loading permissions...
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>

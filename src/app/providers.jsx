@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import AuthProvider from "@/providers/AuthProvider";
+import { TimeZoneProvider } from "@/providers/TimeZoneProvider";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -13,21 +14,21 @@ if (typeof window !== "undefined") {
 
     const originalToLocaleString = Date.prototype.toLocaleString;
     Date.prototype.toLocaleString = function (locales, options) {
-      const tz = window.__SYSTEM_TIMEZONE__;
+      const tz = window.__SYSTEM_TIMEZONE__ || "Asia/Dhaka";
       const opts = { timeZone: tz, ...options };
       return originalToLocaleString.call(this, locales, opts);
     };
 
     const originalToLocaleDateString = Date.prototype.toLocaleDateString;
     Date.prototype.toLocaleDateString = function (locales, options) {
-      const tz = window.__SYSTEM_TIMEZONE__;
+      const tz = window.__SYSTEM_TIMEZONE__ || "Asia/Dhaka";
       const opts = { timeZone: tz, ...options };
       return originalToLocaleDateString.call(this, locales, opts);
     };
 
     const originalToLocaleTimeString = Date.prototype.toLocaleTimeString;
     Date.prototype.toLocaleTimeString = function (locales, options) {
-      const tz = window.__SYSTEM_TIMEZONE__;
+      const tz = window.__SYSTEM_TIMEZONE__ || "Asia/Dhaka";
       const opts = { timeZone: tz, ...options };
       return originalToLocaleTimeString.call(this, locales, opts);
     };
@@ -35,7 +36,7 @@ if (typeof window !== "undefined") {
     // Patch Intl.DateTimeFormat
     const OriginalDateTimeFormat = Intl.DateTimeFormat;
     Intl.DateTimeFormat = function (locales, options) {
-      const tz = window.__SYSTEM_TIMEZONE__;
+      const tz = window.__SYSTEM_TIMEZONE__ || "Asia/Dhaka";
       const opts = { timeZone: tz, ...options };
       return new OriginalDateTimeFormat(locales, opts);
     };
@@ -55,8 +56,10 @@ export default function Providers({ children }) {
 
   return (
     <AuthProvider>
-      {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
-      <ToastContainer position="top-right" autoClose={3000} />
+      <TimeZoneProvider>
+        {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
+        <ToastContainer position="top-right" autoClose={3000} />
+      </TimeZoneProvider>
     </AuthProvider>
   );
 }
