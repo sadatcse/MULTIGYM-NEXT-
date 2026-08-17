@@ -9,6 +9,9 @@ const SIZE_CLASSES = {
   11: "w-11 h-11 text-xs",
   12: "w-12 h-12 text-sm",
   14: "w-14 h-14 text-base",
+  16: "w-16 h-16 text-lg",
+  20: "w-20 h-20 text-xl",
+  24: "w-24 h-24 text-2xl",
 };
 
 const COLORS = [

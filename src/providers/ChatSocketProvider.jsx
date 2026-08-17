@@ -121,8 +121,8 @@ export function useChatSocket() {
       sendMessage: async () => {
         throw new Error("Chat socket not available");
       },
-      markSeen: () => {},
-      sendTyping: () => {},
+      markSeen: () => { },
+      sendTyping: () => { },
     };
   }
   return ctx;

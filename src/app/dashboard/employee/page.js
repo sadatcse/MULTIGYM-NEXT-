@@ -6,6 +6,7 @@ import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
 import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
+import PhotoUpload from "@/components/Comon/PhotoUpload";
 import useEmployeeApi from "@/hooks/useEmployeeApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import useBranchApi from "@/hooks/useBranchApi";
@@ -1207,7 +1208,7 @@ export default function EmployeePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
                           Nationality
@@ -1234,19 +1235,13 @@ export default function EmployeePage() {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                          Photo Avatar URL
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.photo}
-                          onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                          placeholder="https://..."
-                          className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold/50 outline-none"
-                        />
-                      </div>
                     </div>
+
+                    <PhotoUpload
+                      value={formData.photo}
+                      onChange={(url) => setFormData({ ...formData, photo: url })}
+                      name={formData.name}
+                    />
                   </div>
                 )}
 

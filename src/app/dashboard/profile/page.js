@@ -4,6 +4,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "@/providers/AuthProvider";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
 import Mtitle from "@/components/Comon/Mtitle";
+import PhotoUpload from "@/components/Comon/PhotoUpload";
 import Swal from "sweetalert2";
 import {
   FiUser,
@@ -14,7 +15,6 @@ import {
   FiShield,
   FiMapPin,
   FiKey,
-  FiCamera,
   FiSave,
   FiCheckCircle,
   FiAlertTriangle,
@@ -302,21 +302,13 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            {/* Profile Photo URL Input */}
-            <div className="p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey space-y-2">
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-brand-black dark:text-brand-white flex items-center gap-1.5">
-                <FiCamera className="text-brand-gold" /> Profile Photo URL / Avatar
-              </label>
-              <input
-                type="url"
+            {/* Profile Photo Upload */}
+            <div className="p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey">
+              <PhotoUpload
                 value={personalForm.photo}
-                onChange={(e) => setPersonalForm({ ...personalForm, photo: e.target.value })}
-                placeholder="https://example.com/my-photo.jpg"
-                className="w-full px-4 py-2.5 rounded-2xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                onChange={(url) => setPersonalForm({ ...personalForm, photo: url })}
+                name={personalForm.name || user?.name}
               />
-              <p className="text-[11px] text-brand-dark-grey dark:text-brand-gold-light font-medium">
-                Enter an online image URL or Unsplash avatar link to update your profile photo.
-              </p>
             </div>
 
             {/* Form Fields Grid */}
