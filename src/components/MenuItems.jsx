@@ -22,6 +22,9 @@ import {
   MdBusiness,
   MdPolicy,
   MdAdminPanelSettings,
+  MdLocalShipping,
+  MdStorefront,
+  MdCategory,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -59,6 +62,28 @@ const menuItems = () => {
           key: "employee-duty-time",
           description: "Configure and assign shifts and work schedules to employees",
           icon: <MdAccessTime className="text-base" />,
+        },
+      ],
+    },
+    {
+      title: "Vendor Management",
+      path: "/dashboard/vendors",
+      key: "vendor-management",
+      icon: <MdLocalShipping className="text-lg" />,
+      children: [
+        {
+          title: "Vendor Directory",
+          path: "/dashboard/vendors",
+          key: "vendors",
+          description: "A-to-Z record of every vendor: contacts, purchases, warranties, and service history",
+          icon: <MdStorefront className="text-base" />,
+        },
+        {
+          title: "Vendor Categories",
+          path: "/dashboard/vendors/categories",
+          key: "vendor-categories",
+          description: "Manage vendor category types (ISP, CCTV, AC, IT, Security, etc.)",
+          icon: <MdCategory className="text-base" />,
         },
       ],
     },
