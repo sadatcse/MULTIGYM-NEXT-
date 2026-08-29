@@ -12,7 +12,7 @@ import useVendorDocumentApi from "@/hooks/useVendorDocumentApi";
 import useVendorPerformanceApi from "@/hooks/useVendorPerformanceApi";
 import useDepartmentApi from "@/hooks/useDepartmentApi";
 import useBranchApi from "@/hooks/useBranchApi";
-import useVendorCategoryApi from "@/hooks/useVendorCategoryApi";
+import useProductCategoryApi from "@/hooks/useProductCategoryApi";
 import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Avatar from "@/components/Comon/Avatar";
 import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
@@ -310,7 +310,7 @@ const PURCHASE_EMPTY = {
 function PurchasesTab({ vendorId, purchases, api, onChange, formatDate, currencySymbol }) {
   const { departments } = useDepartmentApi(100);
   const { branches } = useBranchApi(100);
-  const { vendorCategories } = useVendorCategoryApi(100);
+  const { productCategories } = useProductCategoryApi(100);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(PURCHASE_EMPTY);
@@ -335,7 +335,7 @@ function PurchasesTab({ vendorId, purchases, api, onChange, formatDate, currency
 
   const branchOptions = Array.from(
     new Set([
-      ...(branches || []).map((b) => b.title || b.name || b.branchName).filter(Boolean),
+      ...(branches || []).map((b) => b.name || b.title || b.branchName).filter(Boolean),
       "Multi Gym Premium",
       "Multi Gym Dhanmondi",
       "Multi Gym Banani",
@@ -346,17 +346,17 @@ function PurchasesTab({ vendorId, purchases, api, onChange, formatDate, currency
 
   const categoryOptions = Array.from(
     new Set([
-      ...(vendorCategories || []).map((c) => c.title).filter(Boolean),
-      "Fitness & Cardio Equipment Suppliers",
-      "Nutritional Supplements & Juice Bar",
-      "HVAC & Air Climate Control",
-      "CCTV, Biometrics & Security Systems",
-      "Sanitation, Janitorial & Hygiene Supplies",
-      "Sound, AV & Digital Signage Systems",
-      "Steam Room, Sauna & Spa Maintenance",
-      "Internet Service Provider & IT Infrastructure",
-      "Apparel, Towels & Gym Merchandising",
-      "Generator & Electrical Power Maintenance",
+      ...(productCategories || []).map((c) => c.title).filter(Boolean),
+      "Cardio Machines & Fitness Equipment",
+      "Strength Training & Power Racks",
+      "Protein Powders & Supplements",
+      "Pre-Workout & BCAAs",
+      "CCTV & Security Hardware",
+      "Air Conditioning & HVAC Spares",
+      "Sanitation & Janitorial Supplies",
+      "Sound & AV Entertainment Systems",
+      "Steam Room & Sauna Supplies",
+      "IT & Networking Infrastructure",
     ])
   );
 

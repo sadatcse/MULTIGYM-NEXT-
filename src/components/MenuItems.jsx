@@ -85,6 +85,13 @@ const menuItems = () => {
           description: "Manage vendor category types (ISP, CCTV, AC, IT, Security, etc.)",
           icon: <MdCategory className="text-base" />,
         },
+        {
+          title: "Product Categories",
+          path: "/dashboard/vendors/product-categories",
+          key: "product-categories",
+          description: "Manage product & item category types for purchases and inventory",
+          icon: <MdCategory className="text-base" />,
+        },
       ],
     },
     {
