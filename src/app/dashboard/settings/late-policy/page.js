@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import useLatePolicyApi from "@/hooks/useLatePolicyApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Mtitle from "@/components/Comon/Mtitle";
 import Swal from "sweetalert2";
 import {
@@ -37,6 +38,8 @@ const INITIAL_FORM = {
 };
 
 export default function LatePolicyPage() {
+  const { settings } = useSystemTimeZone();
+  const currencySymbol = settings.currencySymbol || "৳";
   const { hasPermission } = useUserPermissions();
   const canView = hasPermission("/dashboard/settings/late-policy", "view");
   const canAdd = hasPermission("/dashboard/settings/late-policy", "add");
@@ -346,7 +349,7 @@ export default function LatePolicyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey mb-1">Deduction Amount (৳)</label>
+                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey mb-1">Deduction Amount ({currencySymbol})</label>
                   <input
                     type="number"
                     value={formData.deductionAmount}

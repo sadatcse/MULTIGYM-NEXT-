@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import useOvertimeApi from "@/hooks/useOvertimeApi";
 import useEmployeeApi from "@/hooks/useEmployeeApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Mtitle from "@/components/Comon/Mtitle";
 import Swal from "sweetalert2";
 import {
@@ -20,6 +21,7 @@ import {
 } from "react-icons/fi";
 
 export default function OvertimePage() {
+  const { formatDate } = useSystemTimeZone();
   const { hasPermission } = useUserPermissions();
   const canView = hasPermission("/dashboard/settings/overtime", "view");
   const canAdd = hasPermission("/dashboard/settings/overtime", "add");
@@ -336,7 +338,7 @@ export default function OvertimePage() {
                         {item.employeeName}
                         {item.employeeId && <span className="block text-[10px] text-brand-dark-grey">({item.employeeId})</span>}
                       </td>
-                      <td className="py-3.5 px-4 text-brand-black dark:text-brand-white">{item.recordDate}</td>
+                      <td className="py-3.5 px-4 text-brand-black dark:text-brand-white">{item.recordDate ? formatDate(item.recordDate) : "—"}</td>
                       <td className="py-3.5 px-4 text-emerald-500 font-black">{item.overtimeHours} Hours</td>
                       <td className="py-3.5 px-4">{item.overtimeMinutes} Mins</td>
                       <td className="py-3.5 px-4">

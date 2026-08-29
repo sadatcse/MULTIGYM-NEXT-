@@ -6,11 +6,21 @@ import { axiosPublic } from "@/hooks/useAxiosPublic";
 
 export const AuthContext = createContext();
 
+const DEFAULT_COMPANY = {
+  companyName: "Multigym HR",
+  companyTagline: "Complete Enterprise HR & Payroll Management",
+  email: "info@multigymhr.com",
+  phone: "+880 1700-000000",
+  address: "House 12, Road 5, Dhanmondi, Dhaka 1205, Bangladesh",
+  website: "https://multigymhr.com",
+  logo: "",
+};
+
 const AuthProvider = ({ children }) => {
   const [employee, setEmployee] = useState(null);
   const [employeeProfile, setEmployeeProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [company, setCompany] = useState(null);
+  const [company, setCompany] = useState(DEFAULT_COMPANY);
 
   // Alias state for backward compatibility
   const user = employee;
@@ -43,9 +53,25 @@ const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = fetchEmployeeProfile;
 
+  // Public site branding (company name/logo/contact) — the /setting endpoint
+  // has no auth guard, so this is safe to fetch immediately, before login,
+  // to brand the login screen itself. Unlike the timezone/permission
+  // providers, this is not gated on auth.
   const fetchCompany = useCallback(async () => {
-    setCompany({ companyName: "Multigym HR", logo: "" });
+    try {
+      const res = await axiosPublic.get("/setting");
+      if (res?.data?.data) {
+        setCompany((prev) => ({ ...prev, ...res.data.data }));
+      }
+    } catch {
+      // Keep the default branding on failure — never block the login screen.
+    }
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount, not a cascading render
+    fetchCompany();
+  }, [fetchCompany]);
 
   const registerEmployee = async (email, password, name, department, branch, role = "user") => {
     setLoading(true);

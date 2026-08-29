@@ -12,6 +12,7 @@ export default function useProxyDutyApi(initialLimit = 10) {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(initialLimit);
   const [totalItems, setTotalItems] = useState(0);
@@ -30,6 +31,7 @@ export default function useProxyDutyApi(initialLimit = 10) {
         params: {
           search: search || undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
+          month: monthFilter || undefined,
           page,
           limit,
         },
@@ -50,7 +52,7 @@ export default function useProxyDutyApi(initialLimit = 10) {
         setLoading(false);
       }
     }
-  }, [axiosSecure, search, statusFilter, page, limit]);
+  }, [axiosSecure, search, statusFilter, monthFilter, page, limit]);
 
   useEffect(() => {
     fetchProxyDuties();
@@ -82,6 +84,8 @@ export default function useProxyDutyApi(initialLimit = 10) {
     setSearch,
     statusFilter,
     setStatusFilter,
+    monthFilter,
+    setMonthFilter,
     page,
     setPage,
     limit,

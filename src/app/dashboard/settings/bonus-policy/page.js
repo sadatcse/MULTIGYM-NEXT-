@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import useBonusPolicyApi from "@/hooks/useBonusPolicyApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Mtitle from "@/components/Comon/Mtitle";
 import Swal from "sweetalert2";
 import {
@@ -28,6 +29,8 @@ const INITIAL_FORM = {
 };
 
 export default function BonusPolicyPage() {
+  const { settings } = useSystemTimeZone();
+  const currencySymbol = settings.currencySymbol || "৳";
   const { hasPermission } = useUserPermissions();
   const canView = hasPermission("/dashboard/settings/bonus-policy", "view");
   const canAdd = hasPermission("/dashboard/settings/bonus-policy", "add");
@@ -198,7 +201,7 @@ export default function BonusPolicyPage() {
               <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                 <span className="text-[10px] text-brand-dark-grey block">Bonus Rate / Amount</span>
                 <span className="text-emerald-500 font-black">
-                  {policy.calculationType === "fixed_amount" ? `৳${policy.bonusRate}` : `${policy.bonusRate}%`}
+                  {policy.calculationType === "fixed_amount" ? `${currencySymbol}${policy.bonusRate}` : `${policy.bonusRate}%`}
                 </span>
               </div>
 
@@ -270,7 +273,7 @@ export default function BonusPolicyPage() {
                   >
                     <option value="percentage_of_basic">% of Basic Salary</option>
                     <option value="percentage_of_gross">% of Gross Salary</option>
-                    <option value="fixed_amount">Fixed Amount (৳)</option>
+                    <option value="fixed_amount">Fixed Amount ({currencySymbol})</option>
                   </select>
                 </div>
 

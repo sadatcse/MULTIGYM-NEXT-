@@ -36,7 +36,7 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState("");
 
   const router = useRouter();
-  const { user, loginUser, loading: authLoading } = useContext(AuthContext);
+  const { user, loginUser, loading: authLoading, company } = useContext(AuthContext);
 
   useEffect(() => {
     setMounted(true);
@@ -140,7 +140,7 @@ const Login = () => {
         <div className="flex flex-col items-center space-y-4">
           <div className="w-14 h-14 border-4 border-brand-red border-t-transparent rounded-full animate-spin"></div>
           <p className="text-brand-gold font-bold tracking-widest text-xs uppercase animate-pulse">
-            Loading Multigym HR System...
+            Loading {company?.companyName || "Multigym HR"} System...
           </p>
         </div>
       </div>
@@ -207,8 +207,8 @@ const Login = () => {
             {/* Brand Logo on Left Showcase Panel */}
             <div className="relative z-10 pt-2">
               <img
-                src={Logo.src || "/Logo.png"}
-                alt="Multigym HR Logo"
+                src={company?.logo || Logo.src || "/Logo.png"}
+                alt={`${company?.companyName || "Multigym HR"} Logo`}
                 className="h-14 w-auto object-contain filter drop-shadow-xl"
               />
             </div>
@@ -255,12 +255,12 @@ const Login = () => {
             {/* Logo Header - Logo.src used for dark background mode, Logo_Dark.src for light background mode */}
             <div className="flex flex-col items-center mb-6 text-center">
               <img
-                src={theme === "dark" ? Logo.src : Logo_Dark.src}
-                alt="Multigym HR Logo"
+                src={company?.logo || (theme === "dark" ? Logo.src : Logo_Dark.src)}
+                alt={`${company?.companyName || "Multigym HR"} Logo`}
                 className="h-14 w-auto object-contain mb-3 hover:scale-105 transition-transform duration-300"
               />
               <h2 className="text-2xl font-extrabold tracking-tight">
-                Sign In to Multigym HR
+                Sign In to {company?.companyName || "Multigym HR"}
               </h2>
               <p className={`text-xs mt-1 font-medium ${
                 theme === "dark" ? "text-brand-gold-light/80" : "text-brand-dark-grey"
@@ -422,7 +422,7 @@ const Login = () => {
 
             <div className="mt-6 pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 text-center">
               <p className="text-[11px] text-brand-dark-grey dark:text-brand-gold-light/60 font-medium">
-                Multigym HR Operations & Management Platform &copy; 2026
+                {company?.companyName || "Multigym HR"} Operations &amp; Management Platform &copy; 2026
               </p>
             </div>
           </div>
@@ -462,7 +462,7 @@ const Login = () => {
               </div>
               <h3 className="text-xl font-bold mb-1 tracking-tight">Forgot Password?</h3>
               <p className="mb-6 text-xs text-brand-dark-grey dark:text-brand-gold-light leading-relaxed">
-                Enter your registered Multigym HR email address and we&apos;ll dispatch a reset link.
+                Enter your registered {company?.companyName || "Multigym HR"} email address and we&apos;ll dispatch a reset link.
               </p>
               <form onSubmit={handlePasswordReset} className="space-y-4">
                 <div>

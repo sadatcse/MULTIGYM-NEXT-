@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import useProxyDutyApi from "@/hooks/useProxyDutyApi";
 import useEmployeeApi from "@/hooks/useEmployeeApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Mtitle from "@/components/Comon/Mtitle";
 import Swal from "sweetalert2";
 import {
@@ -31,6 +32,8 @@ const INITIAL_FORM = {
 };
 
 export default function ProxyDutyPage() {
+  const { settings, formatDate } = useSystemTimeZone();
+  const currencySymbol = settings.currencySymbol || "৳";
   const { hasPermission } = useUserPermissions();
   const canView = hasPermission("/dashboard/settings/proxy-duty", "view");
   const canAdd = hasPermission("/dashboard/settings/proxy-duty", "add");
@@ -46,6 +49,8 @@ export default function ProxyDutyPage() {
     setSearch,
     statusFilter,
     setStatusFilter,
+    monthFilter,
+    setMonthFilter,
     createProxyDuty,
     updateProxyDuty,
     deleteProxyDuty,
@@ -157,7 +162,8 @@ export default function ProxyDutyPage() {
 
       {/* SEARCH & ACTIONS */}
       <div className="bg-brand-white dark:bg-brand-charcoal p-4 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          {/* Search Input */}
           <div className="relative w-full sm:w-64">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-dark-grey text-sm" />
             <input
@@ -165,9 +171,44 @@ export default function ProxyDutyPage() {
               placeholder="Search proxy records..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none"
+              className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
             />
           </div>
+
+          {/* Duty Month Filter */}
+          <div className="relative flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-44">
+              <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-gold text-xs pointer-events-none" />
+              <input
+                type="month"
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
+                title="Filter by Duty Month"
+              />
+            </div>
+            {monthFilter && (
+              <button
+                onClick={() => setMonthFilter("")}
+                className="px-2.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-brand-red border border-brand-beige dark:border-brand-dark-grey text-xs font-bold hover:bg-brand-red/10 transition-colors shrink-0"
+                title="Clear Month Filter"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full sm:w-36 px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </div>
 
         {canAdd && (
@@ -216,8 +257,8 @@ export default function ProxyDutyPage() {
                       {item.proxyEmployeeName}
                       {item.proxyEmployeeId && <span className="block text-[10px] text-brand-dark-grey">({item.proxyEmployeeId})</span>}
                     </td>
-                    <td className="py-3.5 px-4 text-brand-black dark:text-brand-white">{item.dutyDate}</td>
-                    <td className="py-3.5 px-4 text-emerald-500 font-black">৳{item.proxyPayAmount}</td>
+                    <td className="py-3.5 px-4 text-brand-black dark:text-brand-white">{item.dutyDate ? formatDate(item.dutyDate) : "—"}</td>
+                    <td className="py-3.5 px-4 text-emerald-500 font-black">{currencySymbol}{item.proxyPayAmount}</td>
                     <td className="py-3.5 px-4">
                       <span className={`inline-flex px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${item.status === "completed" ? "bg-blue-500/10 text-blue-500" : item.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
                         {item.status}
@@ -315,7 +356,7 @@ export default function ProxyDutyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey mb-1">Proxy Pay Amount (৳)</label>
+                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey mb-1">Proxy Pay Amount ({currencySymbol})</label>
                   <input
                     type="number"
                     min="0"

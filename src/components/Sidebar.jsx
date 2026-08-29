@@ -110,7 +110,7 @@ const AccordionItem = ({ item, isSidebarOpen }) => {
 /* ---------------- SIDEBAR ---------------- */
 const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
   const logo = mode === "dark" ? Logo_Dark : Logo;
-  const { user } = useContext(AuthContext);
+  const { user, company } = useContext(AuthContext);
   const { can, role, loading } = useUserPermissions();
 
   /* ---------------- PERMISSION + FORCE LOGIC ---------------- */
@@ -168,8 +168,8 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
         {/* Logo */}
         <div className="h-[65px] flex items-center justify-center border-b border-brand-beige/50 dark:border-brand-dark-grey/50">
           <img
-            src={logo.src}
-            alt="Logo"
+            src={company?.logo || logo.src}
+            alt={company?.companyName || "Logo"}
             className={`transition-all ${isSidebarOpen ? "w-24" : "w-10"}`}
           />
         </div>

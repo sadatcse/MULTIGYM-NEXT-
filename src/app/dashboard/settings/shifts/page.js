@@ -47,18 +47,6 @@ const rowVariants = {
   exit: { opacity: 0, transition: { duration: 0.15 } },
 };
 
-// Helper to format 24h time ("09:00", "14:00") into 12h time ("09:00 AM", "02:00 PM")
-function format12HourTime(time24) {
-  if (!time24) return "—";
-  const [hStr, mStr] = time24.split(":");
-  const h = parseInt(hStr, 10);
-  const m = parseInt(mStr || "0", 10);
-  if (isNaN(h)) return time24;
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${pad(h12)}:${pad(m)} ${period}`;
-}
 
 export default function ShiftsPage() {
   const { can } = useUserPermissions();
@@ -110,8 +98,6 @@ export default function ShiftsPage() {
   const [formData, setFormData] = useState({
     name: "",
     order: "",
-    startTime: "09:00",
-    endTime: "17:00",
     description: "",
     status: "active",
   });
@@ -146,8 +132,6 @@ export default function ShiftsPage() {
     setFormData({
       name: "",
       order: nextOrder,
-      startTime: "09:00",
-      endTime: "17:00",
       description: "",
       status: "active",
     });
@@ -161,8 +145,6 @@ export default function ShiftsPage() {
     setFormData({
       name: shift.name || "",
       order: shift.order ?? 1,
-      startTime: shift.startTime || "09:00",
-      endTime: shift.endTime || "17:00",
       description: shift.description || "",
       status: shift.status || "active",
     });
@@ -227,8 +209,6 @@ export default function ShiftsPage() {
       const payload = {
         name: formData.name.trim(),
         order: Number(formData.order),
-        startTime: formData.startTime || "09:00",
-        endTime: formData.endTime || "17:00",
         description: formData.description.trim(),
         status: formData.status,
       };
@@ -556,7 +536,6 @@ export default function ShiftsPage() {
                     <tr>
                       <th className="py-4 px-6 text-center w-20">Order</th>
                       <th className="py-4 px-6">Shift Name</th>
-                      <th className="py-4 px-6">Shift Timing (Start – End)</th>
                       <th className="py-4 px-6">Description</th>
                       <th className="py-4 px-6 text-center w-28">Status</th>
                       <th className="py-4 px-6 text-center w-28">Actions</th>
@@ -594,15 +573,7 @@ export default function ShiftsPage() {
                               </div>
                             </td>
 
-                            {/* Shift Timing */}
-                            <td className="py-4 px-6">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs border border-amber-500/20">
-                                <FiClock className="text-xs" />
-                                <span>
-                                  {format12HourTime(shift.startTime)} – {format12HourTime(shift.endTime)}
-                                </span>
-                              </span>
-                            </td>
+
 
                             {/* Description */}
                             <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium max-w-xs truncate">
@@ -711,15 +682,7 @@ export default function ShiftsPage() {
                           </span>
                         </div>
 
-                        {/* Shift Timing Badge */}
-                        <div className="mb-3">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs border border-amber-500/20">
-                            <FiClock className="text-xs shrink-0" />
-                            <span>
-                              {format12HourTime(shift.startTime)} – {format12HourTime(shift.endTime)}
-                            </span>
-                          </span>
-                        </div>
+
 
                         {/* Description */}
                         <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light/90 font-medium leading-relaxed mb-4 line-clamp-2">
@@ -861,44 +824,7 @@ export default function ShiftsPage() {
                   )}
                 </div>
 
-                {/* Start Time & End Time */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
-                      Start Time <span className="text-brand-red">*</span>
-                    </label>
-                    <input
-                      type="time"
-                      disabled={isSubmitting}
-                      value={formData.startTime}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, startTime: e.target.value }))
-                      }
-                      className="w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey focus:ring-2 focus:ring-brand-gold/50 text-brand-black dark:text-brand-white outline-none cursor-pointer disabled:opacity-60"
-                    />
-                    <span className="text-[10px] font-bold text-amber-500 mt-1 block">
-                      {format12HourTime(formData.startTime)}
-                    </span>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
-                      End Time <span className="text-brand-red">*</span>
-                    </label>
-                    <input
-                      type="time"
-                      disabled={isSubmitting}
-                      value={formData.endTime}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, endTime: e.target.value }))
-                      }
-                      className="w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey focus:ring-2 focus:ring-brand-gold/50 text-brand-black dark:text-brand-white outline-none cursor-pointer disabled:opacity-60"
-                    />
-                    <span className="text-[10px] font-bold text-amber-500 mt-1 block">
-                      {format12HourTime(formData.endTime)}
-                    </span>
-                  </div>
-                </div>
 
                 {/* Display Order */}
                 <div>

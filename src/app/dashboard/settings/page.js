@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import useSettingApi from "@/hooks/useSettingApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import Mtitle from "@/components/Comon/Mtitle";
+import PhotoUpload from "@/components/Comon/PhotoUpload";
 import Swal from "sweetalert2";
 import {
   FiSettings,
@@ -340,21 +341,18 @@ export default function SiteSettingsPage() {
 
                 <div>
                   <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1 flex items-center gap-1">
-                    <FiImage className="text-brand-gold" /> Company Logo Image URL
+                    <FiImage className="text-brand-gold" /> Company Logo
                   </label>
-                  <input
-                    type="url"
-                    value={formData.logo}
-                    onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                    placeholder="https://example.com/logo.png"
-                    disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 mb-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                  />
-                  {formData.logo && (
-                    <div className="p-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 inline-block">
-                      <img src={formData.logo} alt="Company Logo Preview" className="h-10 object-contain" />
-                    </div>
-                  )}
+                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey">
+                    <PhotoUpload
+                      value={formData.logo}
+                      onChange={(url) => setFormData({ ...formData, logo: url })}
+                      name={formData.companyName}
+                      shape="square"
+                      folder="logos"
+                      label="Company Logo"
+                    />
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -417,6 +415,7 @@ export default function SiteSettingsPage() {
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="YYYY-MM-DD">YYYY-MM-DD (2026-08-16)</option>
+                    <option value="YYYY/MM/DD">YYYY/MM/DD (2026/08/16)</option>
                     <option value="DD/MM/YYYY">DD/MM/YYYY (16/08/2026)</option>
                     <option value="MM/DD/YYYY">MM/DD/YYYY (08/16/2026)</option>
                     <option value="DD-MM-YYYY">DD-MM-YYYY (16-08-2026)</option>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "@/providers/AuthProvider";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Mtitle from "@/components/Comon/Mtitle";
 import PhotoUpload from "@/components/Comon/PhotoUpload";
 import Swal from "sweetalert2";
@@ -27,6 +28,7 @@ import {
 export default function ProfilePage() {
   const { user, setUser, setUserProfile } = useContext(AuthContext);
   const axiosSecure = useAxiosSecure();
+  const { formatDate } = useSystemTimeZone();
 
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -582,7 +584,7 @@ export default function ProfilePage() {
 
             <div className="p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50">
               <span className="text-[10px] font-extrabold uppercase text-brand-dark-grey block">Joining Date</span>
-              <span className="text-sm font-black text-brand-black dark:text-brand-white mt-1 block">{user.joiningDate || "—"}</span>
+              <span className="text-sm font-black text-brand-black dark:text-brand-white mt-1 block">{user.joiningDate ? formatDate(user.joiningDate) : "—"}</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50">

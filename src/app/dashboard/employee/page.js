@@ -9,6 +9,7 @@ import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
 import PhotoUpload from "@/components/Comon/PhotoUpload";
 import useEmployeeApi from "@/hooks/useEmployeeApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import useBranchApi from "@/hooks/useBranchApi";
 import useDepartmentApi from "@/hooks/useDepartmentApi";
 import useJobPositionApi from "@/hooks/useJobPositionApi";
@@ -112,6 +113,7 @@ const rowVariants = {
 };
 
 export default function EmployeePage() {
+  const { formatDate } = useSystemTimeZone();
   const { can } = useUserPermissions();
   const canView = can("employee", "view");
   const canAdd = can("employee", "add");
@@ -1959,7 +1961,7 @@ export default function EmployeePage() {
                     </div>
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Joining Date</span>
-                      <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.joiningDate || "—"}</span>
+                      <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.joiningDate ? formatDate(viewingEmployee.joiningDate) : "—"}</span>
                     </div>
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Role</span>
@@ -1979,7 +1981,7 @@ export default function EmployeePage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Date of Birth</span>
-                      <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.dateOfBirth || "—"}</span>
+                      <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.dateOfBirth ? formatDate(viewingEmployee.dateOfBirth) : "—"}</span>
                     </div>
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Gender</span>

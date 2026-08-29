@@ -19,6 +19,9 @@ import {
   MdSwapHoriz,
   MdAlarmOn,
   MdCardGiftcard,
+  MdBusiness,
+  MdPolicy,
+  MdAdminPanelSettings,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -38,10 +41,32 @@ const menuItems = () => {
       icon: <MdChat className="text-lg" />,
     },
     {
-      title: "Configuration & Settings",
-      path: "/dashboard/settings/branches",
-      key: "configuration",
-      icon: <MdSettings className="text-lg" />,
+      title: "Employee Management",
+      path: "/dashboard/employee",
+      key: "employee-management",
+      icon: <MdPeople className="text-lg" />,
+      children: [
+        {
+          title: "Employee Directory",
+          path: "/dashboard/employee",
+          key: "employee",
+          description: "View, create, update, and manage employee profiles and credentials",
+          icon: <MdPeople className="text-base" />,
+        },
+        {
+          title: "Employee Duty Time",
+          path: "/dashboard/employee/duty-time",
+          key: "employee-duty-time",
+          description: "Configure and assign shifts and work schedules to employees",
+          icon: <MdAccessTime className="text-base" />,
+        },
+      ],
+    },
+    {
+      title: "Organization Setup",
+      path: "/dashboard/settings",
+      key: "org-setup",
+      icon: <MdBusiness className="text-lg" />,
       children: [
         {
           title: "Site & General Settings",
@@ -51,7 +76,7 @@ const menuItems = () => {
           icon: <MdSettings className="text-base" />,
         },
         {
-          title: "Gym Calendar ",
+          title: "Gym Calendar",
           path: "/dashboard/calendar",
           key: "calendar",
           description: "Manage gym calendar, holidays, operating schedules, and payroll calculation metadata",
@@ -78,12 +103,27 @@ const menuItems = () => {
           description: "Manage job titles, department assignments, hierarchy order, and active access",
           icon: <MdBadge className="text-base" />,
         },
+      ],
+    },
+    {
+      title: "Work & Schedules",
+      path: "/dashboard/settings/shifts",
+      key: "work-schedules-setup",
+      icon: <MdSchedule className="text-lg" />,
+      children: [
         {
           title: "Shift Configuration",
           path: "/dashboard/settings/shifts",
           key: "shifts",
           description: "Manage work shift schedules, display order, and active status",
           icon: <MdAccessTime className="text-base" />,
+        },
+        {
+          title: "Work Schedule List",
+          path: "/dashboard/settings/work-schedules",
+          key: "work-schedules",
+          description: "Manage weekly work schedules, daily hours, late tolerance, and half-day rules",
+          icon: <MdSchedule className="text-base" />,
         },
         {
           title: "Employee Leave Types",
@@ -93,12 +133,20 @@ const menuItems = () => {
           icon: <MdBeachAccess className="text-base" />,
         },
         {
-          title: "Work Schedule List",
-          path: "/dashboard/settings/work-schedules",
-          key: "work-schedules",
-          description: "Manage weekly work schedules, daily hours, late tolerance, and half-day rules",
-          icon: <MdSchedule className="text-base" />,
+          title: "Proxy Duty Management",
+          path: "/dashboard/settings/proxy-duty",
+          key: "proxy-duty",
+          description: "Log and track substitute duty swaps, duty dates, and proxy pay allowances",
+          icon: <MdSwapHoriz className="text-base" />,
         },
+      ],
+    },
+    {
+      title: "Policies & Payroll Setup",
+      path: "/dashboard/settings/late-policy",
+      key: "policies-setup",
+      icon: <MdPolicy className="text-lg" />,
+      children: [
         {
           title: "Late & Attendance Policy",
           path: "/dashboard/settings/late-policy",
@@ -114,13 +162,6 @@ const menuItems = () => {
           icon: <MdPayments className="text-base" />,
         },
         {
-          title: "Proxy Duty Management",
-          path: "/dashboard/settings/proxy-duty",
-          key: "proxy-duty",
-          description: "Log and track substitute duty swaps, duty dates, and proxy pay allowances",
-          icon: <MdSwapHoriz className="text-base" />,
-        },
-        {
           title: "Overtime Policy & Records",
           path: "/dashboard/settings/overtime",
           key: "overtime",
@@ -134,6 +175,14 @@ const menuItems = () => {
           description: "Configure festival, performance, and attendance bonuses and payout months",
           icon: <MdCardGiftcard className="text-base" />,
         },
+      ],
+    },
+    {
+      title: "Security & Access",
+      path: "/dashboard/settings/roles",
+      key: "security-setup",
+      icon: <MdAdminPanelSettings className="text-lg" />,
+      children: [
         {
           title: "User Role Configuration",
           path: "/dashboard/settings/roles",
@@ -147,21 +196,6 @@ const menuItems = () => {
           key: "role-permissions",
           description: "Configure module-level view/add/edit/delete access matrix",
           icon: <MdSecurity className="text-base" />,
-        },
-      ],
-    },
-    {
-      title: "Employee Management",
-      path: "/dashboard/employee",
-      key: "employee-management",
-      icon: <MdPeople className="text-lg" />,
-      children: [
-        {
-          title: "Employee Directory",
-          path: "/dashboard/employee",
-          key: "employee",
-          description: "View, create, update, and manage employee profiles and credentials",
-          icon: <MdPeople className="text-base" />,
         },
       ],
     },
