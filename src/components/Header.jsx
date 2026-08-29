@@ -1,50 +1,80 @@
 "use client";
 
-import React, { useState, useContext, useEffect, useCallback } from "react";
+import React, { useState, useContext, useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
-import { FaUserCircle } from "react-icons/fa";
+import { MdMenu } from "react-icons/md";
 import { RiMenuFold4Fill as RiFoldIcon } from "react-icons/ri";
-import { MdMenu, MdSearch, MdDarkMode, MdLightMode, MdTableRestaurant, MdReceiptLong, MdDashboard } from "react-icons/md";
-import { FiBell, FiCheck, FiClock } from "react-icons/fi";
+import { FiBell, FiClock, FiAlertTriangle, FiFileText, FiTool, FiDollarSign } from "react-icons/fi";
 import { AuthContext } from "@/providers/AuthProvider";
 import useThemeMode from "@/hooks/useThemeMode";
 import useSystemTimeZone from "@/hooks/useSystemTimeZone";
+import useAxiosSecure from "@/hooks/useAxiosSecure";
 import ProfileDropdown from "@/components/Comon/ProfileDropdown";
 
-const getMockNotifications = () => [
-  {
-    _id: "mock-1",
-    title: "System Update Complete",
-    message: "Resort PMS system successfully optimized to v16.2.7.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    read: false
-  },
-  {
-    _id: "mock-2",
-    title: "Daily Checkout Warning",
-    message: "Room 101 expected checkout is overdue by 1 hour.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    read: false
-  },
-  {
-    _id: "mock-3",
-    title: "Kitchen Alert: Low Ingredients",
-    message: "Sugar and milk stock counts are approaching safety minimums.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    read: true
-  }
-];
+// Vendor alerts (expiring warranties/contracts, upcoming services, pending
+// payments) are computed live server-side — no persisted read/unread state,
+// "read" here is just an ephemeral client-side dismissal for this session.
+function buildNotificationsFromAlerts(alerts) {
+  if (!alerts) return [];
+  const items = [];
+
+  alerts.expiringWarranties?.forEach((p) => {
+    items.push({
+      _id: `warranty-${p._id}`,
+      icon: FiAlertTriangle,
+      color: "text-rose-500",
+      title: p.warrantyStatus === "expired" ? "Warranty expired" : "Warranty expiring soon",
+      message: `${p.productName} — ${p.vendor?.name || "Unknown vendor"}`,
+      createdAt: p.warranty?.endDate,
+    });
+  });
+
+  alerts.expiringContracts?.forEach((c) => {
+    items.push({
+      _id: `contract-${c._id}`,
+      icon: FiFileText,
+      color: "text-amber-500",
+      title: c.status === "expired" ? "Contract expired" : "Contract expiring soon",
+      message: `${c.contractType || "Contract"} — ${c.vendor?.name || "Unknown vendor"}`,
+      createdAt: c.endDate,
+    });
+  });
+
+  alerts.upcomingServices?.forEach((s) => {
+    items.push({
+      _id: `service-${s._id}`,
+      icon: FiTool,
+      color: "text-blue-500",
+      title: "Upcoming service",
+      message: `${s.serviceType || "Service"} — ${s.vendor?.name || "Unknown vendor"}`,
+      createdAt: s.nextServiceDate,
+    });
+  });
+
+  alerts.pendingPayments?.forEach((p) => {
+    items.push({
+      _id: `payment-${p._id}`,
+      icon: FiDollarSign,
+      color: "text-brand-gold",
+      title: "Pending vendor payment",
+      message: `${p.productName} — ${p.vendor?.name || "Unknown vendor"}`,
+      createdAt: p.purchaseDate,
+    });
+  });
+
+  return items.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+}
 
 const Header = ({ isSidebarOpen, toggleSidebar }) => {
-  const [isProfileOpen, setProfileOpen] = useState(false);
   const [isNotifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(getMockNotifications());
+  const [notifications, setNotifications] = useState([]);
+  const [dismissedIds, setDismissedIds] = useState(new Set());
+  const notifRef = useRef(null);
 
   const { user, logoutUser } = useContext(AuthContext);
+  const axiosSecure = useAxiosSecure();
   const router = useRouter();
-  const pathname = usePathname();
-  const { mode, toggleMode, loading } = useThemeMode();
+  const { mode } = useThemeMode();
   const { formatDateTime, currentTimeZoneObj } = useSystemTimeZone();
   const [now, setNow] = useState(null);
 
@@ -54,12 +84,32 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleMarkAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-  };
+  const loadAlerts = useCallback(async () => {
+    try {
+      const res = await axiosSecure.get("/vendor/alerts");
+      setNotifications(buildNotificationsFromAlerts(res.data.data));
+    } catch (err) {
+      console.error("Failed to load vendor alerts:", err);
+    }
+  }, [axiosSecure]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAlerts();
+  }, [loadAlerts]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const visibleNotifications = notifications.filter((n) => !dismissedIds.has(n._id));
 
   const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setDismissedIds(new Set(notifications.map((n) => n._id)));
   };
 
   const handleSignOut = async () => {
@@ -92,6 +142,55 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
             </span>
           </div>
         )}
+
+        {/* Notification Bell */}
+        <div className="relative" ref={notifRef}>
+          <button
+            onClick={() => setNotifOpen((prev) => !prev)}
+            aria-label="Notifications"
+            className="relative text-brand-charcoal dark:text-brand-offwhite hover:bg-brand-primary/10 dark:hover:bg-brand-dark-grey p-2 rounded-full focus:outline-none transition-colors duration-200 cursor-pointer"
+          >
+            <FiBell className="text-xl" />
+            {visibleNotifications.length > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-brand-red text-white text-[9px] font-black flex items-center justify-center">
+                {visibleNotifications.length > 9 ? "9+" : visibleNotifications.length}
+              </span>
+            )}
+          </button>
+
+          <div
+            className={`absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey/60 rounded-2xl shadow-2xl z-50 transition-all duration-200 origin-top-right ${
+              isNotifOpen ? "opacity-100 scale-100 visible pointer-events-auto" : "opacity-0 scale-95 invisible pointer-events-none"
+            }`}
+          >
+            <div className="p-3.5 border-b border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-between sticky top-0 bg-brand-white dark:bg-brand-charcoal">
+              <h4 className="text-xs font-black text-brand-black dark:text-brand-white">Vendor Alerts</h4>
+              {visibleNotifications.length > 0 && (
+                <button onClick={handleMarkAllRead} className="text-[10px] font-bold text-brand-gold hover:underline cursor-pointer">
+                  Mark all read
+                </button>
+              )}
+            </div>
+            {visibleNotifications.length === 0 ? (
+              <p className="p-6 text-center text-xs text-brand-dark-grey">No pending alerts. You're all caught up.</p>
+            ) : (
+              <ul>
+                {visibleNotifications.map((n) => {
+                  const Icon = n.icon;
+                  return (
+                    <li key={n._id} className="p-3 border-b border-brand-beige/30 dark:border-brand-dark-grey/30 last:border-0 flex items-start gap-2.5">
+                      <Icon className={`text-sm mt-0.5 shrink-0 ${n.color}`} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-brand-black dark:text-brand-white">{n.title}</p>
+                        <p className="text-[11px] text-brand-dark-grey truncate">{n.message}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
 
         {/* Profile Dropdown */}
         <ProfileDropdown

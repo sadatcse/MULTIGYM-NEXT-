@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
@@ -10,6 +11,8 @@ import Avatar from "@/components/Comon/Avatar";
 import useVendorApi from "@/hooks/useVendorApi";
 import useVendorCategoryApi from "@/hooks/useVendorCategoryApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
+import useAxiosSecure from "@/hooks/useAxiosSecure";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Swal from "sweetalert2";
 import {
   FiTruck,
@@ -28,8 +31,10 @@ import {
   FiShield,
   FiPhone,
   FiMail,
-  FiGlobe,
   FiMapPin,
+  FiDollarSign,
+  FiAlertTriangle,
+  FiClock,
 } from "react-icons/fi";
 
 const containerVariants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
@@ -59,11 +64,30 @@ const EMPTY_FORM = {
 };
 
 export default function VendorDirectoryPage() {
+  const router = useRouter();
+  const axiosSecure = useAxiosSecure();
+  const { settings } = useSystemTimeZone();
+  const currencySymbol = settings.currencySymbol || "৳";
+
   const { can } = useUserPermissions();
   const canView = can("vendors", "view");
   const canAdd = can("vendors", "add");
   const canEdit = can("vendors", "edit");
   const canDelete = can("vendors", "delete");
+
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const loadDashboardStats = useCallback(async () => {
+    try {
+      const res = await axiosSecure.get("/vendor/dashboard-stats");
+      setDashboardStats(res.data.data);
+    } catch (err) {
+      console.error("Failed to load vendor dashboard stats:", err);
+    }
+  }, [axiosSecure]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadDashboardStats();
+  }, [loadDashboardStats]);
 
   const {
     vendors,
@@ -103,8 +127,6 @@ export default function VendorDirectoryPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [viewingVendor, setViewingVendor] = useState(null);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingVendor, setDeletingVendor] = useState(null);
@@ -320,6 +342,95 @@ export default function VendorDirectoryPage() {
         </motion.div>
       </motion.div>
 
+      {dashboardStats && (
+        <>
+          <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <motion.div variants={itemVariants} className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-brand-gold/50 transition-all duration-300 group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">Total Spending</span>
+                  <span className="text-2xl font-black text-brand-gold mt-1 block">{currencySymbol}{dashboardStats.totalSpending.toLocaleString()}</span>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+                  <FiDollarSign />
+                </div>
+              </div>
+            </motion.div>
+            <motion.div variants={itemVariants} className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-amber-500/50 transition-all duration-300 group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">Pending Payments</span>
+                  <span className="text-2xl font-black text-amber-500 mt-1 block">{currencySymbol}{dashboardStats.pendingPaymentAmount.toLocaleString()}</span>
+                  <span className="text-[10px] text-brand-dark-grey">{dashboardStats.pendingPaymentCount} purchase{dashboardStats.pendingPaymentCount !== 1 ? "s" : ""}</span>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+                  <FiClock />
+                </div>
+              </div>
+            </motion.div>
+            <motion.div variants={itemVariants} className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-rose-500/50 transition-all duration-300 group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">Expiring Warranties</span>
+                  <span className="text-2xl font-black text-rose-500 mt-1 block">{dashboardStats.expiringWarrantiesCount}</span>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+                  <FiAlertTriangle />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm">
+              <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light mb-4">Category-wise Vendors</h3>
+              {dashboardStats.categoryWiseVendors.length === 0 ? (
+                <p className="text-xs text-brand-dark-grey py-6 text-center">No categorized vendors yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {dashboardStats.categoryWiseVendors.map((c) => {
+                    const max = Math.max(...dashboardStats.categoryWiseVendors.map((x) => x.count));
+                    const widthPct = max ? Math.max((c.count / max) * 100, 6) : 6;
+                    return (
+                      <div key={c.category} className="flex items-center gap-3">
+                        <span className="w-28 shrink-0 text-xs font-bold text-brand-black dark:text-brand-white truncate">{c.category}</span>
+                        <div className="flex-1 h-6 bg-brand-offwhite dark:bg-brand-midnight rounded-full overflow-hidden">
+                          <div className="h-full bg-brand-gold rounded-full flex items-center justify-end pr-2" style={{ width: `${widthPct}%` }}>
+                            <span className="text-[10px] font-black text-brand-midnight">{c.count}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm">
+              <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light mb-4">Monthly Purchase Trend ({new Date().getFullYear()})</h3>
+              {dashboardStats.monthlyPurchaseTrend.length === 0 ? (
+                <p className="text-xs text-brand-dark-grey py-6 text-center">No purchases recorded this year.</p>
+              ) : (
+                <div className="flex items-end gap-2 h-32">
+                  {dashboardStats.monthlyPurchaseTrend.map((m) => {
+                    const max = Math.max(...dashboardStats.monthlyPurchaseTrend.map((x) => x.total));
+                    const heightPct = max ? Math.max((m.total / max) * 100, 6) : 6;
+                    const monthLabel = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m._id - 1];
+                    return (
+                      <div key={m._id} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
+                        <span className="text-[9px] font-bold text-brand-dark-grey">{currencySymbol}{Math.round(m.total).toLocaleString()}</span>
+                        <div className="w-full max-w-[24px] bg-brand-gold rounded-t-[4px]" style={{ height: `${heightPct}%` }} />
+                        <span className="text-[10px] font-bold text-brand-dark-grey">{monthLabel}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       <div className="bg-brand-white dark:bg-brand-charcoal p-4 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
           <FiSearch className="absolute left-3.5 top-3 text-brand-dark-grey dark:text-brand-gold-light text-sm" />
@@ -455,7 +566,7 @@ export default function VendorDirectoryPage() {
                             </td>
                             <td className="py-4 px-6 text-center">
                               <div className="flex items-center justify-center gap-2">
-                                <button onClick={() => setViewingVendor(vendor)} className="p-2 rounded-xl text-brand-dark-grey bg-brand-beige/30 dark:bg-brand-midnight hover:bg-brand-black hover:text-white dark:hover:bg-white dark:hover:text-brand-black transition-all cursor-pointer" title="View Vendor">
+                                <button onClick={() => router.push(`/dashboard/vendors/${vendor._id}`)} className="p-2 rounded-xl text-brand-dark-grey bg-brand-beige/30 dark:bg-brand-midnight hover:bg-brand-black hover:text-white dark:hover:bg-white dark:hover:text-brand-black transition-all cursor-pointer" title="View Vendor">
                                   <FiEye className="text-sm" />
                                 </button>
                                 {canEdit && (
@@ -522,7 +633,7 @@ export default function VendorDirectoryPage() {
                           {vendor.status}
                         </span>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setViewingVendor(vendor)} className="p-2 rounded-xl text-brand-dark-grey bg-brand-beige/30 dark:bg-brand-midnight hover:bg-brand-black hover:text-white dark:hover:bg-white dark:hover:text-brand-black transition-all cursor-pointer" title="View Vendor">
+                          <button onClick={() => router.push(`/dashboard/vendors/${vendor._id}`)} className="p-2 rounded-xl text-brand-dark-grey bg-brand-beige/30 dark:bg-brand-midnight hover:bg-brand-black hover:text-white dark:hover:bg-white dark:hover:text-brand-black transition-all cursor-pointer" title="View Vendor">
                             <FiEye className="text-sm" />
                           </button>
                           {canEdit && (
@@ -697,79 +808,6 @@ export default function VendorDirectoryPage() {
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* View Modal */}
-      <AnimatePresence>
-        {viewingVendor && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-brand-white dark:bg-brand-charcoal w-full max-w-lg rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
-              <div className="p-5 flex items-center gap-3 border-b border-brand-beige/50 dark:border-brand-dark-grey/50 shrink-0">
-                <Avatar name={viewingVendor.name} size={12} />
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-black text-brand-black dark:text-brand-white truncate">{viewingVendor.name}</h3>
-                  <p className="text-xs text-brand-dark-grey">{viewingVendor.category || "Uncategorized"}</p>
-                </div>
-                <button onClick={() => setViewingVendor(null)} className="p-1.5 rounded-xl text-brand-dark-grey hover:text-brand-black dark:hover:text-white cursor-pointer">
-                  <FiX className="text-lg" />
-                </button>
-              </div>
-              <div className="p-5 space-y-3 overflow-y-auto text-xs">
-                {viewingVendor.contactPerson1?.name && (
-                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                    <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Contact Person 1</span>
-                    <span className="font-bold text-brand-black dark:text-brand-white block">{viewingVendor.contactPerson1.name} {viewingVendor.contactPerson1.designation ? `(${viewingVendor.contactPerson1.designation})` : ""}</span>
-                    <span className="block text-brand-dark-grey">{viewingVendor.contactPerson1.phone} {viewingVendor.contactPerson1.email ? `· ${viewingVendor.contactPerson1.email}` : ""}</span>
-                  </div>
-                )}
-                {viewingVendor.contactPerson2?.name && (
-                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                    <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Contact Person 2</span>
-                    <span className="font-bold text-brand-black dark:text-brand-white block">{viewingVendor.contactPerson2.name} {viewingVendor.contactPerson2.designation ? `(${viewingVendor.contactPerson2.designation})` : ""}</span>
-                    <span className="block text-brand-dark-grey">{viewingVendor.contactPerson2.phone} {viewingVendor.contactPerson2.email ? `· ${viewingVendor.contactPerson2.email}` : ""}</span>
-                  </div>
-                )}
-                {(viewingVendor.phones?.length > 0 || viewingVendor.emails?.length > 0) && (
-                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                    {viewingVendor.phones?.length > 0 && <span className="block text-brand-dark-grey"><FiPhone className="inline mr-1 text-brand-gold" />{viewingVendor.phones.join(", ")}</span>}
-                    {viewingVendor.emails?.length > 0 && <span className="block text-brand-dark-grey mt-1"><FiMail className="inline mr-1 text-brand-gold" />{viewingVendor.emails.join(", ")}</span>}
-                  </div>
-                )}
-                {viewingVendor.website && (
-                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                    <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Website</span>
-                    <span className="flex items-center gap-1.5 font-bold text-brand-black dark:text-brand-white"><FiGlobe className="text-brand-gold" />{viewingVendor.website}</span>
-                  </div>
-                )}
-                {(viewingVendor.address?.addressLine1 || viewingVendor.address?.city) && (
-                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                    <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Address</span>
-                    <span className="font-bold text-brand-black dark:text-brand-white block">
-                      {[viewingVendor.address?.addressLine1, viewingVendor.address?.addressLine2, viewingVendor.address?.area, viewingVendor.address?.city, viewingVendor.address?.division].filter(Boolean).join(", ")}
-                    </span>
-                  </div>
-                )}
-                {viewingVendor.taxVatNumber && (
-                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                    <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Tax / VAT Number</span>
-                    <span className="font-bold text-brand-black dark:text-brand-white block">{viewingVendor.taxVatNumber}</span>
-                  </div>
-                )}
-                {viewingVendor.notes && (
-                  <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                    <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Notes</span>
-                    <span className="font-medium text-brand-black dark:text-brand-white block">{viewingVendor.notes}</span>
-                  </div>
-                )}
-              </div>
-              <div className="p-4 border-t border-brand-beige/50 dark:border-brand-dark-grey/50 flex justify-end shrink-0">
-                <button onClick={() => setViewingVendor(null)} className="px-5 py-2 rounded-2xl text-xs font-bold bg-brand-black text-white dark:bg-white dark:text-brand-black cursor-pointer">
-                  Close
-                </button>
-              </div>
             </motion.div>
           </div>
         )}
