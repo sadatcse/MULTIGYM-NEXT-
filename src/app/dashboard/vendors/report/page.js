@@ -280,7 +280,22 @@ export default function VendorReportPage() {
   const pendingPurchaseSpend = filteredPurchases.filter((p) => p.paymentStatus === "pending" || p.paymentStatus === "partial" || p.paymentStatus === "overdue").reduce((acc, p) => acc + (p.totalPrice || 0), 0);
 
   const totalServiceCost = filteredServices.reduce((acc, s) => acc + (s.cost || 0), 0);
-  const completedServicesCount = filteredServices.filter((s) => s.completionStatus === "completed").length;
+  // Dynamic Branch & Department lists merging DB master records + purchase/service records
+  const allBranchNames = Array.from(
+    new Set([
+      ...branches.map((b) => b.name || b.branchName).filter(Boolean),
+      ...purchases.map((p) => p.branch).filter(Boolean),
+      ...services.map((s) => s.branch).filter(Boolean),
+    ])
+  ).sort();
+
+  const allDeptNames = Array.from(
+    new Set([
+      ...departments.map((d) => d.name || d.departmentName).filter(Boolean),
+      ...purchases.map((p) => p.department).filter(Boolean),
+      ...services.map((s) => s.department).filter(Boolean),
+    ])
+  ).sort();
 
   return (
     <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-16">
@@ -404,9 +419,9 @@ export default function VendorReportPage() {
               className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-2 outline-none cursor-pointer"
             >
               <option value="all">All Gym Branches</option>
-              {branches.map((b) => (
-                <option key={b._id} value={b.branchName}>
-                  {b.branchName}
+              {allBranchNames.map((bName) => (
+                <option key={bName} value={bName}>
+                  {bName}
                 </option>
               ))}
             </select>
@@ -418,9 +433,9 @@ export default function VendorReportPage() {
               className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-2 outline-none cursor-pointer"
             >
               <option value="all">All Departments</option>
-              {departments.map((d) => (
-                <option key={d._id} value={d.departmentName || d.name}>
-                  {d.departmentName || d.name}
+              {allDeptNames.map((dName) => (
+                <option key={dName} value={dName}>
+                  {dName}
                 </option>
               ))}
             </select>
