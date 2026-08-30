@@ -4,7 +4,7 @@ import React, { useState, useContext, useEffect, useCallback, useRef } from "rea
 import { useRouter, usePathname } from "next/navigation";
 import { MdMenu } from "react-icons/md";
 import { RiMenuFold4Fill as RiFoldIcon } from "react-icons/ri";
-import { FiBell, FiClock, FiAlertTriangle, FiFileText, FiTool, FiDollarSign } from "react-icons/fi";
+import { FiBell, FiClock, FiAlertTriangle, FiFileText, FiTool, FiDollarSign, FiUserX, FiRefreshCw } from "react-icons/fi";
 import { AuthContext } from "@/providers/AuthProvider";
 import useThemeMode from "@/hooks/useThemeMode";
 import useSystemTimeZone from "@/hooks/useSystemTimeZone";
@@ -65,6 +65,48 @@ function buildNotificationsFromAlerts(alerts) {
   return items.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
 }
 
+// Same computed-live, no-persisted-state approach for asset alerts (pending
+// returns, damaged/lost items, uniform replacement due).
+function buildAssetNotifications(alerts) {
+  if (!alerts) return [];
+  const items = [];
+
+  alerts.pendingReturns?.forEach((a) => {
+    items.push({
+      _id: `asset-pending-${a._id}`,
+      icon: FiUserX,
+      color: "text-rose-500",
+      title: "Pending asset return",
+      message: `${a.asset?.assetCode || "Asset"} — ${a.employee?.name || "Unknown employee"}`,
+      createdAt: a.issueDate,
+    });
+  });
+
+  alerts.damagedAssets?.forEach((a) => {
+    items.push({
+      _id: `asset-damaged-${a._id}`,
+      icon: FiAlertTriangle,
+      color: "text-rose-500",
+      title: a.status === "lost" ? "Asset reported lost" : "Asset reported damaged",
+      message: `${a.assetCode} — ${a.assetType?.name || ""}`,
+      createdAt: a.updatedAt,
+    });
+  });
+
+  alerts.replacementDue?.forEach((a) => {
+    items.push({
+      _id: `asset-replacement-${a._id}`,
+      icon: FiRefreshCw,
+      color: "text-brand-gold",
+      title: "Uniform replacement due",
+      message: `${a.asset?.assetType?.name || "Item"} — ${a.employee?.name || "Unknown employee"}`,
+      createdAt: a.issueDate,
+    });
+  });
+
+  return items;
+}
+
 const Header = ({ isSidebarOpen, toggleSidebar }) => {
   const [isNotifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -86,10 +128,17 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
 
   const loadAlerts = useCallback(async () => {
     try {
-      const res = await axiosSecure.get("/vendor/alerts");
-      setNotifications(buildNotificationsFromAlerts(res.data.data));
+      const [vendorRes, assetRes] = await Promise.allSettled([
+        axiosSecure.get("/vendor/alerts"),
+        axiosSecure.get("/asset-assignment/alerts"),
+      ]);
+
+      const vendorItems = vendorRes.status === "fulfilled" ? buildNotificationsFromAlerts(vendorRes.value.data.data) : [];
+      const assetItems = assetRes.status === "fulfilled" ? buildAssetNotifications(assetRes.value.data.data) : [];
+
+      setNotifications([...vendorItems, ...assetItems].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)));
     } catch (err) {
-      console.error("Failed to load vendor alerts:", err);
+      console.error("Failed to load alerts:", err);
     }
   }, [axiosSecure]);
 
@@ -164,7 +213,7 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
             }`}
           >
             <div className="p-3.5 border-b border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-between sticky top-0 bg-brand-white dark:bg-brand-charcoal">
-              <h4 className="text-xs font-black text-brand-black dark:text-brand-white">Vendor Alerts</h4>
+              <h4 className="text-xs font-black text-brand-black dark:text-brand-white">Alerts</h4>
               {visibleNotifications.length > 0 && (
                 <button onClick={handleMarkAllRead} className="text-[10px] font-bold text-brand-gold hover:underline cursor-pointer">
                   Mark all read
@@ -172,7 +221,7 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
               )}
             </div>
             {visibleNotifications.length === 0 ? (
-              <p className="p-6 text-center text-xs text-brand-dark-grey">No pending alerts. You're all caught up.</p>
+              <p className="p-6 text-center text-xs text-brand-dark-grey">No pending alerts. You&apos;re all caught up.</p>
             ) : (
               <ul>
                 {visibleNotifications.map((n) => {

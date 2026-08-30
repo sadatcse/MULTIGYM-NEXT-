@@ -25,6 +25,9 @@ import {
   MdLocalShipping,
   MdStorefront,
   MdCategory,
+  MdInventory,
+  MdCheckroom,
+  MdAssignmentReturn,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -62,6 +65,35 @@ const menuItems = () => {
           key: "employee-duty-time",
           description: "Configure and assign shifts and work schedules to employees",
           icon: <MdAccessTime className="text-base" />,
+        },
+      ],
+    },
+    {
+      title: "Asset Management",
+      path: "/dashboard/assets",
+      key: "asset-management",
+      icon: <MdCheckroom className="text-lg" />,
+      children: [
+        {
+          title: "Asset Directory",
+          path: "/dashboard/assets",
+          key: "assets",
+          description: "Track every uniform, key, and company asset issued to staff",
+          icon: <MdInventory className="text-base" />,
+        },
+        {
+          title: "Asset Types",
+          path: "/dashboard/assets/types",
+          key: "asset-types",
+          description: "Manage the master list of asset & uniform types",
+          icon: <MdCategory className="text-base" />,
+        },
+        {
+          title: "Exit Clearance",
+          path: "/dashboard/assets/clearance",
+          key: "asset-clearance",
+          description: "Pending asset returns for resigned or terminated employees",
+          icon: <MdAssignmentReturn className="text-base" />,
         },
       ],
     },

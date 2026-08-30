@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
@@ -16,6 +17,7 @@ import useJobPositionApi from "@/hooks/useJobPositionApi";
 import useShiftApi from "@/hooks/useShiftApi";
 import useRoleApi from "@/hooks/useRoleApi";
 import useLocationData from "@/hooks/useLocationData";
+import useAssetAssignmentApi from "@/hooks/useAssetAssignmentApi";
 import Swal from "sweetalert2";
 import {
   FiUsers,
@@ -42,6 +44,8 @@ import {
   FiUser,
   FiEye,
   FiKey,
+  FiPackage,
+  FiExternalLink,
 } from "react-icons/fi";
 
 const EMPTY_ADDRESS = {
@@ -113,6 +117,7 @@ const rowVariants = {
 };
 
 export default function EmployeePage() {
+  const router = useRouter();
   const { formatDate } = useSystemTimeZone();
   const { can } = useUserPermissions();
   const canView = can("employee", "view");
@@ -2047,6 +2052,8 @@ export default function EmployeePage() {
                     </div>
                   </div>
                 )}
+
+                <EmployeeAssetsSection employeeId={viewingEmployee._id} formatDate={formatDate} onViewAll={() => router.push("/dashboard/assets")} />
               </div>
 
               <div className="p-4 bg-brand-offwhite dark:bg-brand-midnight border-t border-brand-beige/50 dark:border-brand-dark-grey/50 flex justify-end">
@@ -2158,6 +2165,61 @@ export default function EmployeePage() {
           </div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/* Compact "currently assigned" summary for the employee view modal — the
+ * full assignment history (including returns) lives on the Asset Management
+ * module itself, this is just the integration point. */
+function EmployeeAssetsSection({ employeeId, formatDate, onViewAll }) {
+  const { getByEmployee } = useAssetAssignmentApi();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    getByEmployee(employeeId)
+      .then((data) => {
+        if (active) setItems(data);
+      })
+      .catch((err) => console.error("Failed to load employee assets:", err))
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employeeId]);
+
+  const active = items.filter((i) => i.status === "active");
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-xs font-black uppercase tracking-wider text-brand-gold flex items-center gap-1.5">
+          <FiPackage /> Assets & Uniforms
+        </h4>
+        <button onClick={onViewAll} className="text-[10px] font-bold text-brand-gold hover:underline cursor-pointer flex items-center gap-1">
+          Asset Management <FiExternalLink className="text-[10px]" />
+        </button>
+      </div>
+      {loading ? (
+        <p className="text-xs text-brand-dark-grey">Loading...</p>
+      ) : active.length === 0 ? (
+        <p className="text-xs text-brand-dark-grey p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">No assets currently assigned.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          {active.map((item) => (
+            <div key={item._id} className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
+              <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">{item.asset?.assetType?.name || "Asset"}</span>
+              <span className="font-bold text-brand-black dark:text-brand-white">{item.asset?.assetCode}</span>
+              <span className="block text-brand-dark-grey">Issued {formatDate(item.issueDate)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

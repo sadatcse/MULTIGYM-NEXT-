@@ -318,47 +318,21 @@ function PurchasesTab({ vendorId, purchases, api, onChange, formatDate, currency
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Dynamic Options with fallbacks
-  const departmentOptions = Array.from(
-    new Set([
-      ...(departments || []).map((d) => d.title || d.name).filter(Boolean),
-      "Management",
-      "Operations",
-      "IT & Security",
-      "Fitness & Training",
-      "Maintenance & Cleaning",
-      "Accounts & Finance",
-      "Sales & Marketing",
-      "Front Desk & Reception",
-    ])
-  );
+  // Pure dynamic options directly from live MongoDB database
+  const activeBranches = (branches || []).filter((b) => !b.status || b.status === "active");
+  const branchOptions = activeBranches.length > 0
+    ? Array.from(new Set(activeBranches.map((b) => b.name || b.title || b.branchName).filter(Boolean)))
+    : ["Power Fit — Adabor", "Shiya Masjid Branch", "Lalmatia Branch", "MULTIGYM"];
 
-  const branchOptions = Array.from(
-    new Set([
-      ...(branches || []).map((b) => b.name || b.title || b.branchName).filter(Boolean),
-      "Multi Gym Premium",
-      "Multi Gym Dhanmondi",
-      "Multi Gym Banani",
-      "Multi Gym Uttara",
-      "Multi Gym Gulshan",
-    ])
-  );
+  const activeDepartments = (departments || []).filter((d) => !d.status || d.status === "active");
+  const departmentOptions = activeDepartments.length > 0
+    ? Array.from(new Set(activeDepartments.map((d) => d.title || d.name).filter(Boolean)))
+    : ["Management", "Operations", "IT & Security", "Fitness & Training", "Maintenance & Cleaning", "Accounts & Finance", "Sales & Marketing", "Front Desk & Reception"];
 
-  const categoryOptions = Array.from(
-    new Set([
-      ...(productCategories || []).map((c) => c.title).filter(Boolean),
-      "Cardio Machines & Fitness Equipment",
-      "Strength Training & Power Racks",
-      "Protein Powders & Supplements",
-      "Pre-Workout & BCAAs",
-      "CCTV & Security Hardware",
-      "Air Conditioning & HVAC Spares",
-      "Sanitation & Janitorial Supplies",
-      "Sound & AV Entertainment Systems",
-      "Steam Room & Sauna Supplies",
-      "IT & Networking Infrastructure",
-    ])
-  );
+  const activeProductCategories = (productCategories || []).filter((c) => !c.status || c.status === "active");
+  const categoryOptions = activeProductCategories.length > 0
+    ? Array.from(new Set(activeProductCategories.map((c) => c.title).filter(Boolean)))
+    : ["Tissue & Hygiene Paper Products", "Electrical & Wiring Supplies", "Cardio Machines & Fitness Equipment", "Strength Training & Power Racks"];
 
   const calculatedTotal = Number(formData.quantity || 1) * Number(formData.unitPrice || 0);
 
