@@ -28,6 +28,7 @@ import {
   MdInventory,
   MdCheckroom,
   MdAssignmentReturn,
+  MdAssessment,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -109,6 +110,13 @@ const menuItems = () => {
           key: "vendors",
           description: "A-to-Z record of every vendor: contacts, purchases, warranties, and service history",
           icon: <MdStorefront className="text-base" />,
+        },
+        {
+          title: "Vendor Report",
+          path: "/dashboard/vendors/report",
+          key: "vendor-report",
+          description: "Executive audit & summary report of vendors, purchases, and contract status",
+          icon: <MdAssessment className="text-base" />,
         },
         {
           title: "Vendor Categories",

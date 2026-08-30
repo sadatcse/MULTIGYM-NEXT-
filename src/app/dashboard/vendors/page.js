@@ -35,6 +35,7 @@ import {
   FiDollarSign,
   FiAlertTriangle,
   FiClock,
+  FiFileText,
 } from "react-icons/fi";
 
 const containerVariants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
@@ -283,15 +284,24 @@ export default function VendorDirectoryPage() {
         title="Vendor Management"
         subtitle="A-to-Z record of every vendor your organization works with."
         rightcontent={
-          canAdd ? (
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleOpenAdd}
-              className="flex items-center gap-2 px-5 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+              onClick={() => router.push("/dashboard/vendors/report")}
+              className="flex items-center gap-2 px-4 py-2.5 bg-brand-offwhite dark:bg-brand-midnight hover:bg-brand-beige/50 dark:hover:bg-brand-dark-grey text-brand-black dark:text-brand-white font-bold text-xs rounded-2xl border border-brand-beige/60 dark:border-brand-dark-grey/60 transition-all cursor-pointer"
             >
-              <FiPlus className="text-base" />
-              <span>Add Vendor</span>
+              <FiFileText className="text-base text-brand-gold" />
+              <span>View Report</span>
             </button>
-          ) : null
+            {canAdd && (
+              <button
+                onClick={handleOpenAdd}
+                className="flex items-center gap-2 px-5 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+              >
+                <FiPlus className="text-base" />
+                <span>Add Vendor</span>
+              </button>
+            )}
+          </div>
         }
       />
 
