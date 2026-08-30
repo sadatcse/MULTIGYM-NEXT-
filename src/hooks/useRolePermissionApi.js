@@ -2,41 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
-import menuItems from "@/components/MenuItems";
-
-// Helper to extract system modules from central menuItems definition
-const getSystemModulesFromMenu = () => {
-  const rawMenu = menuItems();
-  const categories = [];
-
-  rawMenu.forEach((cat) => {
-    if (cat.children && cat.children.length > 0) {
-      const items = cat.children.map((child) => ({
-        key: child.key || child.path.split("/").pop(),
-        name: child.title,
-        description: child.description || `Manage ${child.title} access and features`,
-      }));
-
-      categories.push({
-        category: cat.title,
-        items,
-      });
-    } else if (cat.key !== "home" && cat.path !== "/dashboard/home") {
-      categories.push({
-        category: cat.title,
-        items: [
-          {
-            key: cat.key || cat.path.split("/").pop(),
-            name: cat.title,
-            description: cat.description || `Manage ${cat.title} access and features`,
-          },
-        ],
-      });
-    }
-  });
-
-  return categories;
-};
+import { getSystemModulesFromMenu } from "@/utils/systemModules";
 
 export default function useRolePermissionApi(initialRole = "") {
   const axiosSecure = useAxiosSecure();

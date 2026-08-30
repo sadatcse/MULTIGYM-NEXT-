@@ -381,53 +381,7 @@ export default function VendorDirectoryPage() {
             </motion.div>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm">
-              <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light mb-4">Category-wise Vendors</h3>
-              {dashboardStats.categoryWiseVendors.length === 0 ? (
-                <p className="text-xs text-brand-dark-grey py-6 text-center">No categorized vendors yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {dashboardStats.categoryWiseVendors.map((c) => {
-                    const max = Math.max(...dashboardStats.categoryWiseVendors.map((x) => x.count));
-                    const widthPct = max ? Math.max((c.count / max) * 100, 6) : 6;
-                    return (
-                      <div key={c.category} className="flex items-center gap-3">
-                        <span className="w-28 shrink-0 text-xs font-bold text-brand-black dark:text-brand-white truncate">{c.category}</span>
-                        <div className="flex-1 h-6 bg-brand-offwhite dark:bg-brand-midnight rounded-full overflow-hidden">
-                          <div className="h-full bg-brand-gold rounded-full flex items-center justify-end pr-2" style={{ width: `${widthPct}%` }}>
-                            <span className="text-[10px] font-black text-brand-midnight">{c.count}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
 
-            <div className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm">
-              <h3 className="text-xs font-black uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light mb-4">Monthly Purchase Trend ({new Date().getFullYear()})</h3>
-              {dashboardStats.monthlyPurchaseTrend.length === 0 ? (
-                <p className="text-xs text-brand-dark-grey py-6 text-center">No purchases recorded this year.</p>
-              ) : (
-                <div className="flex items-end gap-2 h-32">
-                  {dashboardStats.monthlyPurchaseTrend.map((m) => {
-                    const max = Math.max(...dashboardStats.monthlyPurchaseTrend.map((x) => x.total));
-                    const heightPct = max ? Math.max((m.total / max) * 100, 6) : 6;
-                    const monthLabel = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m._id - 1];
-                    return (
-                      <div key={m._id} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
-                        <span className="text-[9px] font-bold text-brand-dark-grey">{currencySymbol}{Math.round(m.total).toLocaleString()}</span>
-                        <div className="w-full max-w-[24px] bg-brand-gold rounded-t-[4px]" style={{ height: `${heightPct}%` }} />
-                        <span className="text-[10px] font-bold text-brand-dark-grey">{monthLabel}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
         </>
       )}
 

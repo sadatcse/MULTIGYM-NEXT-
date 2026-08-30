@@ -74,39 +74,12 @@ export function PermissionsProvider({ children }) {
         return true;
       }
 
-      if (dbPermissions && typeof dbPermissions === "object") {
-        // Direct key check
-        if (dbPermissions[moduleKey] !== undefined && dbPermissions[moduleKey] !== null) {
-          return Boolean(dbPermissions[moduleKey][action]);
-        }
-
-        // Comprehensive alias resolution (singular vs plural, parent vs child module keys)
-        const keyAliases = {
-          employee: ["user", "employee-management"],
-          user: ["employee", "employee-management"],
-          "employee-duty-time": ["employee", "user", "employee-management"],
-
-          vendors: ["vendor", "vendor-management"],
-          vendor: ["vendors", "vendor-management"],
-          "vendor-categories": ["vendors", "vendor", "vendor-management"],
-          "product-categories": ["vendors", "vendor", "vendor-management"],
-          "vendor-management": ["vendors", "vendor"],
-
-          assets: ["asset", "asset-management"],
-          asset: ["assets", "asset-management"],
-          "asset-types": ["assets", "asset", "asset-management"],
-          "asset-clearance": ["assets", "asset", "asset-management"],
-          "asset-management": ["assets", "asset"],
-        };
-
-        const aliases = keyAliases[moduleKey];
-        if (aliases) {
-          for (const alias of aliases) {
-            if (dbPermissions[alias] !== undefined && dbPermissions[alias] !== null) {
-              return Boolean(dbPermissions[alias][action]);
-            }
-          }
-        }
+      // Every page checks permissions using the exact same `key` it registers
+      // with in MenuItems.jsx (confirmed across every call site) — so a direct
+      // lookup is all that's needed here. No hardcoded alias table: adding a
+      // new module only ever requires a MenuItems.jsx entry, nothing in this file.
+      if (dbPermissions && typeof dbPermissions === "object" && dbPermissions[moduleKey] != null) {
+        return Boolean(dbPermissions[moduleKey][action]);
       }
 
       // Default to allowed for newly added modules or unconfigured roles

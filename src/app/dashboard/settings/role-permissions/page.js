@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import useRolePermissionApi from "@/hooks/useRolePermissionApi";
-import menuItems from "@/components/MenuItems";
+import { getSystemModulesFromMenu } from "@/utils/systemModules";
 import Swal from "sweetalert2";
 import {
   FiShield,
@@ -21,40 +21,6 @@ import {
   FiTrash2,
   FiLayers,
 } from "react-icons/fi";
-
-// Dynamically generate system modules matrix from central menuItems definition
-const getSystemModulesFromMenu = () => {
-  const rawMenu = menuItems();
-  const categories = [];
-
-  rawMenu.forEach((cat) => {
-    if (cat.children && cat.children.length > 0) {
-      const items = cat.children.map((child) => ({
-        key: child.key || child.path.split("/").pop(),
-        name: child.title,
-        description: child.description || `Manage ${child.title} access and features`,
-      }));
-
-      categories.push({
-        category: cat.title,
-        items,
-      });
-    } else if (cat.key !== "home" && cat.path !== "/dashboard/home") {
-      categories.push({
-        category: cat.title,
-        items: [
-          {
-            key: cat.key || cat.path.split("/").pop(),
-            name: cat.title,
-            description: cat.description || `Manage ${cat.title} access and features`,
-          },
-        ],
-      });
-    }
-  });
-
-  return categories;
-};
 
 // Framer Motion variants
 const containerVariants = {
@@ -204,6 +170,10 @@ export default function RolePermissionsPage() {
     // the hook's own lock silently no-ops the second call) fire a premature
     // "Saved!" success alert before the first save has even landed.
     if (saveLockRef.current) return;
+    // Also block saving while the selected role's permissions are still being
+    // fetched — `permissions` would still hold the previous role's data (or
+    // stale defaults), and saving it now would write the wrong role's matrix.
+    if (loading) return;
     saveLockRef.current = true;
     try {
       await savePermissions();
@@ -235,7 +205,7 @@ export default function RolePermissionsPage() {
         rightcontent={
           <button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || loading}
             className="flex items-center gap-2 px-6 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? (
