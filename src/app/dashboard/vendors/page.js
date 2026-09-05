@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
-import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import Avatar from "@/components/Comon/Avatar";
 import useVendorApi from "@/hooks/useVendorApi";
 import useVendorCategoryApi from "@/hooks/useVendorCategoryApi";

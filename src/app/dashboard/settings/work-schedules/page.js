@@ -1,26 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import useWorkScheduleApi from "@/hooks/useWorkScheduleApi";
 import useShiftApi from "@/hooks/useShiftApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import Mtitle from "@/components/Comon/Mtitle";
+import SkeletonLoading from "@/components/Comon/SkeletonLoading";
+import Pagination from "@/components/Comon/Pagination";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import Swal from "sweetalert2";
 import {
   FiClock,
   FiPlus,
-  FiEdit,
+  FiEdit3,
   FiTrash2,
   FiSearch,
   FiCheckCircle,
   FiXCircle,
-  FiUsers,
+  FiX,
   FiGrid,
   FiList,
-  FiX,
-  FiBriefcase,
+  FiLoader,
+  FiShield,
   FiLayers,
   FiCalendar,
+  FiMinus,
 } from "react-icons/fi";
 
 // Helper to format 24h time ("09:00", "14:00") into 12h time ("09:00 AM", "02:00 PM")
@@ -77,16 +82,6 @@ function parseWorkHoursInput(inputVal) {
   return { decimalHours, formattedText, hours, minutes };
 }
 
-// Format decimal hours (e.g. 8.5 -> "8 hrs 30 mins", 8 -> "8 hrs 0 mins")
-function formatHoursAndMinsText(decimalHours, existingText) {
-  if (existingText && existingText.trim()) return existingText;
-  if (!decimalHours || isNaN(decimalHours)) return "0 hrs 0 mins";
-  const totalMins = Math.round(decimalHours * 60);
-  const h = Math.floor(totalMins / 60);
-  const m = totalMins % 60;
-  return `${h} hrs ${m} mins`;
-}
-
 // Calculate duration between startTime and endTime in minutes
 function calculateSlotDurationMinutes(startTime, endTime) {
   if (!startTime || !endTime) return 0;
@@ -124,6 +119,25 @@ const INITIAL_FORM = {
   order: 1,
 };
 
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+const rowVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: "easeOut", delay: Math.min(i, 8) * 0.035 },
+  }),
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+
 export default function WorkSchedulesPage() {
   const { hasPermission } = useUserPermissions();
   const canView = hasPermission("/dashboard/settings/work-schedules", "view");
@@ -139,6 +153,11 @@ export default function WorkSchedulesPage() {
     setSearch,
     statusFilter,
     setStatusFilter,
+    page,
+    setPage,
+    limit,
+    setLimit,
+    totalPages,
     createSchedule,
     updateSchedule,
     deleteSchedule,
@@ -147,13 +166,43 @@ export default function WorkSchedulesPage() {
   const { shifts: availableShifts } = useShiftApi(100);
 
   const [viewMode, setViewMode] = useState("table");
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) setViewMode("grid");
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
-  const [formError, setFormError] = useState("");
+  const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Recalculate work hours when single shift timing or multi-slots change
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingItem, setDeletingItem] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const submitLockRef = useRef(false);
+  const deleteLockRef = useRef(false);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !isSubmitting) setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, isSubmitting]);
+
+  const totalSchedules = stats.totalSchedules || schedules.length;
+  const activeSchedules = stats.activeCount || schedules.filter((s) => s.status === "active").length;
+  const inactiveSchedules = Math.max(0, totalSchedules - activeSchedules);
+  const multiSlotCount = schedules.filter((s) => s.isMultiSlot).length;
+
   const recalculateMultiSlotHours = (slots) => {
     let totalMins = 0;
     const updatedSlots = slots.map((s) => {
@@ -184,7 +233,7 @@ export default function WorkSchedulesPage() {
       workHoursPerDay: 8.5,
       workHoursFormatted: "8 hrs 30 mins",
     });
-    setFormError("");
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -200,9 +249,7 @@ export default function WorkSchedulesPage() {
       shiftType: item.shiftType || "General Day Shift",
       startTime: item.startTime || "09:00",
       endTime: item.endTime || "17:00",
-      workHoursInput: item.workHoursFormatted
-        ? item.workHoursFormatted
-        : String(item.workHoursPerDay || 8),
+      workHoursInput: item.workHoursFormatted || String(item.workHoursPerDay || 8),
       workHoursPerDay: item.workHoursPerDay || parsed.decimalHours,
       workHoursFormatted: item.workHoursFormatted || parsed.formattedText,
       isMultiSlot: item.isMultiSlot || false,
@@ -214,9 +261,10 @@ export default function WorkSchedulesPage() {
       assignedEmployees: item.assignedEmployees || [],
       order: item.order || 1,
     });
-    setFormError("");
+    setFormErrors({});
     setIsModalOpen(true);
-  };  // Handle changes in Start Time (Auto calculate Work Hours)
+  };
+
   const handleStartTimeChange = (newStartTime) => {
     const duration = calculateSlotDurationMinutes(newStartTime, formData.endTime);
     const h = Math.floor(duration / 60);
@@ -232,7 +280,6 @@ export default function WorkSchedulesPage() {
     });
   };
 
-  // Handle changes in End Time (Auto calculate Work Hours)
   const handleEndTimeChange = (newEndTime) => {
     const duration = calculateSlotDurationMinutes(formData.startTime, newEndTime);
     const h = Math.floor(duration / 60);
@@ -248,7 +295,6 @@ export default function WorkSchedulesPage() {
     });
   };
 
-  // Handle manual changes in workHoursInput (e.g. user typing "8.30", "8.45", "8.59")
   const handleWorkHoursInputChange = (val) => {
     const parsed = parseWorkHoursInput(val);
     setFormData({
@@ -259,7 +305,6 @@ export default function WorkSchedulesPage() {
     });
   };
 
-  // Handle Multi-Slot Time Updates
   const handleSlotChange = (index, field, value) => {
     const newSlots = [...formData.timeSlots];
     newSlots[index] = { ...newSlots[index], [field]: value };
@@ -302,15 +347,32 @@ export default function WorkSchedulesPage() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const validateForm = () => {
+    const errors = {};
     if (!formData.scheduleName.trim()) {
-      setFormError("Schedule name is required.");
-      return;
+      errors.scheduleName = "Schedule name is required.";
     }
 
+    const duplicate = schedules.find(
+      (s) =>
+        s.scheduleName.trim().toLowerCase() === formData.scheduleName.trim().toLowerCase() &&
+        s._id !== editingItem?._id
+    );
+    if (duplicate) {
+      errors.scheduleName = `Schedule "${formData.scheduleName}" already exists.`;
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting || submitLockRef.current) return;
+    if (!validateForm()) return;
+
+    submitLockRef.current = true;
     setIsSubmitting(true);
-    setFormError("");
 
     const payload = {
       scheduleName: formData.scheduleName.trim(),
@@ -322,556 +384,904 @@ export default function WorkSchedulesPage() {
       isMultiSlot: formData.isMultiSlot,
       timeSlots: formData.isMultiSlot
         ? formData.timeSlots.map((s) => ({
-          slotName: s.slotName || "",
-          startTime: s.startTime,
-          endTime: s.endTime,
-          durationMinutes: calculateSlotDurationMinutes(s.startTime, s.endTime),
-        }))
+            slotName: s.slotName || "",
+            startTime: s.startTime,
+            endTime: s.endTime,
+            durationMinutes: calculateSlotDurationMinutes(s.startTime, s.endTime),
+          }))
         : [],
       workDaysPerWeek: Number(formData.workDaysPerWeek),
       lateToleranceMinutes: Number(formData.lateToleranceMinutes),
       halfDayHours: Number(formData.halfDayHours),
       status: formData.status,
       assignedEmployees: formData.assignedEmployees,
-      order: Number(formData.order),
+      order: Number(formData.order) || 1,
     };
 
     try {
       if (editingItem) {
         await updateSchedule(editingItem._id, payload);
         Swal.fire({
-          title: "Work Schedule Updated!",
-          text: `"${payload.scheduleName}" has been updated successfully.`,
+          title: "Updated!",
+          text: `Work schedule "${payload.scheduleName}" updated successfully.`,
           icon: "success",
           confirmButtonColor: "#FF1818",
+          timer: 2000,
         });
       } else {
         await createSchedule(payload);
         Swal.fire({
-          title: "Work Schedule Created!",
-          text: `"${payload.scheduleName}" has been created successfully.`,
+          title: "Created!",
+          text: `Work schedule "${payload.scheduleName}" created successfully.`,
           icon: "success",
           confirmButtonColor: "#FF1818",
+          timer: 2000,
         });
       }
       setIsModalOpen(false);
     } catch (err) {
-      setFormError(err?.response?.data?.message || "Failed to save work schedule.");
+      const msg = err?.response?.data?.message || "Failed to save work schedule.";
+      Swal.fire({
+        title: "Error!",
+        text: Array.isArray(msg) ? msg.join(", ") : msg,
+        icon: "error",
+        confirmButtonColor: "#FF1818",
+      });
     } finally {
       setIsSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 
-  const handleDelete = (item) => {
+  const handleOpenDelete = (item) => {
     if (!canDelete) return;
-    Swal.fire({
-      title: "Delete Work Schedule?",
-      text: `Are you sure you want to delete "${item.scheduleName}"?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#FF1818",
-      cancelButtonColor: "#6B7280",
-      confirmButtonText: "Yes, Delete",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await deleteSchedule(item._id);
-          Swal.fire("Deleted!", `"${item.scheduleName}" has been removed.`, "success");
-        } catch (err) {
-          Swal.fire("Error", err?.response?.data?.message || "Failed to delete work schedule.", "error");
-        }
-      }
-    });
+    setDeletingItem(item);
+    setIsDeleteModalOpen(true);
   };
 
-  return (
-    <div className="space-y-6 w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 pb-12 font-sans">
-      <Mtitle
-        title="Work Schedule Configuration"
-        subtitle="Configure weekly working schedules, hours & minutes duration, split-shifts with multiple time slots, and employee assignments."
-      />
+  const handleConfirmDelete = async () => {
+    if (!deletingItem || isDeleting || deleteLockRef.current) return;
 
-      {/* KPI METRICS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-xl font-bold">
-            <FiClock />
-          </div>
-          <div>
-            <span className="text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light">Total Schedules</span>
-            <p className="text-2xl font-black text-brand-black dark:text-brand-white">{stats.totalSchedules || schedules.length}</p>
-          </div>
-        </div>
+    deleteLockRef.current = true;
+    setIsDeleting(true);
+    try {
+      await deleteSchedule(deletingItem._id);
+      Swal.fire({
+        title: "Deleted!",
+        text: `Work schedule "${deletingItem.scheduleName}" has been deleted.`,
+        icon: "success",
+        confirmButtonColor: "#FF1818",
+        timer: 2000,
+      });
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to delete work schedule.";
+      Swal.fire({
+        title: "Error!",
+        text: Array.isArray(msg) ? msg.join(", ") : msg,
+        icon: "error",
+        confirmButtonColor: "#FF1818",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeletingItem(null);
+      deleteLockRef.current = false;
+    }
+  };
 
-        <div className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl font-bold">
-            <FiCheckCircle />
+  if (!canView && !loading) {
+    return (
+      <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
+        <Mtitle
+          title="Work Schedules"
+          subtitle="Configure weekly working schedules, hours & minutes duration, split-shifts with multiple time slots, and employee assignments."
+        />
+        <div className="bg-brand-white dark:bg-brand-charcoal p-8 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 text-center max-w-xl mx-auto shadow-xl">
+          <div className="w-16 h-16 bg-brand-red/10 text-brand-red rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiShield className="text-3xl" />
           </div>
-          <div>
-            <span className="text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light">Active Schedules</span>
-            <p className="text-2xl font-black text-emerald-500">{stats.activeCount || schedules.filter((s) => s.status === "active").length}</p>
-          </div>
+          <h2 className="text-xl font-black text-brand-black dark:text-brand-white mb-2">Access Restricted</h2>
+          <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mb-6">
+            You do not have view permission for Work Schedules. Please contact your system administrator.
+          </p>
         </div>
       </div>
+    );
+  }
 
-      {/* CONTROLS BAR */}
+  return (
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
+      <Mtitle
+        title="Work Schedules"
+        subtitle="Configure weekly working schedules, hours & minutes duration, split-shifts with multiple time slots, and employee assignments."
+        rightcontent={
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+            >
+              <FiPlus className="text-base" />
+              <span>Add Schedule</span>
+            </button>
+          ) : null
+        }
+      />
+
+      {/* 4 STAT METRIC CARDS */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-brand-gold/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                Total Schedules
+              </span>
+              <span className="text-2xl font-black text-brand-black dark:text-brand-white mt-1 block">
+                {totalSchedules}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiClock />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-emerald-500/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                Active Schedules
+              </span>
+              <span className="text-2xl font-black text-emerald-500 mt-1 block">
+                {activeSchedules}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiCheckCircle />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-rose-500/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                Inactive Schedules
+              </span>
+              <span className="text-2xl font-black text-rose-500 mt-1 block">
+                {inactiveSchedules}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiXCircle />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-sky-500/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                Multi-Slot Split Shifts
+              </span>
+              <span className="text-2xl font-black text-sky-500 mt-1 block">
+                {multiSlotCount}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiLayers />
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* CONTROL BAR */}
       <div className="bg-brand-white dark:bg-brand-charcoal p-4 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          <div className="relative w-full sm:w-64">
-            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-dark-grey text-sm" />
-            <input
-              type="text"
-              placeholder="Search schedules..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
-            />
+        <div className="relative w-full md:w-80">
+          <FiSearch className="absolute left-3.5 top-3 text-brand-dark-grey dark:text-brand-gold-light text-sm" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search schedule name..."
+            className="w-full pl-10 pr-9 py-2 rounded-xl text-xs bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey focus:outline-none focus:ring-2 focus:ring-brand-gold/50 text-brand-black dark:text-brand-white font-bold"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-2.5 text-brand-dark-grey hover:text-brand-black dark:hover:text-white"
+            >
+              <FiX className="text-sm" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+          <div className="bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center gap-1">
+            {["all", "active", "inactive"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setStatusFilter(tab);
+                  setPage(1);
+                }}
+                className={`px-3 py-1 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
+                  statusFilter === tab
+                    ? "bg-brand-gold text-brand-midnight shadow-xs"
+                    : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
 
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full sm:w-40 px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
+            value={limit}
+            onChange={(e) => {
+              setLimit(Number(e.target.value));
+              setPage(1);
+            }}
+            className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer"
           >
-            <option value="all">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value={10}>10 per page</option>
+            <option value={20}>20 per page</option>
+            <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
           </select>
-        </div>
 
-        {canAdd && (
-          <button
-            onClick={handleOpenAdd}
-            className="px-5 py-2.5 rounded-2xl bg-brand-red hover:bg-brand-red-dark text-white font-black text-xs shadow-md shadow-brand-red/20 transition-all cursor-pointer flex items-center gap-2"
-          >
-            <FiPlus />
-            <span>Add Work Schedule</span>
-          </button>
-        )}
+          <div className="bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center gap-1">
+            <button
+              onClick={() => setViewMode("table")}
+              className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-brand-gold text-brand-midnight shadow-xs"
+                  : "text-brand-dark-grey dark:text-brand-gold-light"
+              }`}
+              title="Table View"
+            >
+              <FiList className="text-sm" />
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-brand-gold text-brand-midnight shadow-xs"
+                  : "text-brand-dark-grey dark:text-brand-gold-light"
+              }`}
+              title="Grid Card View"
+            >
+              <FiGrid className="text-sm" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* TABLE VIEW */}
-      <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-brand-offwhite dark:bg-brand-midnight/60 border-b border-brand-beige/50 dark:border-brand-dark-grey/50 text-[11px] font-black uppercase text-brand-dark-grey dark:text-brand-gold-light tracking-wider">
-                <th className="py-3.5 px-4">#</th>
-                <th className="py-3.5 px-4">Schedule Name</th>
-                <th className="py-3.5 px-4">Shift Type</th>
-                <th className="py-3.5 px-4">Shift Timing (Punch Slots)</th>
-                <th className="py-3.5 px-4">Daily Work Hours</th>
-                <th className="py-3.5 px-4">Weekly Days</th>
-                <th className="py-3.5 px-4">Late Tolerance</th>
-                <th className="py-3.5 px-4">Half Day Hours</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-brand-beige/40 dark:divide-brand-dark-grey/40 text-xs font-bold">
-              {schedules.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="py-8 text-center text-brand-dark-grey">
-                    No work schedules found. Click "Add Work Schedule" to create one.
-                  </td>
-                </tr>
-              ) : (
-                schedules.map((item, idx) => (
-                  <tr key={item._id} className="hover:bg-brand-offwhite/50 dark:hover:bg-brand-midnight/30 transition-colors">
-                    <td className="py-3.5 px-4 text-brand-dark-grey">{idx + 1}</td>
-                    <td className="py-3.5 px-4 font-black text-brand-black dark:text-brand-white">
-                      <div>{item.scheduleName}</div>
-                      {item.isMultiSlot && (
-                        <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md bg-brand-gold/15 text-brand-gold text-[10px] font-extrabold uppercase border border-brand-gold/30">
-                          Split Shift ({item.timeSlots?.length || 0} Slots)
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-brand-gold">{item.shiftType}</td>
-                    <td className="py-3.5 px-4">
-                      {item.isMultiSlot && item.timeSlots && item.timeSlots.length > 0 ? (
-                        <div className="flex flex-col gap-1">
-                          {item.timeSlots.map((slot, sIdx) => (
-                            <span key={sIdx} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-brand-gold/15 text-brand-gold dark:text-brand-gold-light font-extrabold text-[11px] border border-brand-gold/30 w-fit">
-                              <FiClock className="text-xs shrink-0" />
-                              <span>
-                                {slot.slotName ? `${slot.slotName}: ` : ""}
-                                {format12HourTime(slot.startTime)} – {format12HourTime(slot.endTime)}
+      {/* SCHEDULES LIST */}
+      {loading ? (
+        <SkeletonLoading variant={viewMode === "table" ? "table" : "card"} rows={5} />
+      ) : schedules.length === 0 ? (
+        <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl p-12 border border-brand-beige/50 dark:border-brand-dark-grey/50 text-center max-w-lg mx-auto shadow-sm">
+          <div className="w-16 h-16 bg-brand-gold/10 text-brand-gold rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+            <FiClock />
+          </div>
+          <h3 className="text-lg font-black text-brand-black dark:text-brand-white mb-1">
+            No Work Schedules Found
+          </h3>
+          <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mb-6">
+            {search || statusFilter !== "all"
+              ? "No schedules match your active filters."
+              : "No weekly work schedules have been configured yet."}
+          </p>
+          {canAdd && (
+            <button
+              onClick={handleOpenAdd}
+              className="px-5 py-2.5 bg-brand-red text-white text-xs font-bold rounded-2xl shadow-md hover:bg-brand-red-dark transition-all cursor-pointer"
+            >
+              + Add First Schedule
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {viewMode === "table" && (
+            <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-lg shadow-black/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-brand-offwhite dark:bg-brand-midnight uppercase text-[10px] font-black tracking-wider text-brand-dark-grey dark:text-brand-gold-light border-b border-brand-beige/60 dark:border-brand-dark-grey/60">
+                    <tr>
+                      <th className="py-4 px-6 text-center w-20">Order</th>
+                      <th className="py-4 px-6">Schedule Name</th>
+                      <th className="py-4 px-6">Timing / Slots</th>
+                      <th className="py-4 px-6">Daily Hours</th>
+                      <th className="py-4 px-6">Days / Wk & Half-Day</th>
+                      <th className="py-4 px-6 text-center w-28">Status</th>
+                      <th className="py-4 px-6 text-center w-28">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-beige/30 dark:divide-brand-dark-grey/30 text-xs">
+                    <AnimatePresence initial={false}>
+                      {schedules.map((item, idx) => {
+                        const rowBusy = isDeleting && deletingItem?._id === item._id;
+                        return (
+                          <motion.tr
+                            key={item._id}
+                            custom={idx}
+                            variants={rowVariants}
+                            initial="hidden"
+                            animate="show"
+                            exit="exit"
+                            layout
+                            className={`hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-all duration-150 ${
+                              rowBusy ? "opacity-50 pointer-events-none" : ""
+                            }`}
+                          >
+                            <td className="py-4 px-6 text-center">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-brand-gold/10 text-brand-gold font-black text-xs">
+                                #{item.order || idx + 1}
                               </span>
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-gold/15 text-brand-gold dark:text-brand-gold-light font-extrabold text-xs border border-brand-gold/30">
-                          <FiClock className="text-xs shrink-0" />
-                          <span>
-                            {format12HourTime(item.startTime || "09:00")} – {format12HourTime(item.endTime || "17:00")}
-                          </span>
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-brand-black dark:text-brand-white font-extrabold">
-                      {formatHoursAndMinsText(item.workHoursPerDay, item.workHoursFormatted)}
-                      <span className="text-[10px] text-brand-dark-grey block font-normal">
-                        ({item.workHoursPerDay} hrs)
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">{item.workDaysPerWeek} Days / Wk</td>
-                    <td className="py-3.5 px-4 text-brand-gold">{item.lateToleranceMinutes} Mins</td>
-                    <td className="py-3.5 px-4">{item.halfDayHours} Hrs</td>
-                    <td className="py-3.5 px-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${item.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-brand-red/10 text-brand-red"}`}>
-                        {item.status === "active" ? <FiCheckCircle /> : <FiXCircle />}
-                        <span>{item.status}</span>
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right space-x-2">
-                      {canEdit && (
-                        <button onClick={() => handleOpenEdit(item)} className="p-2 rounded-xl bg-brand-gold/10 text-brand-gold hover:bg-brand-gold/20 transition-all cursor-pointer">
-                          <FiEdit />
-                        </button>
-                      )}
-                      {canDelete && (
-                        <button onClick={() => handleDelete(item)} className="p-2 rounded-xl bg-brand-red/10 text-brand-red hover:bg-brand-red/20 transition-all cursor-pointer">
-                          <FiTrash2 />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-brand-white dark:bg-brand-charcoal w-full max-w-xl rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-2xl overflow-hidden p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-brand-beige/40 dark:border-brand-dark-grey/40 pb-3">
-              <div>
-                <h3 className="text-base font-black text-brand-black dark:text-brand-white">
-                  {editingItem ? "Edit Work Schedule" : "Add Work Schedule"}
-                </h3>
-                <p className="text-[11px] text-brand-dark-grey dark:text-brand-gold-light">
-                  Supports custom hours & minutes (e.g. 8.30, 8.45, 8.59) and multi-slot split shifts.
-                </p>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="font-extrabold text-brand-black dark:text-brand-white text-sm">
+                                {item.scheduleName}
+                              </div>
+                              <div className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light/70 font-semibold mt-0.5">
+                                Shift: {item.shiftType || "General Day Shift"}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              {item.isMultiSlot ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/10 text-sky-500 font-extrabold text-[11px]">
+                                  <FiLayers className="text-xs" /> {item.timeSlots?.length || 0} Split Slots
+                                </span>
+                              ) : (
+                                <span className="font-bold text-brand-black dark:text-brand-white">
+                                  {format12HourTime(item.startTime)} — {format12HourTime(item.endTime)}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6 font-extrabold text-emerald-500">
+                              {item.workHoursFormatted || `${item.workHoursPerDay} hrs`}
+                            </td>
+                            <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium">
+                              <div>{item.workDaysPerWeek} Days / Week</div>
+                              <div className="text-[10px] text-brand-dark-grey mt-0.5">Half-Day: {item.halfDayHours}h • Tol: {item.lateToleranceMinutes}m</div>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <span
+                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold capitalize ${
+                                  item.status === "active"
+                                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                    : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    item.status === "active" ? "bg-emerald-500" : "bg-rose-500"
+                                  }`}
+                                />
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                {canEdit && (
+                                  <button
+                                    onClick={() => handleOpenEdit(item)}
+                                    disabled={rowBusy}
+                                    className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Edit Schedule"
+                                  >
+                                    <FiEdit3 className="text-sm" />
+                                  </button>
+                                )}
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleOpenDelete(item)}
+                                    disabled={rowBusy}
+                                    className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Delete Schedule"
+                                  >
+                                    {rowBusy ? (
+                                      <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <FiTrash2 className="text-sm" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 text-brand-dark-grey hover:text-brand-red cursor-pointer">
-                <FiX />
-              </button>
             </div>
+          )}
 
-            {formError && (
-              <div className="p-3 rounded-2xl bg-brand-red/10 border border-brand-red/20 text-brand-red text-xs font-bold">
-                {formError}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                  Schedule Name <span className="text-brand-red">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.scheduleName}
-                  onChange={(e) => setFormData({ ...formData, scheduleName: e.target.value })}
-                  placeholder="e.g. SPOTTER DUTY or Split Shift Schedule"
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
-                  required
-                />
-              </div>
-
-              {/* SCHEDULE MODE TOGGLE: Single Shift vs Multi-Slot Split Shift */}
-              <div className="p-3 bg-brand-offwhite dark:bg-brand-midnight rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50 space-y-2">
-                <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light">
-                  Shift Entry Mode
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, isMultiSlot: false })}
-                    className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${!formData.isMultiSlot
-                        ? "bg-brand-gold text-brand-midnight shadow-md"
-                        : "bg-brand-white dark:bg-brand-charcoal text-brand-dark-grey hover:text-brand-black dark:hover:text-white"
+          {viewMode === "grid" && (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
+              <AnimatePresence initial={false}>
+                {schedules.map((item) => {
+                  const rowBusy = isDeleting && deletingItem?._id === item._id;
+                  return (
+                    <motion.div
+                      key={item._id}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
+                      layout
+                      className={`bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group ${
+                        rowBusy ? "opacity-50 pointer-events-none" : ""
                       }`}
-                  >
-                    <FiClock className="text-xs" />
-                    <span>Single Shift Slot</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const calc = recalculateMultiSlotHours(formData.timeSlots);
-                      setFormData({
-                        ...formData,
-                        isMultiSlot: true,
-                        timeSlots: calc.updatedSlots,
-                        workHoursPerDay: calc.workHoursPerDay,
-                        workHoursFormatted: calc.workHoursFormatted,
-                        workHoursInput: calc.workHoursInput,
-                      });
-                    }}
-                    className={`py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${formData.isMultiSlot
-                        ? "bg-brand-red text-white shadow-md shadow-brand-red/20"
-                        : "bg-brand-white dark:bg-brand-charcoal text-brand-dark-grey hover:text-brand-black dark:hover:text-white"
-                      }`}
-                  >
-                    <FiLayers className="text-xs" />
-                    <span>Multiple Time Slots (Split Shift)</span>
-                  </button>
-                </div>
-              </div>
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div>
+                            <span className="text-[10px] uppercase tracking-widest text-brand-dark-grey dark:text-brand-gold-light font-extrabold block">
+                              Schedule
+                            </span>
+                            <h3 className="text-base font-black text-brand-black dark:text-brand-white mt-0.5">
+                              {item.scheduleName}
+                            </h3>
+                            <span className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light/70 font-semibold block mt-0.5">
+                              {item.shiftType}
+                            </span>
+                          </div>
+                          <span className="shrink-0 w-8 h-8 rounded-2xl bg-brand-gold/10 text-brand-gold font-black text-xs flex items-center justify-center">
+                            #{item.order || 1}
+                          </span>
+                        </div>
 
-              {/* SINGLE SHIFT FIELDS */}
-              {!formData.isMultiSlot ? (
-                <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2 my-4 text-[11px] font-bold">
+                          <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
+                            <span className="text-[9px] text-brand-dark-grey block uppercase">Daily Work</span>
+                            <span className="text-emerald-500">{item.workHoursFormatted || `${item.workHoursPerDay} hrs`}</span>
+                          </div>
+                          <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
+                            <span className="text-[9px] text-brand-dark-grey block uppercase">Days / Wk</span>
+                            <span>{item.workDaysPerWeek} Days</span>
+                          </div>
+                          <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight col-span-2">
+                            <span className="text-[9px] text-brand-dark-grey block uppercase">Timing / Split</span>
+                            <span className="truncate block">
+                              {item.isMultiSlot
+                                ? `${item.timeSlots?.length || 0} Split Time Slots`
+                                : `${format12HourTime(item.startTime)} - ${format12HourTime(item.endTime)}`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-between">
+                        <span
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold capitalize ${
+                            item.status === "active"
+                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                              : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              item.status === "active" ? "bg-emerald-500" : "bg-rose-500"
+                            }`}
+                          />
+                          {item.status}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(item)}
+                              disabled={rowBusy}
+                              className="p-2 rounded-xl text-brand-gold bg-brand-gold/10 hover:bg-brand-gold hover:text-brand-midnight transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Edit Schedule"
+                            >
+                              <FiEdit3 className="text-sm" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleOpenDelete(item)}
+                              disabled={rowBusy}
+                              className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete Schedule"
+                            >
+                              {rowBusy ? (
+                                <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <FiTrash2 className="text-sm" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={(newPage) => setPage(newPage)} />
+        </>
+      )}
+
+      {/* ADD / EDIT MODAL */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2 }}
+              className="bg-brand-white dark:bg-brand-charcoal w-full max-w-2xl rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            >
+              <div className="bg-brand-offwhite dark:bg-brand-midnight px-6 py-4 border-b border-brand-beige/60 dark:border-brand-dark-grey/60 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-brand-gold/15 text-brand-gold flex items-center justify-center font-bold">
+                    <FiClock className="text-lg" />
+                  </div>
                   <div>
-                    <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                      Shift Type
+                    <h3 className="text-base font-black text-brand-black dark:text-brand-white">
+                      {editingItem ? "Edit Work Schedule" : "Add Work Schedule"}
+                    </h3>
+                    <p className="text-[11px] text-brand-dark-grey dark:text-brand-gold-light font-medium">
+                      Configure shifts, daily work hours, split slots, and policies
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSubmitting}
+                  className="p-1.5 rounded-xl text-brand-dark-grey hover:text-brand-black dark:hover:text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <FiX className="text-lg" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Schedule Name <span className="text-brand-red">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.scheduleName}
+                      disabled={isSubmitting}
+                      onChange={(e) => setFormData({ ...formData, scheduleName: e.target.value })}
+                      placeholder="e.g. Standard 8.30 Hours Day Shift"
+                      className={`w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border ${
+                        formErrors.scheduleName
+                          ? "border-brand-red focus:ring-brand-red/50"
+                          : "border-brand-beige/60 dark:border-brand-dark-grey focus:ring-brand-gold/50"
+                      } text-brand-black dark:text-brand-white outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed`}
+                    />
+                    {formErrors.scheduleName && (
+                      <p className="text-brand-red text-[11px] mt-1 font-bold">{formErrors.scheduleName}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Order
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={formData.order}
+                      disabled={isSubmitting}
+                      onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Shift Category
                     </label>
                     <select
                       value={formData.shiftType}
+                      disabled={isSubmitting}
                       onChange={(e) => setFormData({ ...formData, shiftType: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none cursor-pointer"
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
                     >
                       {availableShifts && availableShifts.length > 0 ? (
-                        availableShifts.map((shift) => (
-                          <option key={shift._id} value={shift.name}>
-                            {shift.name} {shift.status === "inactive" ? "(Inactive)" : ""}
+                        availableShifts.map((s) => (
+                          <option key={s._id} value={s.name}>
+                            {s.name} ({s.shiftCategory || "General"})
                           </option>
                         ))
                       ) : (
-                        <option value={formData.shiftType || "General Day Shift"}>
-                          {formData.shiftType || "General Day Shift"}
-                        </option>
+                        <>
+                          <option value="General Day Shift">General Day Shift</option>
+                          <option value="Morning Shift">Morning Shift</option>
+                          <option value="Evening Shift">Evening Shift</option>
+                          <option value="Night Shift">Night Shift</option>
+                        </>
                       )}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                      Start Time
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Multi-Slot Split Shift?
                     </label>
-                    <input
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => handleStartTimeChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none cursor-pointer"
-                    />
-                    <span className="text-[10px] font-bold text-brand-gold mt-1 block">
-                      {format12HourTime(formData.startTime)}
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                      End Time
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => handleEndTimeChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none cursor-pointer"
-                    />
-                    <span className="text-[10px] font-bold text-brand-gold mt-1 block">
-                      {format12HourTime(formData.endTime)}
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                      Work Hours / Day
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.workHoursInput}
-                      onChange={(e) => handleWorkHoursInputChange(e.target.value)}
-                      placeholder="e.g. 8.30 or 8.45 or 8.59"
-                      className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
-                    />
-                    <span className="text-[10px] font-bold text-emerald-500 mt-1 block">
-                      Duration: {formData.workHoursFormatted} ({formData.workHoursPerDay} hrs)
-                    </span>
+                    <div className="flex items-center gap-4 mt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="isMultiSlot"
+                          checked={!formData.isMultiSlot}
+                          disabled={isSubmitting}
+                          onChange={() => setFormData({ ...formData, isMultiSlot: false })}
+                          className="w-4 h-4 accent-brand-gold cursor-pointer"
+                        />
+                        <span className="text-xs font-bold">Standard Single Shift</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="isMultiSlot"
+                          checked={formData.isMultiSlot}
+                          disabled={isSubmitting}
+                          onChange={() => {
+                            const calc = recalculateMultiSlotHours(formData.timeSlots);
+                            setFormData({
+                              ...formData,
+                              isMultiSlot: true,
+                              workHoursPerDay: calc.workHoursPerDay,
+                              workHoursFormatted: calc.workHoursFormatted,
+                              workHoursInput: calc.workHoursInput,
+                            });
+                          }}
+                          className="w-4 h-4 accent-sky-500 cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-sky-500">Split-Shift Multi Slot</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                /* MULTI-SLOT SPLIT SHIFT BUILDER */
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-brand-black dark:text-brand-white uppercase">
-                      Split Shift Time Slots ({formData.timeSlots.length} Slots = {formData.timeSlots.length * 2} Punch Entries)
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleAddSlot}
-                      className="px-3 py-1.5 rounded-xl bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-all shadow-md shadow-brand-red/20"
-                    >
-                      <FiPlus className="text-xs" />
-                      <span>Add Slot</span>
-                    </button>
+
+                {!formData.isMultiSlot ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50">
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-brand-dark-grey dark:text-brand-gold-light uppercase tracking-wider mb-1">
+                        Shift Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.startTime}
+                        disabled={isSubmitting}
+                        onChange={(e) => handleStartTimeChange(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-brand-dark-grey dark:text-brand-gold-light uppercase tracking-wider mb-1">
+                        Shift End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.endTime}
+                        disabled={isSubmitting}
+                        onChange={(e) => handleEndTimeChange(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-brand-dark-grey dark:text-brand-gold-light uppercase tracking-wider mb-1">
+                        Daily Duration
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.workHoursInput}
+                        disabled={isSubmitting}
+                        onChange={(e) => handleWorkHoursInputChange(e.target.value)}
+                        placeholder="e.g. 8.30"
+                        className="w-full px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      />
+                      <span className="text-[10px] text-emerald-500 font-bold block mt-1">
+                        {formData.workHoursFormatted}
+                      </span>
+                    </div>
                   </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase text-sky-500 tracking-wider">
+                        Split Slots Configuration ({formData.workHoursFormatted})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleAddSlot}
+                        className="px-3 py-1 bg-sky-500 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-sky-600 transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <FiPlus /> Add Slot
+                      </button>
+                    </div>
 
-                  <div className="space-y-2.5">
-                    {formData.timeSlots.map((slot, index) => {
-                      const duration = calculateSlotDurationMinutes(slot.startTime, slot.endTime);
-                      const dHours = Math.floor(duration / 60);
-                      const dMins = duration % 60;
-                      return (
-                        <div
-                          key={index}
-                          className="p-3 bg-brand-offwhite dark:bg-brand-midnight rounded-2xl border border-brand-beige/60 dark:border-brand-dark-grey/60 space-y-2"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <input
-                              type="text"
-                              value={slot.slotName || `Slot ${index + 1}`}
-                              onChange={(e) => handleSlotChange(index, "slotName", e.target.value)}
-                              placeholder={`Slot ${index + 1} Name (e.g. Morning)`}
-                              className="px-2.5 py-1 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none w-1/2"
-                            />
-                            <span className="text-[10px] font-extrabold text-brand-gold bg-brand-gold/10 px-2 py-1 rounded-lg border border-brand-gold/20">
-                              Duration: {dHours}h {dMins}m
-                            </span>
-                            {formData.timeSlots.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveSlot(index)}
-                                className="p-1.5 rounded-xl text-brand-red hover:bg-brand-red/10 transition-colors cursor-pointer"
-                                title="Remove Slot"
-                              >
-                                <FiTrash2 className="text-sm" />
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[10px] font-bold text-brand-dark-grey mb-0.5">
-                                Start Time (Check-In)
-                              </label>
-                              <input
-                                type="time"
-                                value={slot.startTime}
-                                onChange={(e) => handleSlotChange(index, "startTime", e.target.value)}
-                                className="w-full px-2.5 py-1.5 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none cursor-pointer"
-                              />
-                              <span className="text-[10px] font-semibold text-brand-gold mt-0.5 block">
-                                {format12HourTime(slot.startTime)}
-                              </span>
-                            </div>
-
-                            <div>
-                              <label className="block text-[10px] font-bold text-brand-dark-grey mb-0.5">
-                                End Time (Check-Out)
-                              </label>
-                              <input
-                                type="time"
-                                value={slot.endTime}
-                                onChange={(e) => handleSlotChange(index, "endTime", e.target.value)}
-                                className="w-full px-2.5 py-1.5 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none cursor-pointer"
-                              />
-                              <span className="text-[10px] font-semibold text-brand-gold mt-0.5 block">
-                                {format12HourTime(slot.endTime)}
-                              </span>
-                            </div>
-                          </div>
+                    <div className="space-y-2">
+                      {formData.timeSlots.map((slot, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/50 dark:border-brand-dark-grey/50">
+                          <input
+                            type="text"
+                            value={slot.slotName}
+                            onChange={(e) => handleSlotChange(idx, "slotName", e.target.value)}
+                            placeholder="Slot Name"
+                            className="w-32 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none"
+                          />
+                          <input
+                            type="time"
+                            value={slot.startTime}
+                            onChange={(e) => handleSlotChange(idx, "startTime", e.target.value)}
+                            className="w-28 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none"
+                          />
+                          <span className="text-xs font-bold text-brand-dark-grey">to</span>
+                          <input
+                            type="time"
+                            value={slot.endTime}
+                            onChange={(e) => handleSlotChange(idx, "endTime", e.target.value)}
+                            className="w-28 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSlot(idx)}
+                            disabled={formData.timeSlots.length <= 1}
+                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ml-auto"
+                          >
+                            <FiMinus className="text-xs" />
+                          </button>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Work Days / Week
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={7}
+                      value={formData.workDaysPerWeek}
+                      disabled={isSubmitting}
+                      onChange={(e) => setFormData({ ...formData, workDaysPerWeek: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    />
                   </div>
 
-                  {/* SUMMARY BOX FOR SPLIT SHIFT */}
-                  <div className="p-3 rounded-2xl bg-brand-gold/10 border border-brand-gold/20 text-brand-black dark:text-brand-gold-light text-xs font-extrabold flex items-center justify-between">
-                    <span>Total Calculated Work Duration:</span>
-                    <span className="text-sm font-black underline text-brand-gold">
-                      {formData.workHoursFormatted} ({formData.workHoursPerDay} Hrs)
-                    </span>
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Late Tolerance (Mins)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formData.lateToleranceMinutes}
+                      disabled={isSubmitting}
+                      onChange={(e) => setFormData({ ...formData, lateToleranceMinutes: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Half-Day Min Hours
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={formData.halfDayHours}
+                      disabled={isSubmitting}
+                      onChange={(e) => setFormData({ ...formData, halfDayHours: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    />
                   </div>
                 </div>
-              )}
-
-              {/* COMMON FORM FIELDS */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                    Work Days / Week
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="7"
-                    value={formData.workDaysPerWeek}
-                    onChange={(e) => setFormData({ ...formData, workDaysPerWeek: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none"
-                  />
-                </div>
 
                 <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                    Late Tolerance (Mins)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.lateToleranceMinutes}
-                    onChange={(e) => setFormData({ ...formData, lateToleranceMinutes: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                    Half Day Threshold (Hours)
-                  </label>
-                  <input
-                    type="number"
-                    min="0.5"
-                    step="any"
-                    value={formData.halfDayHours}
-                    onChange={(e) => setFormData({ ...formData, halfDayHours: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
+                  <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1.5">
                     Status
                   </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none cursor-pointer"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="scheduleStatus"
+                        value="active"
+                        checked={formData.status === "active"}
+                        disabled={isSubmitting}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-4 h-4 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                      <span className="text-xs font-bold text-emerald-500">Active</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="scheduleStatus"
+                        value="inactive"
+                        checked={formData.status === "inactive"}
+                        disabled={isSubmitting}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-4 h-4 accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                      <span className="text-xs font-bold text-rose-500">Inactive</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-brand-beige/40 dark:border-brand-dark-grey/40">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-dark-grey hover:text-brand-black cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 rounded-2xl bg-brand-red hover:bg-brand-red-dark text-white font-black text-xs shadow-md shadow-brand-red/20 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {isSubmitting ? "Saving..." : editingItem ? "Update Schedule" : "Create Schedule"}
-                </button>
-              </div>
-            </form>
+                <div className="pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    disabled={isSubmitting}
+                    className="px-4 py-2 rounded-2xl text-xs font-bold bg-brand-beige/30 dark:bg-brand-midnight text-brand-black dark:text-brand-gold-light hover:bg-brand-beige/60 dark:hover:bg-brand-dark-grey transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 rounded-2xl text-xs font-bold bg-brand-red text-white hover:bg-brand-red-dark shadow-md shadow-brand-red/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <FiLoader className="text-sm animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>{editingItem ? "Update Schedule" : "Create Schedule"}</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        itemName={deletingItem?.scheduleName || "Work Schedule"}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
-

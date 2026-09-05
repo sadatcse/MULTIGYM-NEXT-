@@ -119,12 +119,26 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
 
     const items = menuItems();
 
-    // Super Admin sees all menu items
+    // Helper function to strip out hiddenInSidebar items
+    const filterSidebarVisible = (itemList) => {
+      return itemList
+        .filter((item) => !item.hiddenInSidebar && !item.hideInSidebar)
+        .map((item) => {
+          if (!item.children) return item;
+          const visibleChildren = item.children.filter((child) => !child.hiddenInSidebar && !child.hideInSidebar);
+          if (visibleChildren.length === 0) return null;
+          return { ...item, children: visibleChildren };
+        })
+        .filter(Boolean);
+    };
+
+    // Super Admin sees all sidebar-visible menu items
     if (role === "SUPER ADMIN" || role === "SUPERADMIN" || user?.role === "superadmin") {
-      return items;
+      return filterSidebarVisible(items);
     }
 
     return items
+      .filter((item) => !item.hiddenInSidebar && !item.hideInSidebar)
       .map((item) => {
         // Single menu item (e.g. Dashboard Home)
         if (!item.children) {
@@ -134,8 +148,9 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
           return isAllowed ? item : null;
         }
 
-        // Parent item with submenus: filter valid children by view permission
+        // Parent item with submenus: filter valid children by view permission & sidebar visibility
         const validChildren = item.children.filter((child) => {
+          if (child.hiddenInSidebar || child.hideInSidebar) return false;
           const childKey = child.key || child.path.split("/").pop();
           return can(childKey, "view");
         });

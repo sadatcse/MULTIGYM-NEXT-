@@ -97,9 +97,13 @@ const useAxiosSecure = () => {
         const status = error.response ? error.response.status : null;
         if (status === 401 || status === 403) {
           if (typeof window !== "undefined") {
-            localStorage.removeItem("authToken");
+            localStorage.removeItem("authEmployee");
             localStorage.removeItem("authUser");
+            localStorage.removeItem("authToken");
             localStorage.removeItem("token");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("user");
+            window.dispatchEvent(new CustomEvent("auth:unauthorized"));
             router.push("/");
           }
         }

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
-import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import useAssetTypeApi from "@/hooks/useAssetTypeApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import Swal from "sweetalert2";
@@ -27,7 +27,16 @@ import {
   FiRepeat,
 } from "react-icons/fi";
 
-const CATEGORIES = ["Uniform & Identification", "Keys", "Company Assets"];
+const CATEGORIES = [
+  "Uniform & Identification",
+  "Keys & Access",
+  "Company Assets",
+  "IT & Electronics",
+  "Office Equipment & Furniture",
+  "Vehicles & Transport",
+  "Fitness & Gym Equipment",
+  "Safety & Security Equipment",
+];
 
 const containerVariants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 const itemVariants = {
@@ -50,6 +59,14 @@ const EMPTY_FORM = {
   description: "",
   status: "active",
   replacementIntervalMonths: "",
+  requiresSerialNumber: false,
+  requiresSize: false,
+  requiresCondition: true,
+  requiresEmployeeAssignment: true,
+  requiresBranch: false,
+  requiresDepartment: false,
+  quantityBased: true,
+  individualBased: false,
 };
 
 export default function AssetTypesPage() {
@@ -130,6 +147,14 @@ export default function AssetTypesPage() {
       description: type.description || "",
       status: type.status || "active",
       replacementIntervalMonths: type.replacementIntervalMonths || "",
+      requiresSerialNumber: !!type.requiresSerialNumber,
+      requiresSize: !!type.requiresSize,
+      requiresCondition: type.requiresCondition !== false,
+      requiresEmployeeAssignment: type.requiresEmployeeAssignment !== false,
+      requiresBranch: !!type.requiresBranch,
+      requiresDepartment: !!type.requiresDepartment,
+      quantityBased: !!type.quantityBased,
+      individualBased: !!type.individualBased,
     });
     setFormErrors({});
     setIsModalOpen(true);
@@ -166,6 +191,14 @@ export default function AssetTypesPage() {
         description: formData.description.trim(),
         status: formData.status,
         replacementIntervalMonths: formData.replacementIntervalMonths ? Number(formData.replacementIntervalMonths) : undefined,
+        requiresSerialNumber: formData.requiresSerialNumber,
+        requiresSize: formData.requiresSize,
+        requiresCondition: formData.requiresCondition,
+        requiresEmployeeAssignment: formData.requiresEmployeeAssignment,
+        requiresBranch: formData.requiresBranch,
+        requiresDepartment: formData.requiresDepartment,
+        quantityBased: formData.trackingType === "inventory",
+        individualBased: formData.trackingType === "individual",
       };
 
       if (editingType) {
@@ -523,6 +556,28 @@ export default function AssetTypesPage() {
                   <div>
                     <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">Replacement Interval (months)</label>
                     <input type="number" min={1} value={formData.replacementIntervalMonths} disabled={isSubmitting} onChange={(e) => setFormData((prev) => ({ ...prev, replacementIntervalMonths: e.target.value }))} placeholder="Optional" className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50" />
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-brand-offwhite/50 dark:bg-brand-midnight/50 border border-brand-beige/40 dark:border-brand-dark-grey/40 space-y-2">
+                  <span className="block text-[10px] font-black uppercase text-brand-gold">Asset Requirements & Configuration</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold text-brand-black dark:text-brand-white">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formData.requiresSize} disabled={isSubmitting} onChange={(e) => setFormData((prev) => ({ ...prev, requiresSize: e.target.checked }))} className="w-4 h-4 accent-brand-gold cursor-pointer" />
+                      <span>Requires Size (e.g. S, M, L)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formData.requiresSerialNumber} disabled={isSubmitting} onChange={(e) => setFormData((prev) => ({ ...prev, requiresSerialNumber: e.target.checked }))} className="w-4 h-4 accent-brand-gold cursor-pointer" />
+                      <span>Requires Serial Number</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formData.requiresBranch} disabled={isSubmitting} onChange={(e) => setFormData((prev) => ({ ...prev, requiresBranch: e.target.checked }))} className="w-4 h-4 accent-brand-gold cursor-pointer" />
+                      <span>Requires Branch</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formData.requiresDepartment} disabled={isSubmitting} onChange={(e) => setFormData((prev) => ({ ...prev, requiresDepartment: e.target.checked }))} className="w-4 h-4 accent-brand-gold cursor-pointer" />
+                      <span>Requires Department</span>
+                    </label>
                   </div>
                 </div>
 

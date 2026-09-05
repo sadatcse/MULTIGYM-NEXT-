@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import WeatherCard from "@/components/Comon/WeatherCard";
 import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import { AuthContext } from "@/providers/AuthProvider";
+import useTaskApi from "@/hooks/useTaskApi";
 import {
   FiUsers,
   FiMapPin,
@@ -15,13 +16,40 @@ import {
   FiArrowRight,
   FiCheckCircle,
   FiCalendar,
+  FiAlertTriangle,
 } from "react-icons/fi";
+import { MdAssignment, MdPendingActions } from "react-icons/md";
 
 export default function DashboardHomePage() {
   const { user } = useContext(AuthContext);
   const { formatDateTime, currentTimeZoneObj } = useSystemTimeZone();
+  const { getDashboardStats } = useTaskApi();
+
+  const [taskData, setTaskData] = useState(null);
+
+  const fetchTaskStats = useCallback(async () => {
+    try {
+      const data = await getDashboardStats();
+      setTaskData(data);
+    } catch {
+      // Non-fatal
+    }
+  }, [getDashboardStats]);
+
+  useEffect(() => {
+    fetchTaskStats();
+  }, [fetchTaskStats]);
 
   const userName = user?.name || "System Admin";
+  const overview = taskData?.overview || {
+    total: 0,
+    overdue: 0,
+    dueToday: 0,
+    dueSoon: 0,
+    pending: 0,
+    waitingApproval: 0,
+  };
+  const criticalList = taskData?.criticalTasks || [];
 
   return (
     <div className="space-y-6 w-full max-w-[1700px] mx-auto px-2 sm:px-4 lg:px-6 pb-12 font-sans">
@@ -78,6 +106,128 @@ export default function DashboardHomePage() {
             <WeatherCard />
           </div>
         </div>
+      </div>
+
+      {/* MANAGEMENT INSTRUCTIONS & TASKS WIDGET */}
+      <div className="bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-brand-gold/15 text-brand-gold text-lg">
+                <MdAssignment />
+              </span>
+              <h2 className="text-lg font-black text-brand-black dark:text-brand-white">
+                Management Instructions &amp; Tasks
+              </h2>
+            </div>
+            <p className="text-xs text-brand-dark-grey mt-0.5">
+              Directives from MD Sir, Director Sir, and Management requiring active tracking.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/dashboard/tasks/my-tasks"
+              className="px-3.5 py-1.5 rounded-xl bg-brand-gold text-brand-black text-xs font-black hover:bg-brand-gold-light transition-all flex items-center gap-1"
+            >
+              My Tasks
+            </Link>
+            <Link
+              href="/dashboard/tasks"
+              className="px-3.5 py-1.5 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs font-bold hover:border-brand-gold transition-colors flex items-center gap-1"
+            >
+              Task Directory <FiArrowRight />
+            </Link>
+          </div>
+        </div>
+
+        {/* 4 Overview Metric Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Link
+            href="/dashboard/tasks/follow-up"
+            className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 hover:border-red-500/50 transition-all flex items-center justify-between"
+          >
+            <div>
+              <span className="text-[10px] font-black uppercase text-red-600 dark:text-red-400 block">
+                Overdue
+              </span>
+              <span className="text-xl font-black text-red-500 block">{overview.overdue}</span>
+            </div>
+            <span className="text-[9px] font-bold text-red-500">Requires Action</span>
+          </Link>
+
+          <Link
+            href="/dashboard/tasks/follow-up"
+            className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/50 transition-all flex items-center justify-between"
+          >
+            <div>
+              <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 block">
+                Due Today
+              </span>
+              <span className="text-xl font-black text-amber-500 block">{overview.dueToday}</span>
+            </div>
+            <span className="text-[9px] font-bold text-amber-500">Today</span>
+          </Link>
+
+          <Link
+            href="/dashboard/tasks"
+            className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/50 transition-all flex items-center justify-between"
+          >
+            <div>
+              <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 block">
+                Due Soon (3d)
+              </span>
+              <span className="text-xl font-black text-blue-500 block">{overview.dueSoon}</span>
+            </div>
+            <span className="text-[9px] font-bold text-blue-500">Upcoming</span>
+          </Link>
+
+          <Link
+            href="/dashboard/tasks?status=PENDING"
+            className="p-3 rounded-2xl bg-gray-500/10 border border-gray-500/20 hover:border-gray-500/50 transition-all flex items-center justify-between"
+          >
+            <div>
+              <span className="text-[10px] font-black uppercase text-gray-500 block">
+                Pending Directives
+              </span>
+              <span className="text-xl font-black text-gray-500 block">{overview.pending}</span>
+            </div>
+            <span className="text-[9px] font-bold text-gray-500">Unstarted</span>
+          </Link>
+        </div>
+
+        {/* Priority Instructions Quick Snippets */}
+        {criticalList.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-brand-beige/20 dark:border-brand-dark-grey/20">
+            <span className="text-[10px] font-black uppercase tracking-wider text-brand-gold block">
+              High Priority Directives
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {criticalList.slice(0, 3).map((item) => (
+                <Link
+                  key={item._id}
+                  href={`/dashboard/tasks/${item._id}`}
+                  className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/40 dark:border-brand-dark-grey/40 hover:border-brand-gold/60 transition-all block text-xs space-y-1"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black uppercase px-2 py-0.2 rounded-full bg-red-500 text-white">
+                      {item.priority}
+                    </span>
+                    <span className="text-[10px] text-brand-gold font-bold">
+                      {item.instructionSource}
+                    </span>
+                  </div>
+                  <div className="font-extrabold text-brand-black dark:text-brand-white truncate">
+                    {item.title}
+                  </div>
+                  <div className="text-[10px] text-brand-dark-grey">
+                    Deadline: {new Date(item.deadline).toLocaleDateString()}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* QUICK SYSTEM MODULE CARDS */}

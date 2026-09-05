@@ -52,12 +52,14 @@ function buildNotificationsFromAlerts(alerts) {
   });
 
   alerts.pendingPayments?.forEach((p) => {
+    const items_ = p.items || [];
+    const label = items_.length > 1 ? `${items_[0]?.productName} +${items_.length - 1} more` : items_[0]?.productName || p.invoiceNumber || "Purchase order";
     items.push({
       _id: `payment-${p._id}`,
       icon: FiDollarSign,
       color: "text-brand-gold",
       title: "Pending vendor payment",
-      message: `${p.productName} — ${p.vendor?.name || "Unknown vendor"}`,
+      message: `${label} — ${p.vendor?.name || "Unknown vendor"}`,
       createdAt: p.purchaseDate,
     });
   });
@@ -107,6 +109,46 @@ function buildAssetNotifications(alerts) {
   return items;
 }
 
+function buildTaskNotifications(alerts) {
+  if (!alerts) return [];
+  const items = [];
+
+  alerts.overdue?.forEach((t) => {
+    items.push({
+      _id: `task-overdue-${t._id}`,
+      icon: FiAlertTriangle,
+      color: "text-red-500",
+      title: "Task Directive Overdue",
+      message: `${t.title} (${t.instructionSource})`,
+      createdAt: t.deadline,
+    });
+  });
+
+  alerts.waitingApproval?.forEach((t) => {
+    items.push({
+      _id: `task-approval-${t._id}`,
+      icon: FiClock,
+      color: "text-amber-500",
+      title: "Task Awaiting Approval",
+      message: `${t.title} (${t.instructionSource})`,
+      createdAt: t.updatedAt,
+    });
+  });
+
+  alerts.dueSoon?.forEach((t) => {
+    items.push({
+      _id: `task-duesoon-${t._id}`,
+      icon: FiClock,
+      color: "text-brand-gold",
+      title: "Task Due Soon",
+      message: `${t.title} (${t.instructionSource})`,
+      createdAt: t.deadline,
+    });
+  });
+
+  return items;
+}
+
 const Header = ({ isSidebarOpen, toggleSidebar }) => {
   const [isNotifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -128,15 +170,17 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
 
   const loadAlerts = useCallback(async () => {
     try {
-      const [vendorRes, assetRes] = await Promise.allSettled([
+      const [vendorRes, assetRes, taskRes] = await Promise.allSettled([
         axiosSecure.get("/vendor/alerts"),
         axiosSecure.get("/asset-assignment/alerts"),
+        axiosSecure.get("/task/alerts"),
       ]);
 
-      const vendorItems = vendorRes.status === "fulfilled" ? buildNotificationsFromAlerts(vendorRes.value.data.data) : [];
-      const assetItems = assetRes.status === "fulfilled" ? buildAssetNotifications(assetRes.value.data.data) : [];
+      const vendorItems = vendorRes.status === "fulfilled" ? buildNotificationsFromAlerts(vendorRes.value.data?.data) : [];
+      const assetItems = assetRes.status === "fulfilled" ? buildAssetNotifications(assetRes.value.data?.data) : [];
+      const taskItems = taskRes.status === "fulfilled" ? buildTaskNotifications(taskRes.value.data?.data) : [];
 
-      setNotifications([...vendorItems, ...assetItems].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)));
+      setNotifications([...taskItems, ...vendorItems, ...assetItems].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)));
     } catch (err) {
       console.error("Failed to load alerts:", err);
     }

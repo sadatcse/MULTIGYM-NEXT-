@@ -90,7 +90,7 @@ export default function useRolePermissionApi(initialRole = "") {
       setPermissions(mergedPerms);
     } catch (err) {
       if (err?.code === "ERR_CANCELED") return; // superseded by a newer role selection, ignore silently
-      console.log(`No existing permissions for role "${roleName}", initializing full defaults.`);
+      // No existing permissions doc for this role yet — initialize full defaults.
       const categories = getSystemModulesFromMenu();
       const defaultPerms = {};
       categories.forEach((cat) => {

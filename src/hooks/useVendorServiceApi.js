@@ -49,5 +49,26 @@ export default function useVendorServiceApi() {
     [axiosSecure]
   );
 
-  return { loading, getServiceRecords, createServiceRecord, updateServiceRecord, deleteServiceRecord };
+  const addPayment = useCallback(
+    async (serviceId, payload) => {
+      setLoading(true);
+      try {
+        const res = await axiosSecure.post(`/vendor-service/payment/${serviceId}`, payload);
+        return res.data;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [axiosSecure]
+  );
+
+  const removePayment = useCallback(
+    async (serviceId, paymentId) => {
+      const res = await axiosSecure.delete(`/vendor-service/payment/${serviceId}/${paymentId}`);
+      return res.data;
+    },
+    [axiosSecure]
+  );
+
+  return { loading, getServiceRecords, createServiceRecord, updateServiceRecord, deleteServiceRecord, addPayment, removePayment };
 }

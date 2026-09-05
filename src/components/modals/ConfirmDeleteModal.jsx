@@ -1,15 +1,14 @@
-import React from 'react';
+import React from "react";
+import ModalShell from "./ModalShell";
 
 const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, itemName, isDeleting }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 backdrop-blur-md">
-      <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-2xl w-full max-w-md p-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <ModalShell isOpen={isOpen} onClose={onClose} size="sm" closeOnBackdrop={!isDeleting} closeOnEsc={!isDeleting} disableClose>
+      <div className="p-6 relative overflow-hidden">
         <div className="h-1 bg-gradient-to-r from-brand-red via-brand-gold to-brand-red absolute top-0 left-0 right-0" />
-        
+
         <h2 className="text-xl font-black text-brand-black dark:text-brand-white mb-2 pt-2">Confirm Deletion</h2>
-        
+
         <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mb-6 leading-relaxed">
           Are you sure you want to delete <span className="font-extrabold text-brand-red">&quot;{itemName}&quot;</span>?
           This action cannot be undone.
@@ -41,7 +40,7 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, itemName, isDeleting }
           </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 };
 

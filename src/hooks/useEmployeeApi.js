@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import useAxiosSecure from "./useAxiosSecure";
 
-export default function useEmployeeApi() {
+export default function useEmployeeApi(initialLimit = 10) {
   const axiosSecure = useAxiosSecure();
 
   const [employees, setEmployees] = useState([]);
@@ -32,7 +32,7 @@ export default function useEmployeeApi() {
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState("all");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(initialLimit);
 
   // Debounce search input by 400ms
   useEffect(() => {

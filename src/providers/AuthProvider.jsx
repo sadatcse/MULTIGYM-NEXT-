@@ -30,20 +30,42 @@ const AuthProvider = ({ children }) => {
 
   // Load authenticated employee from localStorage on mount
   useEffect(() => {
+    const handleUnauthorized = () => {
+      setEmployee(null);
+      setEmployeeProfile(null);
+    };
+
     if (typeof window !== "undefined") {
+      window.addEventListener("auth:unauthorized", handleUnauthorized);
+
       const storedEmployee =
         localStorage.getItem("authEmployee") || localStorage.getItem("authUser");
-      if (storedEmployee) {
+      const storedToken =
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken");
+
+      if (storedEmployee && storedToken) {
         try {
           const parsed = JSON.parse(storedEmployee);
           setEmployee(parsed);
           setEmployeeProfile(parsed);
         } catch {
           setEmployee(null);
+          setEmployeeProfile(null);
         }
+      } else {
+        setEmployee(null);
+        setEmployeeProfile(null);
       }
       setLoading(false);
     }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("auth:unauthorized", handleUnauthorized);
+      }
+    };
   }, []);
 
   const fetchEmployeeProfile = useCallback(async (email) => {
@@ -134,6 +156,8 @@ const AuthProvider = ({ children }) => {
         localStorage.removeItem("authUser");
         localStorage.removeItem("authToken");
         localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
       }
     } finally {
       setLoading(false);

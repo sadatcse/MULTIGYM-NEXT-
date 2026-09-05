@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import useAxiosSecure from "./useAxiosSecure";
 
 export default function useAssetApi() {
@@ -61,49 +61,88 @@ export default function useAssetApi() {
     fetchAssets(true);
   }, [fetchAssets]);
 
-  const createAsset = async (formData) => {
-    const res = await axiosSecure.post("/asset/post", formData);
-    await fetchAssets(false);
-    return res.data;
-  };
+  const createAsset = useCallback(
+    async (formData) => {
+      const res = await axiosSecure.post("/asset/post", formData);
+      await fetchAssets(false);
+      return res.data;
+    },
+    [axiosSecure, fetchAssets]
+  );
 
-  const updateAsset = async (id, formData) => {
-    const res = await axiosSecure.put(`/asset/update/${id}`, formData);
-    await fetchAssets(false);
-    return res.data;
-  };
+  const updateAsset = useCallback(
+    async (id, formData) => {
+      const res = await axiosSecure.put(`/asset/update/${id}`, formData);
+      await fetchAssets(false);
+      return res.data;
+    },
+    [axiosSecure, fetchAssets]
+  );
 
-  const deleteAsset = async (id) => {
-    const res = await axiosSecure.delete(`/asset/delete/${id}`);
-    await fetchAssets(false);
-    return res.data;
-  };
+  const deleteAsset = useCallback(
+    async (id) => {
+      const res = await axiosSecure.delete(`/asset/delete/${id}`);
+      await fetchAssets(false);
+      return res.data;
+    },
+    [axiosSecure, fetchAssets]
+  );
 
-  const getAssetById = async (id) => {
-    const res = await axiosSecure.get(`/asset/get-id/${id}`);
-    return res.data.data;
-  };
+  const getAssetById = useCallback(
+    async (id) => {
+      const res = await axiosSecure.get(`/asset/get-id/${id}`);
+      return res.data.data;
+    },
+    [axiosSecure]
+  );
 
-  return {
-    assets,
-    totalItems,
-    totalPages,
-    loading,
-    isFetching,
-    searchInput,
-    setSearchInput,
-    assetTypeFilter,
-    setAssetTypeFilter,
-    statusFilter,
-    setStatusFilter,
-    currentPage,
-    setCurrentPage,
-    itemsPerPage,
-    setItemsPerPage,
-    fetchAssets,
-    createAsset,
-    updateAsset,
-    deleteAsset,
-    getAssetById,
-  };
+  // Memoized so consumers can safely depend on the whole hook object in a
+  // useCallback/useEffect dependency array — a plain object literal here
+  // would be a new reference every render, and a page whose own data-load
+  // effect depends on (say) `getAssetById` from this hook would re-fire
+  // forever. Confirmed: this caused a 49-requests-in-6-seconds runaway loop
+  // on the Asset Detail page, which also silently reset the Issue Asset
+  // modal's form (the parent's `asset` state kept getting a new reference,
+  // re-triggering the modal's isOpen-reset effect on every re-render).
+  return useMemo(
+    () => ({
+      assets,
+      totalItems,
+      totalPages,
+      loading,
+      isFetching,
+      searchInput,
+      setSearchInput,
+      assetTypeFilter,
+      setAssetTypeFilter,
+      statusFilter,
+      setStatusFilter,
+      currentPage,
+      setCurrentPage,
+      itemsPerPage,
+      setItemsPerPage,
+      fetchAssets,
+      createAsset,
+      updateAsset,
+      deleteAsset,
+      getAssetById,
+    }),
+    [
+      assets,
+      totalItems,
+      totalPages,
+      loading,
+      isFetching,
+      searchInput,
+      assetTypeFilter,
+      statusFilter,
+      currentPage,
+      itemsPerPage,
+      fetchAssets,
+      createAsset,
+      updateAsset,
+      deleteAsset,
+      getAssetById,
+    ]
+  );
 }

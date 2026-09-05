@@ -49,5 +49,26 @@ export default function useVendorPurchaseApi() {
     [axiosSecure]
   );
 
-  return { loading, getPurchases, createPurchase, updatePurchase, deletePurchase };
+  const addPayment = useCallback(
+    async (purchaseId, payload) => {
+      setLoading(true);
+      try {
+        const res = await axiosSecure.post(`/vendor-purchase/payment/${purchaseId}`, payload);
+        return res.data;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [axiosSecure]
+  );
+
+  const removePayment = useCallback(
+    async (purchaseId, paymentId) => {
+      const res = await axiosSecure.delete(`/vendor-purchase/payment/${purchaseId}/${paymentId}`);
+      return res.data;
+    },
+    [axiosSecure]
+  );
+
+  return { loading, getPurchases, createPurchase, updatePurchase, deletePurchase, addPayment, removePayment };
 }

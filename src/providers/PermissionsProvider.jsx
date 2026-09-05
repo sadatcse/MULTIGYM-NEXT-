@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { AuthContext } from "@/providers/AuthProvider";
-import { axiosPublic } from "@/hooks/useAxiosPublic";
+import useAxiosSecure from "@/hooks/useAxiosSecure";
 import menuItems from "@/components/MenuItems";
 
 export const PermissionsContext = createContext(null);
 
 export function PermissionsProvider({ children }) {
+  const axiosSecure = useAxiosSecure();
   const auth = useContext(AuthContext);
   const currentAuth = auth?.employee || auth?.user;
   const authLoading = auth?.loading ?? false;
@@ -50,7 +51,7 @@ export function PermissionsProvider({ children }) {
 
     setLoading(true);
     try {
-      const res = await axiosPublic.get(`/role-permission?role=${encodeURIComponent(role)}`);
+      const res = await axiosSecure.get(`/role-permission?role=${encodeURIComponent(role)}`);
       if (res?.data?.data?.permissions) {
         setDbPermissions(res.data.data.permissions);
       }
@@ -61,10 +62,12 @@ export function PermissionsProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [currentAuth, role]);
+  }, [currentAuth, role, axiosSecure]);
 
   useEffect(() => {
     if (authLoading) return;
+    // Legitimate initial data fetch once auth resolves; setState inside is intentional.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPermissions();
   }, [authLoading, fetchPermissions]);
 
@@ -91,7 +94,16 @@ export function PermissionsProvider({ children }) {
   const hasPermission = useCallback(
     (pathOrKey, action = "view") => {
       if (!pathOrKey) return true;
-      const key = routeToKeyMap[pathOrKey] || (pathOrKey.includes("/") ? pathOrKey.split("/").pop() : pathOrKey);
+      let key = routeToKeyMap[pathOrKey];
+      if (!key && typeof pathOrKey === "string" && pathOrKey.startsWith("/dashboard/vendors/") && !pathOrKey.endsWith("/report") && !pathOrKey.endsWith("/categories") && !pathOrKey.endsWith("/product-categories")) {
+        key = "vendor-details";
+      }
+      if (!key && typeof pathOrKey === "string" && pathOrKey.startsWith("/dashboard/assets/") && !pathOrKey.endsWith("/types") && !pathOrKey.endsWith("/clearance")) {
+        key = "asset-details";
+      }
+      if (!key) {
+        key = pathOrKey.includes("/") ? pathOrKey.split("/").pop() : pathOrKey;
+      }
       return can(key, action);
     },
     [can, routeToKeyMap]

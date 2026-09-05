@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
-import ConfirmDeleteModal from "@/components/Comon/ConfirmDeleteModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import useShiftApi from "@/hooks/useShiftApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import Swal from "sweetalert2";
