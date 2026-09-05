@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
@@ -9,7 +10,7 @@ import Pagination from "@/components/Comon/Pagination";
 import useMaintenanceApi from "@/hooks/useMaintenanceApi";
 import useBranchApi from "@/hooks/useBranchApi";
 import useDebounce from "@/hooks/useDebounce";
-import { FiSearch, FiLoader } from "react-icons/fi";
+import { FiSearch, FiLoader, FiEye } from "react-icons/fi";
 
 const CATEGORIES = ["AC", "Electrical", "Plumbing", "Equipment", "CCTV", "Access Control", "Interior", "Internet", "General Maintenance"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
@@ -145,6 +146,7 @@ export default function AllMaintenanceRequestsPage() {
                     <th className="py-4 px-6">Assigned</th>
                     <th className="py-4 px-6">Deadline</th>
                     <th className="py-4 px-6 text-center">Status</th>
+                    <th className="py-4 px-6 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-beige/40 dark:divide-brand-dark-grey/40 text-xs">
@@ -162,8 +164,14 @@ export default function AllMaintenanceRequestsPage() {
                           className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-all duration-200 cursor-pointer"
                         >
                           <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white">
-                            {r.issue}
-                            {r.isOverdue && <span className="ml-2 text-[9px] font-black uppercase text-brand-red">Overdue</span>}
+                            <Link
+                              href={`/dashboard/maintenance/${r._id}`}
+                              className="hover:text-brand-gold hover:underline transition-colors block"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {r.issue}
+                            </Link>
+                            {r.isOverdue && <span className="mt-1 inline-block text-[9px] font-black uppercase text-brand-red">Overdue</span>}
                           </td>
                           <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light">{r.branch}</td>
                           <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light">{r.reportedBy?.name || "—"}</td>
@@ -178,12 +186,21 @@ export default function AllMaintenanceRequestsPage() {
                               {r.status?.replace("_", " ")}
                             </span>
                           </td>
+                          <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
+                            <Link
+                              href={`/dashboard/maintenance/${r._id}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-gold/15 text-brand-gold hover:bg-brand-gold hover:text-brand-midnight text-xs font-black transition-colors"
+                              title="View Details"
+                            >
+                              <FiEye className="text-xs" /> Details
+                            </Link>
+                          </td>
                         </motion.tr>
                       ))}
                     </AnimatePresence>
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-brand-dark-grey dark:text-brand-gold-light text-xs font-semibold">
+                      <td colSpan={9} className="py-12 text-center text-brand-dark-grey dark:text-brand-gold-light text-xs font-semibold">
                         No maintenance requests found.
                       </td>
                     </tr>

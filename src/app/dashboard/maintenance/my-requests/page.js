@@ -6,8 +6,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
+import MaintenanceDetailsModal from "@/components/modals/MaintenanceDetailsModal";
 import useMaintenanceApi from "@/hooks/useMaintenanceApi";
-import { FiPlus, FiTool } from "react-icons/fi";
+import { FiPlus, FiTool, FiEye } from "react-icons/fi";
 
 const STATUS_STYLES = {
   OPEN: "bg-sky-500/10 text-sky-500 border-sky-500/20",
@@ -35,6 +36,20 @@ export default function MyMaintenanceRequestsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
+
+  // Details Modal State (opens without buttons as requested)
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  const handleOpenDetails = (r) => {
+    setSelectedRequest(r);
+    setIsDetailsOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setIsDetailsOpen(false);
+    setSelectedRequest(null);
+  };
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -110,6 +125,7 @@ export default function MyMaintenanceRequestsPage() {
                     <th className="py-4 px-6">Submitted</th>
                     <th className="py-4 px-6 text-center">Status</th>
                     <th className="py-4 px-6">Completed</th>
+                    <th className="py-4 px-6 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-beige/40 dark:divide-brand-dark-grey/40 text-xs">
@@ -123,9 +139,20 @@ export default function MyMaintenanceRequestsPage() {
                         animate="show"
                         exit="exit"
                         className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-all duration-200 cursor-pointer"
-                        onClick={() => (window.location.href = `/dashboard/maintenance/${r._id}`)}
+                        onClick={() => handleOpenDetails(r)}
                       >
-                        <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white">{r.issue}</td>
+                        <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDetails(r);
+                            }}
+                            className="hover:text-brand-gold hover:underline transition-colors block text-left cursor-pointer"
+                          >
+                            {r.issue}
+                          </button>
+                        </td>
                         <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light">{r.category}</td>
                         <td className="py-4 px-6 text-center font-bold">{r.priority}</td>
                         <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light">
@@ -138,6 +165,16 @@ export default function MyMaintenanceRequestsPage() {
                         </td>
                         <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light">
                           {r.completedDate ? new Date(r.completedDate).toLocaleDateString() : "—"}
+                        </td>
+                        <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetails(r)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-gold/15 text-brand-gold hover:bg-brand-gold hover:text-brand-midnight text-xs font-black transition-colors cursor-pointer"
+                            title="View Details"
+                          >
+                            <FiEye className="text-xs" /> Details
+                          </button>
                         </td>
                       </motion.tr>
                     ))}
@@ -158,6 +195,14 @@ export default function MyMaintenanceRequestsPage() {
           )}
         </>
       )}
+
+      {/* Details View Modal (clean view without action buttons as requested) */}
+      <MaintenanceDetailsModal
+        isOpen={isDetailsOpen}
+        onClose={handleCloseDetails}
+        requestId={selectedRequest?._id}
+        initialData={selectedRequest}
+      />
     </div>
   );
 }
