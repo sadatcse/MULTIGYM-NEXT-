@@ -199,11 +199,13 @@ export default function MaintenanceReportsPage() {
   const handlePrint = () => {
     printHtmlReport({
       title: reportTitle,
-      preparedBy: user?.name || "Maintenance Department",
-      companyName: settings?.siteName || "Multigym Premium",
+      preparedBy: `${user?.name || "System"} (${user?.role || ""})`,
+      branchFilter: "All Branches",
+      departmentFilter: "All Depts",
       headers,
       rows,
-      summaryStats: statCards,
+      stats: statCards.map((s) => ({ label: s.label, value: s.value })),
+      settings,
     });
   };
 

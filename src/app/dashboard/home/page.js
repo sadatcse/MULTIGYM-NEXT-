@@ -50,6 +50,8 @@ export default function DashboardHomePage() {
   }, [getMaintenanceStats]);
 
   useEffect(() => {
+    // Legitimate initial data fetch; setState inside is intentional.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTaskStats();
     fetchMaintenanceStats();
   }, [fetchTaskStats, fetchMaintenanceStats]);

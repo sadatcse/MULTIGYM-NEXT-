@@ -13,7 +13,6 @@ export default function MaintenanceWorkUpdateModal({ isOpen, onClose, onSubmit, 
     if (!isOpen) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpdate("");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhotos([]);
   }, [isOpen]);
 
