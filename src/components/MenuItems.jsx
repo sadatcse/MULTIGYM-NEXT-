@@ -39,6 +39,8 @@ import {
   MdPendingActions,
   MdCalendarToday,
   MdSupervisorAccount,
+  MdBuild,
+  MdHandyman,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -191,6 +193,58 @@ const menuItems = () => {
           key: "task-categories",
           description: "Manage task categories and classification tags",
           icon: <MdCategory className="text-base" />,
+        },
+      ],
+    },
+    {
+      title: "Maintenance Management",
+      path: "/dashboard/maintenance",
+      key: "maintenance-management",
+      icon: <MdBuild className="text-lg" />,
+      children: [
+        {
+          title: "Dashboard",
+          path: "/dashboard/maintenance",
+          key: "maintenance-dashboard",
+          description: "Maintenance overview, KPIs, and cost summary",
+          icon: <MdAssessment className="text-base" />,
+        },
+        {
+          title: "My Requests",
+          path: "/dashboard/maintenance/my-requests",
+          key: "my-maintenance-requests",
+          description: "Maintenance issues you've reported and their status",
+          icon: <MdPlaylistAddCheck className="text-base" />,
+        },
+        {
+          title: "Request Maintenance",
+          path: "/dashboard/maintenance/create",
+          key: "maintenance-create",
+          description: "Report a maintenance issue for review and assignment",
+          icon: <MdAddCircleOutline className="text-base" />,
+          hiddenInSidebar: true,
+        },
+        {
+          title: "All Requests",
+          path: "/dashboard/maintenance/requests",
+          key: "maintenance",
+          description: "Review, assign, and manage every maintenance request",
+          icon: <MdHandyman className="text-base" />,
+        },
+        {
+          title: "Request Details",
+          path: "/dashboard/maintenance/[id]",
+          key: "maintenance-details",
+          description: "Full maintenance request detail, workflow, and photos",
+          icon: <MdInfo className="text-base" />,
+          hiddenInSidebar: true,
+        },
+        {
+          title: "Maintenance Reports",
+          path: "/dashboard/maintenance/reports",
+          key: "maintenance-reports",
+          description: "Summary, branch, category, employee, cost, and overdue reports",
+          icon: <MdAssessment className="text-base" />,
         },
       ],
     },

@@ -6,6 +6,7 @@ import WeatherCard from "@/components/Comon/WeatherCard";
 import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import { AuthContext } from "@/providers/AuthProvider";
 import useTaskApi from "@/hooks/useTaskApi";
+import useMaintenanceApi from "@/hooks/useMaintenanceApi";
 import {
   FiUsers,
   FiMapPin,
@@ -17,15 +18,18 @@ import {
   FiCheckCircle,
   FiCalendar,
   FiAlertTriangle,
+  FiTool,
 } from "react-icons/fi";
-import { MdAssignment, MdPendingActions } from "react-icons/md";
+import { MdAssignment, MdPendingActions, MdBuild } from "react-icons/md";
 
 export default function DashboardHomePage() {
   const { user } = useContext(AuthContext);
   const { formatDateTime, currentTimeZoneObj } = useSystemTimeZone();
   const { getDashboardStats } = useTaskApi();
+  const { getDashboardStats: getMaintenanceStats } = useMaintenanceApi();
 
   const [taskData, setTaskData] = useState(null);
+  const [maintenanceData, setMaintenanceData] = useState(null);
 
   const fetchTaskStats = useCallback(async () => {
     try {
@@ -36,9 +40,19 @@ export default function DashboardHomePage() {
     }
   }, [getDashboardStats]);
 
+  const fetchMaintenanceStats = useCallback(async () => {
+    try {
+      const data = await getMaintenanceStats();
+      setMaintenanceData(data);
+    } catch {
+      // Non-fatal
+    }
+  }, [getMaintenanceStats]);
+
   useEffect(() => {
     fetchTaskStats();
-  }, [fetchTaskStats]);
+    fetchMaintenanceStats();
+  }, [fetchTaskStats, fetchMaintenanceStats]);
 
   const userName = user?.name || "System Admin";
   const overview = taskData?.overview || {
@@ -223,6 +237,79 @@ export default function DashboardHomePage() {
                   <div className="text-[10px] text-brand-dark-grey">
                     Deadline: {new Date(item.deadline).toLocaleDateString()}
                   </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* MY MAINTENANCE WIDGET */}
+      <div className="bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-brand-gold/15 text-brand-gold text-lg">
+                <MdBuild />
+              </span>
+              <h2 className="text-lg font-black text-brand-black dark:text-brand-white">My Maintenance</h2>
+            </div>
+            <p className="text-xs text-brand-dark-grey mt-0.5">
+              Issues you&apos;ve reported and their current status.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/dashboard/maintenance/create"
+              className="px-3.5 py-1.5 rounded-xl bg-brand-gold text-brand-black text-xs font-black hover:bg-brand-gold-light transition-all flex items-center gap-1"
+            >
+              Request Maintenance
+            </Link>
+            <Link
+              href="/dashboard/maintenance/my-requests"
+              className="px-3.5 py-1.5 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs font-bold hover:border-brand-gold transition-colors flex items-center gap-1"
+            >
+              My Requests <FiArrowRight />
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3 rounded-2xl bg-brand-gold/10 border border-brand-gold/20">
+            <span className="text-[10px] font-black uppercase text-brand-gold block">Total Requests</span>
+            <span className="text-xl font-black text-brand-gold block">{maintenanceData?.overview?.total ?? 0}</span>
+          </div>
+          <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20">
+            <span className="text-[10px] font-black uppercase text-sky-600 dark:text-sky-400 block">Open</span>
+            <span className="text-xl font-black text-sky-500 block">{maintenanceData?.overview?.open ?? 0}</span>
+          </div>
+          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+            <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 block">In Progress</span>
+            <span className="text-xl font-black text-amber-500 block">{maintenanceData?.overview?.inProgress ?? 0}</span>
+          </div>
+          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+            <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 block">Completed</span>
+            <span className="text-xl font-black text-emerald-500 block">{maintenanceData?.overview?.completed ?? 0}</span>
+          </div>
+        </div>
+
+        {maintenanceData?.recent?.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-brand-beige/20 dark:border-brand-dark-grey/20">
+            <span className="text-[10px] font-black uppercase tracking-wider text-brand-gold block">Recent Requests</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {maintenanceData.recent.slice(0, 3).map((item) => (
+                <Link
+                  key={item._id}
+                  href={`/dashboard/maintenance/${item._id}`}
+                  className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/40 dark:border-brand-dark-grey/40 hover:border-brand-gold/60 transition-all block text-xs space-y-1"
+                >
+                  <div className="flex items-center gap-1.5 text-brand-gold">
+                    <FiTool className="text-xs shrink-0" />
+                    <span className="text-[10px] font-bold uppercase">{item.category}</span>
+                  </div>
+                  <div className="font-extrabold text-brand-black dark:text-brand-white truncate">{item.issue}</div>
+                  <div className="text-[10px] text-brand-dark-grey">{item.status?.replace("_", " ")}</div>
                 </Link>
               ))}
             </div>

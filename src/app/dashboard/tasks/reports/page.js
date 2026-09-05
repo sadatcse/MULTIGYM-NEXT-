@@ -19,6 +19,7 @@ import {
   FiCheckCircle,
   FiX,
   FiFilter,
+  FiCalendar,
 } from "react-icons/fi";
 
 export default function TaskReportsPage() {
@@ -30,6 +31,7 @@ export default function TaskReportsPage() {
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState("all");
 
   // Strictly display only active branches configured in Settings > Branches (http://localhost:3000/dashboard/settings/branches)
   const branchOptions = useMemo(() => {
@@ -40,12 +42,33 @@ export default function TaskReportsPage() {
       .filter(Boolean);
   }, [branches]);
 
+  // Dynamically generate last 12 months for total item / workload filtering
+  const monthOptions = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      const value = `${year}-${month}`;
+      months.push({ value, label, isCurrent: i === 0 });
+    }
+    return months;
+  }, []);
+
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
       const params = {};
-      if (selectedBranch && selectedBranch !== "all") {
-        params.branch = selectedBranch;
+      // ONLY Staff Operational Workload has branch and month filters
+      if (activeReport === "employee-wise") {
+        if (selectedBranch && selectedBranch !== "all") {
+          params.branch = selectedBranch;
+        }
+        if (selectedMonth && selectedMonth !== "all") {
+          params.month = selectedMonth;
+        }
       }
       const data = await getReports(activeReport, params);
       setReportData(data || []);
@@ -55,15 +78,16 @@ export default function TaskReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeReport, selectedBranch, getReports]);
+  }, [activeReport, selectedBranch, selectedMonth, getReports]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchReport();
   }, [fetchReport]);
 
-  // Filter report data based on selected branch
+  // Filter report data based on selected branch (strictly for Staff Operational Workload)
   const filteredData = useMemo(() => {
+    if (activeReport !== "employee-wise") return reportData;
     if (!selectedBranch || selectedBranch === "all") return reportData;
 
     const norm = (str) =>
@@ -75,14 +99,11 @@ export default function TaskReportsPage() {
     const target = norm(selectedBranch);
 
     return reportData.filter((row) => {
-      if (activeReport === "employee-wise" || activeReport === "branch-wise") {
-        const rowBranch = norm(row.branch);
-        if (target === "multigym") {
-          return rowBranch.startsWith("multigym");
-        }
-        return rowBranch === target;
+      const rowBranch = norm(row.branch);
+      if (target === "multigym") {
+        return rowBranch.startsWith("multigym");
       }
-      return true;
+      return rowBranch === target;
     });
   }, [reportData, selectedBranch, activeReport]);
 
@@ -97,8 +118,15 @@ export default function TaskReportsPage() {
       "branch-wise": "Branch_Wise_Task_Report",
       "employee-wise": "Employee_Task_Workload_Report",
     };
-    const branchSuffix = selectedBranch !== "all" ? `_${selectedBranch.replace(/[^a-zA-Z0-9]/g, "_")}` : "";
-    const fileName = `${titleMap[activeReport] || "Task_Report"}${branchSuffix}`;
+    const branchSuffix =
+      activeReport === "employee-wise" && selectedBranch !== "all"
+        ? `_${selectedBranch.replace(/[^a-zA-Z0-9]/g, "_")}`
+        : "";
+    const monthSuffix =
+      activeReport === "employee-wise" && selectedMonth !== "all"
+        ? `_${selectedMonth}`
+        : "";
+    const fileName = `${titleMap[activeReport] || "Task_Report"}${branchSuffix}${monthSuffix}`;
 
     if (type === "excel") {
       exportToExcel(filteredData, fileName);
@@ -145,9 +173,16 @@ export default function TaskReportsPage() {
         ]);
       }
 
-      const branchTitleText = selectedBranch !== "all" ? ` - Branch: ${selectedBranch}` : "";
+      const branchTitleText =
+        activeReport === "employee-wise" && selectedBranch !== "all"
+          ? ` - Branch: ${selectedBranch}`
+          : "";
+      const monthLabel =
+        activeReport === "employee-wise" && selectedMonth !== "all"
+          ? ` - Month: ${monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth}`
+          : "";
       printHtmlReport({
-        title: `Management Directive Report (${activeReport.replace(/-/g, " ").toUpperCase()}${branchTitleText})`,
+        title: `Management Directive Report (${activeReport.replace(/-/g, " ").toUpperCase()}${branchTitleText}${monthLabel})`,
         preparedBy: user?.name || "Administrator",
         headers,
         rows,
@@ -222,41 +257,75 @@ export default function TaskReportsPage() {
           </button>
         </div>
 
-        {/* Branch Filter & Refresh Controls */}
-        <div className="flex items-center gap-2 self-start md:self-center">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 text-xs shadow-inner">
-            <FiMapPin className="text-brand-gold shrink-0 text-sm" />
-            <span className="text-[11px] font-black uppercase tracking-wider text-brand-dark-grey">
-              Branch:
-            </span>
-            <select
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-              className="bg-transparent font-extrabold text-xs text-brand-black dark:text-brand-white focus:outline-none cursor-pointer pr-1"
-            >
-              <option value="all" className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white">
-                All Branches
-              </option>
-              {branchOptions.map((bName) => (
-                <option
-                  key={bName}
-                  value={bName}
-                  className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white"
+        {/* Filter Controls (Branch & Month shown strictly for Staff Operational Workload) */}
+        <div className="flex items-center gap-2 flex-wrap self-start md:self-center">
+          {activeReport === "employee-wise" && (
+            <>
+              {/* Branch Filter */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 text-xs shadow-inner">
+                <FiMapPin className="text-brand-gold shrink-0 text-sm" />
+                <span className="text-[11px] font-black uppercase tracking-wider text-brand-dark-grey">
+                  Branch:
+                </span>
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="bg-transparent font-extrabold text-xs text-brand-black dark:text-brand-white focus:outline-none cursor-pointer pr-1"
                 >
-                  {bName}
-                </option>
-              ))}
-            </select>
-          </div>
+                  <option value="all" className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white">
+                    All Branches
+                  </option>
+                  {branchOptions.map((bName) => (
+                    <option
+                      key={bName}
+                      value={bName}
+                      className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white"
+                    >
+                      {bName}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {selectedBranch !== "all" && (
-            <button
-              onClick={() => setSelectedBranch("all")}
-              className="px-2.5 py-1.5 rounded-xl bg-brand-red/10 text-brand-red font-bold text-xs hover:bg-brand-red/20 transition-all cursor-pointer flex items-center gap-1"
-              title="Reset branch filter"
-            >
-              <FiX className="text-xs" /> Clear
-            </button>
+              {/* Month Filter */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 text-xs shadow-inner">
+                <FiCalendar className="text-brand-gold shrink-0 text-sm" />
+                <span className="text-[11px] font-black uppercase tracking-wider text-brand-dark-grey">
+                  Month:
+                </span>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="bg-transparent font-extrabold text-xs text-brand-black dark:text-brand-white focus:outline-none cursor-pointer pr-1"
+                >
+                  <option value="all" className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white">
+                    All Months
+                  </option>
+                  {monthOptions.map((m) => (
+                    <option
+                      key={m.value}
+                      value={m.value}
+                      className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white"
+                    >
+                      {m.label} {m.isCurrent ? "(Current)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {(selectedBranch !== "all" || selectedMonth !== "all") && (
+                <button
+                  onClick={() => {
+                    setSelectedBranch("all");
+                    setSelectedMonth("all");
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-brand-red/10 text-brand-red font-bold text-xs hover:bg-brand-red/20 transition-all cursor-pointer flex items-center gap-1"
+                  title="Reset filters"
+                >
+                  <FiX className="text-xs" /> Clear
+                </button>
+              )}
+            </>
           )}
 
           <button
@@ -341,8 +410,8 @@ export default function TaskReportsPage() {
                 ) : (
                   <tr>
                     <td colSpan={activeReport === "employee-wise" ? 10 : 8} className="py-12 text-center text-brand-dark-grey font-medium">
-                      {selectedBranch !== "all"
-                        ? `No report records found for branch "${selectedBranch}".`
+                      {activeReport === "employee-wise" && (selectedBranch !== "all" || selectedMonth !== "all")
+                        ? "No workload records found for the selected branch / month filters."
                         : "No report records available."}
                     </td>
                   </tr>
