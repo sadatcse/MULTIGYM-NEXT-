@@ -31,24 +31,14 @@ export default function TaskReportsPage() {
   const [reportData, setReportData] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("all");
 
-  // Derive consolidated list of branches from API and report records
+  // Strictly display only active branches configured in Settings > Branches (http://localhost:3000/dashboard/settings/branches)
   const branchOptions = useMemo(() => {
-    const set = new Set();
-    if (branches && Array.isArray(branches)) {
-      branches.forEach((b) => {
-        const name = b?.name || b?.branchName;
-        if (name) set.add(name.trim());
-      });
-    }
-    if (reportData && Array.isArray(reportData)) {
-      reportData.forEach((r) => {
-        if (r?.branch && r.branch !== "All Branches" && r.branch !== "N/A") {
-          set.add(r.branch.trim());
-        }
-      });
-    }
-    return Array.from(set).sort();
-  }, [branches, reportData]);
+    if (!branches || !Array.isArray(branches)) return [];
+    return branches
+      .filter((b) => b.status !== "inactive")
+      .map((b) => (b.name || b.branchName)?.trim())
+      .filter(Boolean);
+  }, [branches]);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -72,8 +62,32 @@ export default function TaskReportsPage() {
     fetchReport();
   }, [fetchReport]);
 
+  // Filter report data based on selected branch
+  const filteredData = useMemo(() => {
+    if (!selectedBranch || selectedBranch === "all") return reportData;
+
+    const norm = (str) =>
+      String(str || "")
+        .toLowerCase()
+        .replace(/[\s—–-]+/g, "")
+        .trim();
+
+    const target = norm(selectedBranch);
+
+    return reportData.filter((row) => {
+      if (activeReport === "employee-wise" || activeReport === "branch-wise") {
+        const rowBranch = norm(row.branch);
+        if (target === "multigym") {
+          return rowBranch.startsWith("multigym");
+        }
+        return rowBranch === target;
+      }
+      return true;
+    });
+  }, [reportData, selectedBranch, activeReport]);
+
   const handleExport = (type) => {
-    if (!reportData || reportData.length === 0) {
+    if (!filteredData || filteredData.length === 0) {
       toast.warning("No data available to export");
       return;
     }
@@ -87,16 +101,16 @@ export default function TaskReportsPage() {
     const fileName = `${titleMap[activeReport] || "Task_Report"}${branchSuffix}`;
 
     if (type === "excel") {
-      exportToExcel(reportData, fileName);
+      exportToExcel(filteredData, fileName);
     } else if (type === "csv") {
-      exportToCsv(reportData, fileName);
+      exportToCsv(filteredData, fileName);
     } else if (type === "print") {
       let headers = [];
       let rows = [];
 
       if (activeReport === "source-wise") {
         headers = ["Source", "Total Tasks", "Completed", "In Progress", "Pending", "Overdue", "Completion Rate"];
-        rows = reportData.map((r) => [
+        rows = filteredData.map((r) => [
           r.source,
           r.totalTasks,
           r.completed,
@@ -107,7 +121,7 @@ export default function TaskReportsPage() {
         ]);
       } else if (activeReport === "branch-wise") {
         headers = ["Branch", "Total Tasks", "Completed", "In Progress", "Pending", "Overdue", "Completion Rate"];
-        rows = reportData.map((r) => [
+        rows = filteredData.map((r) => [
           r.branch,
           r.totalTasks,
           r.completed,
@@ -118,7 +132,7 @@ export default function TaskReportsPage() {
         ]);
       } else if (activeReport === "employee-wise") {
         headers = ["Employee ID", "Name", "Department", "Branch", "Total", "Completed", "In Progress", "Overdue", "Rate"];
-        rows = reportData.map((r) => [
+        rows = filteredData.map((r) => [
           r.employeeId,
           r.name,
           r.department,
@@ -284,8 +298,8 @@ export default function TaskReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-beige/40 dark:divide-brand-dark-grey/40 text-xs">
-                {reportData.length > 0 ? (
-                  reportData.map((row, idx) => (
+                {filteredData.length > 0 ? (
+                  filteredData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-brand-offwhite/50 dark:hover:bg-brand-midnight/50">
                       <td className="py-4 px-5 text-center font-bold text-brand-dark-grey">{idx + 1}</td>
 
