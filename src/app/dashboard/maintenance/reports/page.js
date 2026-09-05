@@ -50,96 +50,135 @@ export default function MaintenanceReportsPage() {
     fetchReport();
   }, [fetchReport]);
 
+  const handleTabChange = (newTab) => {
+    if (newTab === activeTab) return;
+    setData(null);
+    setActiveTab(newTab);
+  };
+
   // Normalizes the current tab's data into headers/rows for print/export.
   const { headers, rows, statCards } = useMemo(() => {
     if (!data) return { headers: [], rows: [], statCards: [] };
 
     if (activeTab === "summary") {
+      if (typeof data !== "object" || Array.isArray(data)) return { headers: [], rows: [], statCards: [] };
       return {
         headers: ["Metric", "Value"],
         rows: [
-          ["Total Requests", data.total],
-          ["Completed", data.completed],
-          ["Pending", data.pending],
-          ["In Progress", data.inProgress],
-          ["Overdue", data.overdue],
-          ["Rejected", data.rejected],
-          ["Cancelled", data.cancelled],
-          ["Estimated Cost", `৳${data.estimatedCost}`],
-          ["Actual Cost", `৳${data.actualCost}`],
-          ["Cost Variance", `৳${data.costVariance}`],
+          ["Total Requests", data.total ?? 0],
+          ["Completed", data.completed ?? 0],
+          ["Pending", data.pending ?? 0],
+          ["In Progress", data.inProgress ?? 0],
+          ["Overdue", data.overdue ?? 0],
+          ["Rejected", data.rejected ?? 0],
+          ["Cancelled", data.cancelled ?? 0],
+          ["Estimated Cost", `৳${data.estimatedCost ?? 0}`],
+          ["Actual Cost", `৳${data.actualCost ?? 0}`],
+          ["Cost Variance", `৳${data.costVariance ?? 0}`],
         ],
         statCards: [
-          { label: "Total", value: data.total },
-          { label: "Completed", value: data.completed },
-          { label: "Pending", value: data.pending },
-          { label: "Overdue", value: data.overdue },
+          { label: "Total", value: data.total ?? 0 },
+          { label: "Completed", value: data.completed ?? 0 },
+          { label: "Pending", value: data.pending ?? 0 },
+          { label: "Overdue", value: data.overdue ?? 0 },
         ],
       };
     }
     if (activeTab === "branch-wise") {
+      if (!Array.isArray(data)) return { headers: [], rows: [], statCards: [] };
       return {
         headers: ["Branch", "Total", "Completed", "Pending", "Overdue", "Est. Cost", "Actual Cost"],
-        rows: data.map((r) => [r.branch, r.total, r.completed, r.pending, r.overdue, `৳${r.estimatedCost}`, `৳${r.actualCost}`]),
+        rows: data.map((r) => [
+          r.branch || "Unassigned",
+          r.total ?? 0,
+          r.completed ?? 0,
+          r.pending ?? 0,
+          r.overdue ?? 0,
+          `৳${r.estimatedCost ?? 0}`,
+          `৳${r.actualCost ?? 0}`,
+        ]),
         statCards: [],
       };
     }
     if (activeTab === "category-wise") {
+      if (!Array.isArray(data)) return { headers: [], rows: [], statCards: [] };
       return {
         headers: ["Category", "Requests", "Completed", "Pending", "Est. Cost", "Actual Cost"],
-        rows: data.map((r) => [r.category, r.total, r.completed, r.pending, `৳${r.estimatedCost}`, `৳${r.actualCost}`]),
+        rows: data.map((r) => [
+          r.category || "Uncategorized",
+          r.total ?? 0,
+          r.completed ?? 0,
+          r.pending ?? 0,
+          `৳${r.estimatedCost ?? 0}`,
+          `৳${r.actualCost ?? 0}`,
+        ]),
         statCards: [],
       };
     }
     if (activeTab === "employee-wise") {
+      if (!Array.isArray(data)) return { headers: [], rows: [], statCards: [] };
       return {
         headers: ["Employee", "Branch", "Total", "Completed", "Pending", "In Progress", "Overdue"],
-        rows: data.map((r) => [r.name, r.branch, r.total, r.completed, r.pending, r.inProgress, r.overdue]),
+        rows: data.map((r) => [
+          r.name || "N/A",
+          r.branch || "N/A",
+          r.total ?? 0,
+          r.completed ?? 0,
+          r.pending ?? 0,
+          r.inProgress ?? 0,
+          r.overdue ?? 0,
+        ]),
         statCards: [],
       };
     }
     if (activeTab === "completion") {
+      if (typeof data !== "object" || Array.isArray(data)) return { headers: [], rows: [], statCards: [] };
       return {
         headers: ["Metric", "Value"],
         rows: [
-          ["Total Requests", data.total],
-          ["Completed", data.completed],
-          ["Pending", data.pending],
-          ["In Progress", data.inProgress],
-          ["Overdue", data.overdue],
-          ["Completion Rate", `${data.completionRate}%`],
+          ["Total Requests", data.total ?? 0],
+          ["Completed", data.completed ?? 0],
+          ["Pending", data.pending ?? 0],
+          ["In Progress", data.inProgress ?? 0],
+          ["Overdue", data.overdue ?? 0],
+          ["Completion Rate", `${data.completionRate ?? 0}%`],
         ],
         statCards: [
-          { label: "Total", value: data.total },
-          { label: "Completion Rate", value: `${data.completionRate}%` },
+          { label: "Total", value: data.total ?? 0 },
+          { label: "Completion Rate", value: `${data.completionRate ?? 0}%` },
         ],
       };
     }
     if (activeTab === "overdue") {
+      if (!Array.isArray(data)) return { headers: [], rows: [], statCards: [] };
       return {
         headers: ["Issue", "Branch", "Priority", "Deadline", "Days Overdue", "Assigned"],
         rows: data.map((r) => [
-          r.issue,
-          r.branch,
-          r.priority,
+          r.issue || "—",
+          r.branch || "—",
+          r.priority || "—",
           r.deadline ? new Date(r.deadline).toLocaleDateString() : "—",
-          r.daysOverdue,
+          r.daysOverdue ?? 0,
           r.assignedToEmployee?.name || r.assignedToVendor?.name || "Unassigned",
         ]),
         statCards: [{ label: "Overdue Requests", value: data.length }],
       };
     }
     if (activeTab === "cost") {
+      const byBranch = Array.isArray(data?.byBranch) ? data.byBranch : [];
+      const byCategory = Array.isArray(data?.byCategory) ? data.byCategory : [];
       const rowsCombined = [
-        ...data.byBranch.map((r) => [`Branch: ${r.branch}`, `৳${r.estimatedCost}`, `৳${r.actualCost}`]),
-        ...data.byCategory.map((r) => [`Category: ${r.category}`, `৳${r.estimatedCost}`, `৳${r.actualCost}`]),
+        ...byBranch.map((r) => [`Branch: ${r.branch || "Unassigned"}`, `৳${r.estimatedCost ?? 0}`, `৳${r.actualCost ?? 0}`]),
+        ...byCategory.map((r) => [`Category: ${r.category || "Uncategorized"}`, `৳${r.estimatedCost ?? 0}`, `৳${r.actualCost ?? 0}`]),
       ];
       return { headers: ["Breakdown", "Estimated Cost", "Actual Cost"], rows: rowsCombined, statCards: [] };
     }
     if (activeTab === "vendor-wise") {
+      const byVendor = Array.isArray(data?.byVendor) ? data.byVendor : [];
+      const byEmployee = Array.isArray(data?.byEmployee) ? data.byEmployee : [];
       const rowsCombined = [
-        ...data.byVendor.map((r) => [r.name, "Vendor", r.total, r.completed, r.pending, r.overdue, `৳${r.totalCost}`]),
-        ...data.byEmployee.map((r) => [r.name, "Employee", r.total, r.completed, r.pending, r.overdue, `৳${r.totalCost}`]),
+        ...byVendor.map((r) => [r.name || "Vendor", "Vendor", r.total ?? 0, r.completed ?? 0, r.pending ?? 0, r.overdue ?? 0, `৳${r.totalCost ?? 0}`]),
+        ...byEmployee.map((r) => [r.name || "Employee", "Employee", r.total ?? 0, r.completed ?? 0, r.pending ?? 0, r.overdue ?? 0, `৳${r.totalCost ?? 0}`]),
       ];
       return { headers: ["Name", "Type", "Assigned", "Completed", "Pending", "Overdue", "Total Cost"], rows: rowsCombined, statCards: [] };
     }
@@ -160,13 +199,11 @@ export default function MaintenanceReportsPage() {
   const handlePrint = () => {
     printHtmlReport({
       title: reportTitle,
-      preparedBy: `${user?.name || "System"} (${user?.role || ""})`,
-      branchFilter: "All Branches",
-      departmentFilter: "All Depts",
+      preparedBy: user?.name || "Maintenance Department",
+      companyName: settings?.siteName || "Multigym Premium",
       headers,
       rows,
-      stats: statCards.map((s) => ({ label: s.label, value: s.value })),
-      settings,
+      summaryStats: statCards,
     });
   };
 
@@ -179,7 +216,7 @@ export default function MaintenanceReportsPage() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id)}
+              onClick={() => handleTabChange(t.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === t.id ? "bg-brand-red text-white shadow-sm" : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"
               }`}
