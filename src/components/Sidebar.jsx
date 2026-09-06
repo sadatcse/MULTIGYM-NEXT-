@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useContext } from "react";
+import React, { useState, useEffect, useMemo, useContext, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MdChevronRight } from "react-icons/md";
+import { MdChevronRight, MdKeyboardArrowDown } from "react-icons/md";
 import menuItems from "./MenuItems";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import { AuthContext } from "@/providers/AuthProvider";
@@ -12,19 +12,11 @@ import Logo from "@/assets/Logo/logo.png";
 import Logo_Dark from "@/assets/Logo/logo_dark.png";
 
 /* ---------------- ACCORDION ITEM ---------------- */
-const AccordionItem = ({ item, isSidebarOpen }) => {
-  const [isOpen, setIsOpen] = useState(false);
+// isOpen/onToggle are lifted to Sidebar so only one group is ever expanded at
+// once — with 13 top-level groups, letting several stay open at the same
+// time was the main reason the sidebar overflowed as much as it did.
+const AccordionItem = ({ item, isSidebarOpen, isOpen, onToggle }) => {
   const pathname = usePathname();
-
-  // Auto-open submenu if any child route is active
-  useEffect(() => {
-    if (item.children) {
-      const active = item.children.some(
-        (child) => child.path === pathname
-      );
-      setIsOpen(active);
-    }
-  }, [pathname, item.children]);
 
   const linkClass = (path) =>
     pathname === path
@@ -36,7 +28,7 @@ const AccordionItem = ({ item, isSidebarOpen }) => {
     return (
       <li className="my-1">
         <button
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={onToggle}
           className="w-full flex justify-between items-center p-3 rounded-md
           text-brand-charcoal dark:text-brand-offwhite hover:bg-brand-primary/10
           dark:hover:bg-brand-primary/20 hover:text-brand-primary dark:hover:text-brand-sage transition-colors"
@@ -112,6 +104,11 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
   const logo = mode === "dark" ? Logo_Dark : Logo;
   const { user, company } = useContext(AuthContext);
   const { can, role, loading } = useUserPermissions();
+  const pathname = usePathname();
+  const navRef = useRef(null);
+  const [openKey, setOpenKey] = useState(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
 
   /* ---------------- PERMISSION + FORCE LOGIC ---------------- */
   const filteredMenuItems = useMemo(() => {
@@ -162,6 +159,31 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
       .filter(Boolean);
   }, [can, loading, role, user]);
 
+  // Auto-open whichever group contains the active route; collapses the rest
+  // (only one group open at a time — see AccordionItem's comment on why).
+  useEffect(() => {
+    const activeParent = filteredMenuItems.find((item) =>
+      item.children?.some((child) => child.path === pathname)
+    );
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing open group to the route on navigation, not a cascading render
+    setOpenKey(activeParent ? activeParent.title : null);
+  }, [pathname, filteredMenuItems]);
+
+  // Drives the top/bottom fade-and-arrow hints below — without them, a
+  // collapsed-but-scrollable sidebar looks like it simply ends, hiding
+  // whatever groups fall past the viewport (e.g. Security & Access when a
+  // long group like Task & Instructions is expanded above it).
+  const updateScrollAffordance = useCallback(() => {
+    const el = navRef.current;
+    if (!el) return;
+    setCanScrollUp(el.scrollTop > 4);
+    setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  }, []);
+
+  useEffect(() => {
+    updateScrollAffordance();
+  }, [filteredMenuItems, openKey, isSidebarOpen, updateScrollAffordance]);
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -190,7 +212,11 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
         </div>
 
         {/* Menu */}
-        <nav className="p-2 overflow-y-auto h-[calc(100vh-65px)] custom-scrollbar">
+        <nav
+          ref={navRef}
+          onScroll={updateScrollAffordance}
+          className="p-2 overflow-y-auto h-[calc(100vh-65px)] custom-scrollbar"
+        >
           {loading ? (
             <div className="flex flex-col gap-4 p-4 mt-4 animate-pulse">
               <div className="h-8 bg-brand-beige dark:bg-brand-dark-grey rounded w-full"></div>
@@ -204,11 +230,26 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, mode }) => {
                   key={`${item.title}-${item.path || "group"}`}
                   item={item}
                   isSidebarOpen={isSidebarOpen}
+                  isOpen={openKey === item.title}
+                  onToggle={() => setOpenKey((prev) => (prev === item.title ? null : item.title))}
                 />
               ))}
             </ul>
           )}
         </nav>
+
+        {/* Scroll hints: a fading edge plus a bouncing arrow at the bottom
+            when there's more menu below the visible area (and a plain fade,
+            no arrow, at the top once scrolled down) — makes the sidebar's
+            scrollability obvious instead of it looking like it just ends. */}
+        {canScrollUp && (
+          <div className="pointer-events-none absolute left-0 right-0 top-[65px] h-6 bg-gradient-to-b from-brand-white dark:from-brand-charcoal to-transparent" />
+        )}
+        {canScrollDown && (
+          <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-10 bg-gradient-to-t from-brand-white dark:from-brand-charcoal to-transparent flex items-end justify-center pb-1">
+            <MdKeyboardArrowDown className="text-lg text-brand-gold animate-bounce" />
+          </div>
+        )}
       </aside>
     </>
   );
