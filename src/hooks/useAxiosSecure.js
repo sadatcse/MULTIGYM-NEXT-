@@ -4,8 +4,17 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
+const getBaseUrl = () => {
+  const url =
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://multigym-hr-backend.vercel.app/api";
+  const trimmed = url.replace(/\/$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+};
+
 const axiosSecure = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || "https://multigym-hr-backend.vercel.app/api",
+  baseURL: getBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },
