@@ -5,16 +5,15 @@ import { motion } from "framer-motion";
 import { FiSearch, FiSend, FiArrowLeft, FiMessageCircle } from "react-icons/fi";
 import { MdDone, MdDoneAll } from "react-icons/md";
 import { AuthContext } from "@/providers/AuthProvider";
-import { useChatSocket } from "@/providers/ChatSocketProvider";
 import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import useChatApi from "@/hooks/useChatApi";
 import Avatar from "@/components/Comon/Avatar";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 
-// Merges an incoming socket message into the conversation-preview list: bumps
-// an existing entry to the top, or creates a fresh entry the first time two
-// employees ever message each other.
+// Merges a newly sent/received message into the conversation-preview list:
+// bumps an existing entry to the top, or creates a fresh entry the first
+// time two employees ever message each other.
 function upsertConversationPreview({ prev, msg, partnerId, contactsById, currentEmployeeId, isConversationActive }) {
   const lastMessage = {
     _id: msg._id,
@@ -73,8 +72,7 @@ export default function ChatPage() {
   const { employee, user } = useContext(AuthContext);
   const currentEmployeeId = (employee || user)?._id;
 
-  const { socket, isOnline, sendMessage, markSeen, sendTyping } = useChatSocket();
-  const { getContacts, getConversations, getMessages } = useChatApi();
+  const { getContacts, getConversations, getMessages, markSeenRest, sendMessageRest } = useChatApi();
   const { timeZone, formatDate, formatTime } = useSystemTimeZone();
 
   const [contacts, setContacts] = useState([]);
@@ -87,7 +85,6 @@ export default function ChatPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [typingActive, setTypingActive] = useState(false);
   const [showMobileList, setShowMobileList] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -96,8 +93,6 @@ export default function ChatPage() {
   const activePartnerIdRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-  const lastTypingSentRef = useRef(0);
 
   const contactsById = useMemo(() => {
     const map = {};
@@ -133,58 +128,44 @@ export default function ChatPage() {
     activePartnerIdRef.current = activePartner?._id || null;
   }, [activePartner]);
 
-  // Live socket events: new messages, seen receipts, typing pings.
+  // Chat has no live push transport (see ChatSocketProvider.jsx for why) —
+  // this polls the REST endpoints every few seconds instead, which is good
+  // enough for an internal tool and keeps the whole feature working on a
+  // platform (Vercel serverless) that can't hold a persistent connection.
   useEffect(() => {
-    if (!socket) return;
+    const partnerId = activePartner?._id || null;
 
-    const handleNewMessage = (msg) => {
-      const partnerId = msg.sender === currentEmployeeId ? msg.receiver : msg.sender;
-      const isActive = activePartnerIdRef.current === partnerId;
+    const tick = async () => {
+      try {
+        const convosData = await getConversations();
+        setConversations(convosData);
+      } catch (err) {
+        console.error("Failed to refresh conversations:", err);
+      }
 
-      setConversations((prev) =>
-        upsertConversationPreview({ prev, msg, partnerId, contactsById, currentEmployeeId, isConversationActive: isActive }),
-      );
-
-      if (isActive) {
-        setMessages((prev) => (prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]));
-        if (msg.sender !== currentEmployeeId) {
-          markSeen(partnerId);
+      if (!partnerId) return;
+      try {
+        const result = await getMessages(partnerId, 1);
+        let gotNewIncoming = false;
+        setMessages((prev) => {
+          const freshById = new Map(result.data.map((m) => [m._id, m]));
+          const existingIds = new Set(prev.map((m) => m._id));
+          const merged = prev.map((m) => freshById.get(m._id) || m);
+          const newOnes = result.data.filter((m) => !existingIds.has(m._id));
+          if (newOnes.some((m) => m.sender !== currentEmployeeId)) gotNewIncoming = true;
+          return newOnes.length === 0 ? merged : [...merged, ...newOnes];
+        });
+        if (gotNewIncoming) {
+          markSeenRest(partnerId).catch(() => {});
         }
+      } catch (err) {
+        console.error("Failed to poll messages:", err);
       }
     };
 
-    const handleSeen = ({ by, conversationId }) => {
-      if (activePartnerIdRef.current === by) {
-        setMessages((prev) =>
-          prev.map((m) => (m.sender === currentEmployeeId && !m.seen ? { ...m, seen: true, seenAt: new Date().toISOString() } : m)),
-        );
-      }
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.conversationId === conversationId && c.lastMessage?.sender === currentEmployeeId
-            ? { ...c, lastMessage: { ...c.lastMessage, seen: true } }
-            : c,
-        ),
-      );
-    };
-
-    const handleTyping = ({ from }) => {
-      if (activePartnerIdRef.current !== from) return;
-      setTypingActive(true);
-      clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => setTypingActive(false), 3000);
-    };
-
-    socket.on("message:new", handleNewMessage);
-    socket.on("message:seen", handleSeen);
-    socket.on("typing", handleTyping);
-
-    return () => {
-      socket.off("message:new", handleNewMessage);
-      socket.off("message:seen", handleSeen);
-      socket.off("typing", handleTyping);
-    };
-  }, [socket, currentEmployeeId, markSeen, contactsById]);
+    const interval = setInterval(tick, 5000);
+    return () => clearInterval(interval);
+  }, [activePartner?._id, currentEmployeeId, getConversations, getMessages, markSeenRest]);
 
   // Load history for the selected conversation and mark it seen.
   useEffect(() => {
@@ -199,7 +180,7 @@ export default function ChatPage() {
         if (!active) return;
         setMessages(result.data);
         setHasMore(result.currentPage < result.totalPages);
-        markSeen(activePartner._id);
+        markSeenRest(activePartner._id).catch(() => {});
         setConversations((prev) => prev.map((c) => (c.partner._id === activePartner._id ? { ...c, unreadCount: 0 } : c)));
       } catch (err) {
         console.error("Failed to load messages:", err);
@@ -255,7 +236,12 @@ export default function ChatPage() {
     setMessageInput("");
     setSending(true);
     try {
-      await sendMessage(activePartner._id, content);
+      const msg = await sendMessageRest(activePartner._id, content);
+      const partnerId = activePartner._id;
+      setMessages((prev) => (prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]));
+      setConversations((prev) =>
+        upsertConversationPreview({ prev, msg, partnerId, contactsById, currentEmployeeId, isConversationActive: true }),
+      );
     } catch (err) {
       console.error("Failed to send message:", err);
       setMessageInput(content);
@@ -273,13 +259,6 @@ export default function ChatPage() {
 
   const handleInputChange = (e) => {
     setMessageInput(e.target.value);
-    if (activePartner) {
-      const now = Date.now();
-      if (now - lastTypingSentRef.current > 2000) {
-        sendTyping(activePartner._id);
-        lastTypingSentRef.current = now;
-      }
-    }
   };
 
   const combinedList = useMemo(() => {
@@ -332,7 +311,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-7rem)]">
-      <Mtitle title="Employee Chat" subtitle="Message any colleague in real time" />
+      <Mtitle title="Employee Chat" subtitle="Message any colleague" />
 
       <div className="flex-1 flex bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm overflow-hidden">
         {/* Contact / conversation list */}
@@ -363,7 +342,6 @@ export default function ChatPage() {
               <div className="p-8 text-center text-sm text-brand-dark-grey">No employees found</div>
             ) : (
               filteredList.map((contact) => {
-                const online = isOnline(contact._id);
                 const isActive = activePartner?._id === contact._id;
                 return (
                   <button
@@ -373,7 +351,7 @@ export default function ChatPage() {
                       isActive ? "bg-brand-primary/10" : "hover:bg-brand-offwhite dark:hover:bg-brand-midnight"
                     }`}
                   >
-                    <Avatar src={contact.photo} name={contact.name} size={11} showStatus online={online} />
+                    <Avatar src={contact.photo} name={contact.name} size={11} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-sm text-brand-black dark:text-brand-white truncate">{contact.name}</span>
@@ -416,18 +394,10 @@ export default function ChatPage() {
                 <button onClick={() => setShowMobileList(true)} className="md:hidden text-brand-dark-grey cursor-pointer">
                   <FiArrowLeft className="text-xl" />
                 </button>
-                <Avatar src={activePartner.photo} name={activePartner.name} size={10} showStatus online={isOnline(activePartner._id)} />
+                <Avatar src={activePartner.photo} name={activePartner.name} size={10} />
                 <div>
                   <h3 className="font-bold text-sm text-brand-black dark:text-brand-white">{activePartner.name}</h3>
-                  <p className="text-xs text-brand-dark-grey">
-                    {typingActive ? (
-                      <span className="text-brand-primary font-semibold">typing...</span>
-                    ) : isOnline(activePartner._id) ? (
-                      "Online"
-                    ) : (
-                      "Offline"
-                    )}
-                  </p>
+                  <p className="text-xs text-brand-dark-grey">{activePartner.jobPosition || activePartner.department || activePartner.role}</p>
                 </div>
               </div>
 

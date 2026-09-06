@@ -75,7 +75,7 @@ export default function EmployeeDutyTimePage() {
   const handleOpenEdit = (emp) => {
     setEditingEmployee(emp);
     setFormData({
-      branch: emp.branch || "",
+      branch: emp.branches?.[0] || "",
       shift: emp.shift || "",
       workSchedule: emp.workSchedule || "",
     });
@@ -89,8 +89,15 @@ export default function EmployeeDutyTimePage() {
 
     setIsSubmitting(true);
     try {
+      // Only the primary (first) branch slot is editable here — preserve any
+      // additional branches the employee already has, set via the Employee
+      // Directory's full multi-branch picker, so this quick shift/schedule
+      // editor can never silently drop them.
+      const additionalBranches = (editingEmployee.branches || []).slice(1);
+      const branches = formData.branch ? [formData.branch, ...additionalBranches] : additionalBranches;
+
       await updateEmployee(editingEmployee._id, {
-        branch: formData.branch,
+        branches,
         shift: formData.shift,
         workSchedule: formData.workSchedule,
       });
@@ -268,8 +275,8 @@ export default function EmployeeDutyTimePage() {
           >
             <option value="all">All Branches</option>
             {branches.map((b) => (
-              <option key={b._id} value={b.branchName}>
-                {b.branchName}
+              <option key={b._id} value={b.name}>
+                {b.name}
               </option>
             ))}
           </select>
@@ -387,7 +394,7 @@ export default function EmployeeDutyTimePage() {
                       <td className="py-4 px-6">
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-brand-black dark:text-brand-white border border-brand-beige dark:border-brand-dark-grey text-xs font-bold">
                           <FiMapPin className="text-brand-gold text-xs" />
-                          <span>{emp.branch || "General Branch"}</span>
+                          <span>{emp.branches?.length > 0 ? emp.branches.join(", ") : "General Branch"}</span>
                         </span>
                       </td>
 
@@ -516,15 +523,15 @@ export default function EmployeeDutyTimePage() {
                 </div>
                 <div className="text-[11px] text-brand-dark-grey font-medium mt-0.5 flex flex-wrap gap-x-3">
                   <span>ID: {editingEmployee.employeeId || "N/A"}</span>
-                  <span>Branch: {editingEmployee.branch || "General"}</span>
+                  <span>Branch: {editingEmployee.branches?.join(", ") || "General"}</span>
                   <span>Dept: {editingEmployee.department || "N/A"}</span>
                 </div>
               </div>
 
-              {/* Select Employee Branch */}
+              {/* Select Employee Primary Branch */}
               <div>
                 <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1.5">
-                  Employee Branch
+                  Primary Branch
                 </label>
                 <select
                   value={formData.branch}
@@ -534,13 +541,15 @@ export default function EmployeeDutyTimePage() {
                 >
                   <option value="">-- Select Branch --</option>
                   {branches.map((b) => (
-                    <option key={b._id} value={b.branchName}>
-                      {b.branchName}
+                    <option key={b._id} value={b.name}>
+                      {b.name}
                     </option>
                   ))}
                 </select>
                 <p className="text-[10px] text-brand-dark-grey mt-1">
-                  Assign location branch for this employee
+                  {editingEmployee.branches?.length > 1
+                    ? `This employee also belongs to: ${editingEmployee.branches.slice(1).join(", ")} (unchanged by this form — manage the full list from the Employee Directory).`
+                    : "Assign the primary location branch for this employee."}
                 </p>
               </div>
 

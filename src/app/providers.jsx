@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import AuthProvider from "@/providers/AuthProvider";
 import { TimeZoneProvider } from "@/providers/TimeZoneProvider";
 import { PermissionsProvider } from "@/providers/PermissionsProvider";
-import { ChatSocketProvider } from "@/providers/ChatSocketProvider";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -60,10 +59,11 @@ export default function Providers({ children }) {
     <AuthProvider>
       <TimeZoneProvider>
         <PermissionsProvider>
-          <ChatSocketProvider>
-            {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
-            <ToastContainer position="top-right" autoClose={3000} />
-          </ChatSocketProvider>
+          {/* ChatSocketProvider is unmounted — the backend's Socket.IO gateway
+              is disabled for the Vercel serverless deploy (see chat.gateway.ts),
+              chat now runs over plain REST/polling in app/dashboard/chat/page.js. */}
+          {mounted ? children : <div className="min-h-screen bg-brand-offwhite dark:bg-brand-charcoal" />}
+          <ToastContainer position="top-right" autoClose={3000} />
         </PermissionsProvider>
       </TimeZoneProvider>
     </AuthProvider>

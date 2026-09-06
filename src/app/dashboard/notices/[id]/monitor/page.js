@@ -53,6 +53,7 @@ export default function NoticeMonitoringPage({ params }) {
   }, [id, searchTerm, statusFilter, getNoticeMonitoring]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMonitoring();
   }, [fetchMonitoring]);
 
@@ -83,7 +84,7 @@ export default function NoticeMonitoringPage({ params }) {
         EmployeeName: emp.name || "N/A",
         EmployeeID: emp.employeeId || "N/A",
         Department: emp.department || "N/A",
-        Branch: emp.branch || "N/A",
+        Branch: emp.branches?.join(", ") || "N/A",
         Status: r.status ? r.status.toUpperCase() : "DELIVERED",
         FirstSeenAt: r.firstSeenAt ? new Date(r.firstSeenAt).toLocaleString() : "Not Seen",
         LastSeenAt: r.lastSeenAt ? new Date(r.lastSeenAt).toLocaleString() : "Not Seen",

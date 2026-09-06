@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
@@ -82,7 +82,7 @@ const INITIAL_FORM = {
   employeeType: "Full-time",
   joiningDate: "",
   status: "active",
-  branch: "",
+  branches: [],
   shift: "",
   role: "user",
   resignationDate: "",
@@ -155,8 +155,8 @@ export default function EmployeePage() {
 
   // Helper APIs & Location Data
   const { branches } = useBranchApi(100);
-  const { departments } = useDepartmentApi(100);
-  const { jobPositions } = useJobPositionApi(100);
+  const { departments } = useDepartmentApi(200);
+  const { jobPositions } = useJobPositionApi(200);
   const { shifts } = useShiftApi(100);
   const { roles: roleOptions } = useRoleApi(100);
   const { divisions, getDistrictsByDivision, getAreasByDistrict } = useLocationData();
@@ -170,6 +170,72 @@ export default function EmployeePage() {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filter job positions based on the department currently selected in the form
+  const availablePositions = useMemo(() => {
+    if (!formData.department || !formData.department.trim()) {
+      return [];
+    }
+
+    const selectedDept = departments.find(
+      (d) =>
+        (d.name && d.name.trim().toLowerCase() === formData.department.trim().toLowerCase()) ||
+        d._id === formData.department
+    );
+
+    const targetDeptName = (selectedDept?.name || formData.department).trim().toLowerCase();
+    const targetDeptId = selectedDept?._id ? String(selectedDept._id) : null;
+
+    return jobPositions.filter((jp) => {
+      // Exclude inactive positions unless it is the currently assigned position of the employee
+      const isCurrent = (jp.title || jp.name) === formData.jobPosition;
+      if (jp.status === "inactive" && !isCurrent) {
+        return false;
+      }
+
+      if (!jp.department) return false;
+      const jpDept = String(jp.department).trim().toLowerCase();
+
+      return jpDept === targetDeptName || (targetDeptId && String(jp.department) === targetDeptId);
+    });
+  }, [formData.department, formData.jobPosition, departments, jobPositions]);
+
+  // Handle department change: resets jobPosition if it does not exist under the new department
+  const handleDepartmentChange = (newDept) => {
+    setFormData((prev) => {
+      if (!newDept) {
+        return {
+          ...prev,
+          department: "",
+          jobPosition: "",
+        };
+      }
+
+      const selectedDept = departments.find(
+        (d) =>
+          (d.name && d.name.trim().toLowerCase() === newDept.trim().toLowerCase()) ||
+          d._id === newDept
+      );
+      const targetDeptName = (selectedDept?.name || newDept).trim().toLowerCase();
+      const targetDeptId = selectedDept?._id ? String(selectedDept._id) : null;
+
+      const matchingPositions = jobPositions.filter((jp) => {
+        if (!jp.department) return false;
+        const jpDept = String(jp.department).trim().toLowerCase();
+        return jpDept === targetDeptName || (targetDeptId && String(jp.department) === targetDeptId);
+      });
+
+      const stillValid = matchingPositions.some(
+        (jp) => (jp.title || jp.name) === prev.jobPosition
+      );
+
+      return {
+        ...prev,
+        department: newDept,
+        jobPosition: stillValid ? prev.jobPosition : "",
+      };
+    });
+  };
 
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -310,7 +376,7 @@ export default function EmployeePage() {
       employeeType: emp.employeeType || "Full-time",
       joiningDate: emp.joiningDate || "",
       status: emp.status || "active",
-      branch: emp.branch || "",
+      branches: Array.isArray(emp.branches) ? emp.branches : (emp.branch ? [emp.branch] : []),
       shift: emp.shift || "",
       role: emp.role || "user",
       resignationDate: emp.resignationDate || "",
@@ -808,7 +874,7 @@ export default function EmployeePage() {
                                 <div className="space-y-1">
                                   <span className="flex items-center gap-1.5 text-xs font-bold text-brand-black dark:text-brand-white">
                                     <FiMapPin className="text-brand-red text-xs shrink-0" />
-                                    {emp.branch || "Main Branch"}
+                                    {emp.branches?.length > 0 ? emp.branches.join(", ") : "Main Branch"}
                                   </span>
                                   <span className="flex items-center gap-1 text-[11px] text-brand-dark-grey dark:text-brand-gold-light">
                                     <FiClock className="text-brand-gold text-xs shrink-0" />
@@ -1694,7 +1760,7 @@ export default function EmployeePage() {
                         </label>
                         <select
                           value={formData.department}
-                          onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                          onChange={(e) => handleDepartmentChange(e.target.value)}
                           className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold/50 outline-none cursor-pointer"
                         >
                           <option value="">Select Department</option>
@@ -1713,37 +1779,82 @@ export default function EmployeePage() {
                         <select
                           value={formData.jobPosition}
                           onChange={(e) => setFormData({ ...formData, jobPosition: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold/50 outline-none cursor-pointer"
+                          disabled={!formData.department}
+                          className={`w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold/50 outline-none cursor-pointer ${
+                            !formData.department ? "opacity-60 cursor-not-allowed" : ""
+                          }`}
                         >
-                          <option value="">Select Position</option>
-                          {jobPositions.map((jp) => (
+                          <option value="">
+                            {!formData.department
+                              ? "Select Department first"
+                              : availablePositions.length === 0
+                              ? "No positions found for this department"
+                              : "Select Position"}
+                          </option>
+                          {formData.jobPosition &&
+                            !availablePositions.some(
+                              (jp) => (jp.title || jp.name) === formData.jobPosition
+                            ) && (
+                              <option value={formData.jobPosition}>
+                                {formData.jobPosition} (Current)
+                              </option>
+                            )}
+                          {availablePositions.map((jp) => (
                             <option key={jp._id} value={jp.title || jp.name}>
                               {jp.title || jp.name}
                             </option>
                           ))}
                         </select>
+                        {!formData.department ? (
+                          <p className="text-[10px] text-brand-dark-grey/70 dark:text-brand-gold-light/60 mt-1 font-medium">
+                            Please select a department first to view its available positions.
+                          </p>
+                        ) : availablePositions.length === 0 ? (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                            No positions found under &quot;{formData.department}&quot;. Add positions in Settings &gt; Job Positions.
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
-                          Branch
-                        </label>
-                        <select
-                          value={formData.branch}
-                          onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold/50 outline-none cursor-pointer"
-                        >
-                          <option value="">Select Branch</option>
-                          {branches.map((b) => (
-                            <option key={b._id} value={b.name}>
+                    <div>
+                      <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1.5">
+                        Branch(es) <span className="font-medium normal-case text-brand-dark-grey/70">— an employee can belong to more than one</span>
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {branches.map((b) => {
+                          const selected = formData.branches.includes(b.name);
+                          return (
+                            <button
+                              key={b._id}
+                              type="button"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  branches: selected
+                                    ? formData.branches.filter((name) => name !== b.name)
+                                    : [...formData.branches, b.name],
+                                })
+                              }
+                              className={`px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
+                                selected
+                                  ? "bg-brand-red text-white border-brand-red shadow-sm"
+                                  : "bg-brand-offwhite dark:bg-brand-midnight text-brand-black dark:text-brand-white border-brand-beige dark:border-brand-dark-grey hover:border-brand-red/50"
+                              }`}
+                            >
                               {b.name}
-                            </option>
-                          ))}
-                        </select>
+                            </button>
+                          );
+                        })}
+                        {branches.length === 0 && (
+                          <p className="text-[10px] text-brand-dark-grey/70 dark:text-brand-gold-light/60 font-medium">
+                            No branches configured yet.
+                          </p>
+                        )}
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[11px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light mb-1">
                           Work Shift
@@ -1915,7 +2026,7 @@ export default function EmployeePage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey overflow-hidden shadow-2xl"
+              className="w-full max-w-5xl bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey overflow-hidden shadow-2xl"
             >
               <div className="p-6 bg-brand-offwhite dark:bg-brand-midnight border-b border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -1946,15 +2057,17 @@ export default function EmployeePage() {
                 </button>
               </div>
 
-              <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+              <div className="p-6 max-h-[78vh] overflow-y-auto space-y-6">
                 <div>
                   <h4 className="text-xs font-black uppercase tracking-wider text-brand-gold mb-3 flex items-center gap-1.5">
                     <FiBriefcase /> Employment Details
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
-                      <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Branch</span>
-                      <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.branch || "—"}</span>
+                      <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Branch(es)</span>
+                      <span className="font-bold text-brand-black dark:text-brand-white">
+                        {viewingEmployee.branches?.length > 0 ? viewingEmployee.branches.join(", ") : viewingEmployee.branch || "—"}
+                      </span>
                     </div>
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Shift</span>
@@ -1983,7 +2096,7 @@ export default function EmployeePage() {
                   <h4 className="text-xs font-black uppercase tracking-wider text-brand-gold mb-3 flex items-center gap-1.5">
                     <FiUser /> Personal Information
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Date of Birth</span>
                       <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.dateOfBirth ? formatDate(viewingEmployee.dateOfBirth) : "—"}</span>
@@ -2000,7 +2113,7 @@ export default function EmployeePage() {
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Nationality</span>
                       <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.nationality || "—"}</span>
                     </div>
-                    <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight col-span-2">
+                    <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">NID / Passport</span>
                       <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.nidPassport || "—"}</span>
                     </div>
@@ -2011,10 +2124,10 @@ export default function EmployeePage() {
                   <h4 className="text-xs font-black uppercase tracking-wider text-brand-gold mb-3 flex items-center gap-1.5">
                     <FiMail /> Contact & Location
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Email Address</span>
-                      <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.email}</span>
+                      <span className="font-bold text-brand-black dark:text-brand-white break-all">{viewingEmployee.email}</span>
                     </div>
                     <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                       <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Mobile Number</span>
@@ -2036,7 +2149,7 @@ export default function EmployeePage() {
                     <h4 className="text-xs font-black uppercase tracking-wider text-brand-gold mb-3 flex items-center gap-1.5">
                       <FiPhone /> Emergency Contact
                     </h4>
-                    <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight grid grid-cols-3 gap-3 text-xs">
+                    <div className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                       <div>
                         <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">Contact Person</span>
                         <span className="font-bold text-brand-black dark:text-brand-white">{viewingEmployee.emergencyContact.name || "—"}</span>
@@ -2210,7 +2323,7 @@ function EmployeeAssetsSection({ employeeId, formatDate, onViewAll }) {
       ) : active.length === 0 ? (
         <p className="text-xs text-brand-dark-grey p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">No assets currently assigned.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 text-xs">
           {active.map((item) => (
             <div key={item._id} className="p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
               <span className="text-[10px] uppercase font-extrabold text-brand-dark-grey block">{item.asset?.assetType?.name || "Asset"}</span>

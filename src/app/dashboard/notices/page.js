@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useContext, useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { AuthContext } from "@/providers/AuthProvider";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
@@ -49,7 +50,19 @@ const rowVariants = {
 
 export default function AdminNoticeDashboardPage() {
   const router = useRouter();
+  const { user } = useContext(AuthContext);
   const { getAdminDashboard, getAllNoticesAdmin, publishNotice, deleteNotice } = useNoticeApi();
+
+  // Matches the backend's hardcoded floor in notice.service.ts — the
+  // permission-matrix entry for "notices" isn't configured for any role, so
+  // the write actions here are gated by role directly rather than relying
+  // on that unconfigured (default-allow) permission check.
+  const isManagerOrAdmin =
+    user?.role === "superadmin" ||
+    user?.role === "admin" ||
+    user?.role === "director" ||
+    user?.role === "manager" ||
+    user?.role === "md";
 
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
@@ -121,6 +134,7 @@ export default function AdminNoticeDashboardPage() {
   }, [getAdminDashboard, getAllNoticesAdmin]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount, not a cascading render
     fetchData();
   }, [fetchData]);
 
@@ -232,13 +246,15 @@ export default function AdminNoticeDashboardPage() {
               <span>Refresh</span>
             </button>
 
-            <Link
-              href="/dashboard/notices/create"
-              className="flex items-center gap-2 px-5 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
-            >
-              <FiPlus className="text-base" />
-              <span>Create Notice</span>
-            </Link>
+            {isManagerOrAdmin && (
+              <Link
+                href="/dashboard/notices/create"
+                className="flex items-center gap-2 px-5 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+              >
+                <FiPlus className="text-base" />
+                <span>Create Notice</span>
+              </Link>
+            )}
           </div>
         }
       />
@@ -464,12 +480,14 @@ export default function AdminNoticeDashboardPage() {
               ? "No notices match your active filters."
               : "No official notices have been drafted or published yet."}
           </p>
-          <Link
-            href="/dashboard/notices/create"
-            className="inline-block px-5 py-2.5 bg-brand-red text-white text-xs font-bold rounded-2xl shadow-md hover:bg-brand-red-dark transition-all"
-          >
-            + Create First Notice
-          </Link>
+          {isManagerOrAdmin && (
+            <Link
+              href="/dashboard/notices/create"
+              className="inline-block px-5 py-2.5 bg-brand-red text-white text-xs font-bold rounded-2xl shadow-md hover:bg-brand-red-dark transition-all"
+            >
+              + Create First Notice
+            </Link>
+          )}
         </div>
       ) : (
         <>
@@ -592,7 +610,7 @@ export default function AdminNoticeDashboardPage() {
 
                             <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1.5">
-                                {item.status === "draft" && (
+                                {isManagerOrAdmin && item.status === "draft" && (
                                   <button
                                     onClick={(e) => handlePublish(item._id, item.title, e)}
                                     className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
@@ -613,29 +631,33 @@ export default function AdminNoticeDashboardPage() {
                                   <FiEye className="text-sm" />
                                 </button>
 
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    router.push(`/dashboard/notices/${item._id}/edit`);
-                                  }}
-                                  className="p-2 rounded-xl text-sky-500 bg-sky-500/10 hover:bg-sky-500 hover:text-white transition-all cursor-pointer"
-                                  title="Edit Notice"
-                                >
-                                  <FiEdit3 className="text-sm" />
-                                </button>
+                                {isManagerOrAdmin && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(`/dashboard/notices/${item._id}/edit`);
+                                    }}
+                                    className="p-2 rounded-xl text-sky-500 bg-sky-500/10 hover:bg-sky-500 hover:text-white transition-all cursor-pointer"
+                                    title="Edit Notice"
+                                  >
+                                    <FiEdit3 className="text-sm" />
+                                  </button>
+                                )}
 
-                                <button
-                                  onClick={(e) => handleOpenDelete(item, e)}
-                                  disabled={rowBusy}
-                                  className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Delete Notice"
-                                >
-                                  {rowBusy ? (
-                                    <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
-                                  ) : (
-                                    <FiTrash2 className="text-sm" />
-                                  )}
-                                </button>
+                                {isManagerOrAdmin && (
+                                  <button
+                                    onClick={(e) => handleOpenDelete(item, e)}
+                                    disabled={rowBusy}
+                                    className="p-2 rounded-xl text-brand-red bg-brand-red/10 hover:bg-brand-red hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Delete Notice"
+                                  >
+                                    {rowBusy ? (
+                                      <span className="block w-3.5 h-3.5 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <FiTrash2 className="text-sm" />
+                                    )}
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </motion.tr>
@@ -741,7 +763,7 @@ export default function AdminNoticeDashboardPage() {
                       </div>
 
                       <div className="pt-4 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                        {item.status === "draft" && (
+                        {isManagerOrAdmin && item.status === "draft" && (
                           <button
                             onClick={(e) => handlePublish(item._id, item.title, e)}
                             className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
@@ -762,17 +784,20 @@ export default function AdminNoticeDashboardPage() {
                           <FiEye className="text-sm" />
                         </button>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/dashboard/notices/${item._id}/edit`);
-                          }}
-                          className="p-2 rounded-xl text-sky-500 bg-sky-500/10 hover:bg-sky-500 hover:text-white transition-all cursor-pointer"
-                          title="Edit Notice"
-                        >
-                          <FiEdit3 className="text-sm" />
-                        </button>
+                        {isManagerOrAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/notices/${item._id}/edit`);
+                            }}
+                            className="p-2 rounded-xl text-sky-500 bg-sky-500/10 hover:bg-sky-500 hover:text-white transition-all cursor-pointer"
+                            title="Edit Notice"
+                          >
+                            <FiEdit3 className="text-sm" />
+                          </button>
+                        )}
 
+                        {isManagerOrAdmin && (
                         <button
                           onClick={(e) => handleOpenDelete(item, e)}
                           disabled={rowBusy}
@@ -785,6 +810,7 @@ export default function AdminNoticeDashboardPage() {
                             <FiTrash2 className="text-sm" />
                           )}
                         </button>
+                        )}
                       </div>
                     </motion.div>
                   );

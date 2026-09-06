@@ -163,6 +163,7 @@ export default function TaskDetailPage({ params }) {
   }, [taskId, getTaskById]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTask();
   }, [fetchTask]);
 
@@ -1020,7 +1021,7 @@ export default function TaskDetailPage({ params }) {
                             )}
                           </div>
                           <div className="text-[10px] text-brand-dark-grey font-mono font-bold">
-                            {emp.employeeId || "Staff"} • {emp.department || "General"} • {emp.branch || "Branch"}
+                            {emp.employeeId || "Staff"} • {emp.department || "General"} • {emp.branches?.join(", ") || "Branch"}
                           </div>
                         </div>
                       </div>

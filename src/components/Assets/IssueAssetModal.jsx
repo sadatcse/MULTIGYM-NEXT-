@@ -68,15 +68,19 @@ export default function IssueAssetModal({
       const targetId = (selBranchObj?._id || selectedBranch).toString().trim();
       const targetName = (selBranchObj?.name || selectedBranch).trim().toLowerCase();
 
-      const empBranchObj = e.branch && typeof e.branch === "object" ? e.branch : null;
-      const empBranchId = (empBranchObj?._id || (typeof e.branch === "string" ? e.branch : "")).toString().trim();
-      const empBranchName = (empBranchObj?.name || e.branchName || (typeof e.branch === "string" ? e.branch : "")).trim().toLowerCase();
-
-      matchBranch =
-        (targetId && empBranchId === targetId) ||
-        (targetName && empBranchName === targetName) ||
-        (targetName && empBranchName.includes(targetName)) ||
-        (targetName && targetName.includes(empBranchName));
+      // An employee may belong to more than one branch — match if ANY of
+      // their branches matches the selected filter (by id or name).
+      const empBranches = Array.isArray(e.branches) ? e.branches : (e.branch ? [e.branch] : []);
+      matchBranch = empBranches.some((eb) => {
+        const empBranchName = (typeof eb === "string" ? eb : eb?.name || "").trim().toLowerCase();
+        const empBranchId = (typeof eb === "string" ? "" : eb?._id || "").toString().trim();
+        return (
+          (targetId && empBranchId === targetId) ||
+          (targetName && empBranchName === targetName) ||
+          (targetName && empBranchName.includes(targetName)) ||
+          (targetName && targetName.includes(empBranchName))
+        );
+      });
     }
 
     const searchLower = employeeSearch.toLowerCase().trim();
@@ -93,6 +97,7 @@ export default function IssueAssetModal({
   useEffect(() => {
     if (!isOpen) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIssueMode(initialMode || "single");
     setSelectedBranch("all");
     setEmployeeSearch("");
@@ -415,7 +420,7 @@ export default function IssueAssetModal({
                   </span>
                   {variantStockViolations.map((v) => (
                     <p key={v.variantName} className="text-[11px] font-medium leading-relaxed">
-                      Variant <span className="font-black text-brand-black dark:text-white">"{v.variantName}"</span>: <span className="text-red-600 dark:text-red-400 font-black">{v.requested} requested</span> for selected staff, but only <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{v.available} available</span> in stock ({v.exceededBy} short).
+                      Variant <span className="font-black text-brand-black dark:text-white">&quot;{v.variantName}&quot;</span>: <span className="text-red-600 dark:text-red-400 font-black">{v.requested} requested</span> for selected staff, but only <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{v.available} available</span> in stock ({v.exceededBy} short).
                     </p>
                   ))}
                   {totalStockExceeded && variantStockViolations.length === 0 && (
@@ -480,7 +485,7 @@ export default function IssueAssetModal({
                 >
                   <option value="">-- Choose Employee ({filteredEmployees.length} Available) --</option>
                   {filteredEmployees.map((e) => {
-                    const branchName = e.branch?.name || (typeof e.branch === "string" ? e.branch : "");
+                    const branchName = Array.isArray(e.branches) ? e.branches.join(", ") : (typeof e.branch === "string" ? e.branch : "");
                     const deptName = e.department?.name || (typeof e.department === "string" ? e.department : "");
                     return (
                       <option key={e._id} value={e._id}>
@@ -521,7 +526,7 @@ export default function IssueAssetModal({
                   ) : (
                     filteredEmployees.map((e) => {
                       const isSelected = selectedEmployeeIds.includes(e._id);
-                      const branchName = e.branch?.name || (typeof e.branch === "string" ? e.branch : "");
+                      const branchName = Array.isArray(e.branches) ? e.branches.join(", ") : (typeof e.branch === "string" ? e.branch : "");
                       const deptName = e.department?.name || (typeof e.department === "string" ? e.department : "");
                       return (
                         <div

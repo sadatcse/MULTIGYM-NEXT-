@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useContext, useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { AuthContext } from "@/providers/AuthProvider";
 import Mtitle from "@/components/Comon/Mtitle";
 import useNoticeApi from "@/hooks/useNoticeApi";
 import useDepartmentApi from "@/hooks/useDepartmentApi";
@@ -28,6 +29,18 @@ export default function EditNoticePage({ params }) {
   const unwrappedParams = use(params);
   const id = unwrappedParams.id;
   const router = useRouter();
+  const { user } = useContext(AuthContext);
+
+  // Matches the backend's hardcoded floor in notice.service.ts — the
+  // permission-matrix entry for "notices" isn't configured for any role, so
+  // the write actions here are gated by role directly rather than relying
+  // on that unconfigured (default-allow) permission check.
+  const isManagerOrAdmin =
+    user?.role === "superadmin" ||
+    user?.role === "admin" ||
+    user?.role === "director" ||
+    user?.role === "manager" ||
+    user?.role === "md";
 
   const axiosSecure = useAxiosSecure();
   const { getNoticeMonitoring, updateNotice } = useNoticeApi();
@@ -57,6 +70,7 @@ export default function EditNoticePage({ params }) {
 
   useEffect(() => {
     if (id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load on mount/id change, not a cascading render
       setLoading(true);
       getNoticeMonitoring(id)
         .then((res) => {
@@ -169,6 +183,24 @@ export default function EditNoticePage({ params }) {
 
   if (loading) {
     return <div className="p-12 text-center font-bold text-brand-dark-grey">Loading Notice Content...</div>;
+  }
+
+  if (!isManagerOrAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-20 px-4">
+        <FiShield className="text-4xl text-brand-dark-grey/50 mx-auto mb-4" />
+        <h2 className="text-lg font-black text-brand-black dark:text-brand-white mb-2">Access Restricted</h2>
+        <p className="text-sm text-brand-dark-grey mb-6">
+          Only management and administrative roles can edit company-wide notices.
+        </p>
+        <button
+          onClick={() => router.push("/dashboard/notices")}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-gold/15 text-brand-gold border border-brand-gold/40 text-xs font-black hover:bg-brand-gold hover:text-brand-black transition-all cursor-pointer"
+        >
+          <FiArrowLeft /> Back to Notice Center
+        </button>
+      </div>
+    );
   }
 
   return (

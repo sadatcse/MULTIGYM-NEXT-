@@ -60,7 +60,7 @@ const menuItems = () => {
       icon: <MdChat className="text-lg" />,
     },
     {
-      title: "Command Center & Governance",
+      title: "Command Center ",
       path: "/dashboard/accountability",
       key: "accountability-management",
       icon: <MdSecurity className="text-lg text-brand-gold" />,
@@ -197,7 +197,7 @@ const menuItems = () => {
       ],
     },
     {
-      title: "Maintenance Management",
+      title: "Maintenance ",
       path: "/dashboard/maintenance",
       key: "maintenance-management",
       icon: <MdBuild className="text-lg" />,

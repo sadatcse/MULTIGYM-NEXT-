@@ -284,7 +284,7 @@ export default function CreateTaskPage() {
       emp.department?.toLowerCase().includes(employeeSearch.toLowerCase());
 
     const matchesBranch =
-      formData.branch === "All Branches" || emp.branch === formData.branch;
+      formData.branch === "All Branches" || emp.branches?.includes(formData.branch);
     const matchesDept =
       formData.department === "All Departments" || emp.department === formData.department;
 

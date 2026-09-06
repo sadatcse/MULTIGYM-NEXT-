@@ -44,5 +44,13 @@ export default function useChatApi() {
     [axiosSecure]
   );
 
-  return { getContacts, getConversations, getMessages, markSeenRest };
+  const sendMessageRest = useCallback(
+    async (receiverId, content) => {
+      const res = await axiosSecure.post("/chat/messages", { receiverId, content });
+      return res?.data?.data;
+    },
+    [axiosSecure]
+  );
+
+  return { getContacts, getConversations, getMessages, markSeenRest, sendMessageRest };
 }

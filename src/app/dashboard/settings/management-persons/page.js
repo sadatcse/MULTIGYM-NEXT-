@@ -213,7 +213,7 @@ export default function ManagementPersonsPage() {
         phone: emp.mobileNumber || emp.phone || "",
         email: emp.email || "",
         department: emp.department || "",
-        branch: emp.branch || "",
+        branch: emp.branches?.[0] || "",
         avatar: emp.photo || "",
         designation: prev.designation || emp.jobPosition || "",
       }));

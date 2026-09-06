@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AuthContext } from "@/providers/AuthProvider";
 import Mtitle from "@/components/Comon/Mtitle";
 import useNoticeApi from "@/hooks/useNoticeApi";
 import useDepartmentApi from "@/hooks/useDepartmentApi";
@@ -30,8 +31,20 @@ import {
 
 export default function CreateNoticePage() {
   const router = useRouter();
+  const { user } = useContext(AuthContext);
   const axiosSecure = useAxiosSecure();
   const { createNotice } = useNoticeApi();
+
+  // Matches the backend's hardcoded floor in notice.service.ts — the
+  // permission-matrix entry for "notices" isn't configured for any role, so
+  // the write actions here are gated by role directly rather than relying
+  // on that unconfigured (default-allow) permission check.
+  const isManagerOrAdmin =
+    user?.role === "superadmin" ||
+    user?.role === "admin" ||
+    user?.role === "director" ||
+    user?.role === "manager" ||
+    user?.role === "md";
   const { departments } = useDepartmentApi();
   const { branches } = useBranchApi();
   const { employees } = useEmployeeApi(100);
@@ -145,6 +158,24 @@ export default function CreateNoticePage() {
       setLoading(false);
     }
   };
+
+  if (!isManagerOrAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-20 px-4">
+        <FiShield className="text-4xl text-brand-dark-grey/50 mx-auto mb-4" />
+        <h2 className="text-lg font-black text-brand-black dark:text-brand-white mb-2">Access Restricted</h2>
+        <p className="text-sm text-brand-dark-grey mb-6">
+          Only management and administrative roles can create company-wide notices.
+        </p>
+        <button
+          onClick={() => router.push("/dashboard/notices")}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-gold/15 text-brand-gold border border-brand-gold/40 text-xs font-black hover:bg-brand-gold hover:text-brand-black transition-all cursor-pointer"
+        >
+          <FiArrowLeft /> Back to Notice Center
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-16 max-w-7xl mx-auto px-2 sm:px-4">
