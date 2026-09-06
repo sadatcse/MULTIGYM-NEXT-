@@ -30,6 +30,7 @@ import {
   FiArrowRight,
   FiRefreshCw,
   FiAward,
+  FiTool,
 } from "react-icons/fi";
 import { MdAssignment, MdPendingActions, MdOutlineHistory } from "react-icons/md";
 
@@ -77,6 +78,15 @@ export default function MyTasksPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("table");
+
+  // Defaults to card view on narrow screens on first load — matches
+  // Sidebar's own window.innerWidth convention. Tables stay available by
+  // manually switching back; this only changes what a first-time mobile
+  // visitor sees before touching the toggle.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial mobile-width check on mount, not a cascading render
+    if (typeof window !== "undefined" && window.innerWidth < 768) setViewMode("grid");
+  }, []);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -612,6 +622,16 @@ export default function MyTasksPage() {
                             >
                               {task.instructionSource}
                             </span>
+                            {(task.relatedMaintenanceRequest || task.category === "Maintenance") && (
+                              <Link
+                                href="/dashboard/maintenance/my-requests"
+                                className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 border border-amber-500/30 hover:bg-amber-500/25 transition-colors cursor-pointer"
+                                title="View linked maintenance order"
+                              >
+                                <FiTool className="text-[10px]" />
+                                <span>Maintenance Work</span>
+                              </Link>
+                            )}
                             <Link
                               href={`/dashboard/tasks/${task._id}`}
                               className="font-black text-sm text-brand-black dark:text-brand-white hover:text-brand-gold transition-colors block"
@@ -855,6 +875,16 @@ export default function MyTasksPage() {
                       >
                         {task.instructionSource}
                       </span>
+                      {(task.relatedMaintenanceRequest || task.category === "Maintenance") && (
+                        <Link
+                          href="/dashboard/maintenance/my-requests"
+                          className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 border border-amber-500/30 hover:bg-amber-500/25 transition-colors cursor-pointer"
+                          title="View linked maintenance order"
+                        >
+                          <FiTool className="text-[10px]" />
+                          <span>Maintenance</span>
+                        </Link>
+                      )}
                       <span
                         className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${priorityBadge}`}
                       >

@@ -649,7 +649,7 @@ export default function UserRolesPage() {
             </div>
 
             {/* CARD GRID VIEW */}
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 ${viewMode === "cards" ? "grid" : "hidden"}`}>
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 ${viewMode === "cards" ? "md:grid" : "md:hidden"}`}>
               {roles.length > 0 ? (
                 <AnimatePresence initial={false}>
                   {roles.map((role, idx) => {

@@ -637,7 +637,7 @@ export default function DepartmentsPage() {
             </div>
 
             {/* CARD GRID VIEW */}
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 ${viewMode === "cards" ? "grid" : "hidden"}`}>
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 ${viewMode === "cards" ? "md:grid" : "md:hidden"}`}>
               {departments.length > 0 ? (
                 <AnimatePresence initial={false}>
                   {departments.map((dept, idx) => {

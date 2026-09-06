@@ -78,6 +78,15 @@ export default function ManagementPersonsPage() {
 
   const [viewMode, setViewMode] = useState("table");
 
+  // Defaults to card view on narrow screens on first load — matches
+  // Sidebar's own window.innerWidth convention. Tables stay available by
+  // manually switching back; this only changes what a first-time mobile
+  // visitor sees before touching the toggle.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial mobile-width check on mount, not a cascading render
+    if (typeof window !== "undefined" && window.innerWidth < 768) setViewMode("grid");
+  }, []);
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);

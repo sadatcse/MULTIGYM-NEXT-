@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import useProxyDutyApi from "@/hooks/useProxyDutyApi";
 import useEmployeeApi from "@/hooks/useEmployeeApi";
@@ -74,6 +74,15 @@ export default function ProxyDutyPage() {
   } = useProxyDutyApi(10);
 
   const [viewMode, setViewMode] = useState("table");
+
+  // Defaults to card view on narrow screens on first load — matches
+  // Sidebar's own window.innerWidth convention. Tables stay available by
+  // manually switching back; this only changes what a first-time mobile
+  // visitor sees before touching the toggle.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial mobile-width check on mount, not a cascading render
+    if (typeof window !== "undefined" && window.innerWidth < 768) setViewMode("grid");
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
