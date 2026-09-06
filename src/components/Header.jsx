@@ -163,6 +163,7 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
   const [now, setNow] = useState(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial clock value on mount, then a real ticking interval
     setNow(new Date());
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
@@ -211,7 +212,7 @@ const Header = ({ isSidebarOpen, toggleSidebar }) => {
   };
 
   return (
-    <header className="bg-brand-white dark:bg-brand-charcoal border-b border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm w-full p-2 flex items-center justify-between z-10 transition-colors">
+    <header className="relative bg-brand-white dark:bg-brand-charcoal border-b border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm w-full p-2 flex items-center justify-between z-40 transition-colors">
       <div className="flex items-center gap-4">
         <button
           onClick={toggleSidebar}
