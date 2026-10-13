@@ -217,10 +217,14 @@ export default function ProofSubmissionModal({
               </div>
               <div>
                 <h3 className="text-base font-black text-brand-black dark:text-brand-white">
-                  Submit Completion Proof
+                  {task.relatedMaintenanceRequest || task.category === "Maintenance"
+                    ? "Upload After Pictures / Proof of Work"
+                    : "Submit Completion Proof"}
                 </h3>
                 <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light/70 truncate max-w-md">
-                  Task: {task.title}
+                  {task.relatedMaintenanceRequest || task.category === "Maintenance"
+                    ? "📸 Upload after photos of the finished maintenance work"
+                    : `Task: ${task.title}`}
                 </p>
               </div>
             </div>

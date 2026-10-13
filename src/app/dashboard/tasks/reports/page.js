@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useContext } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
+import ScrollHintX from "@/components/Comon/ScrollHintX";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import useTaskApi from "@/hooks/useTaskApi";
 import useBranchApi from "@/hooks/useBranchApi";
@@ -18,9 +20,32 @@ import {
   FiMapPin,
   FiCheckCircle,
   FiX,
-  FiFilter,
+  FiClock,
   FiCalendar,
+  FiAlertTriangle,
+  FiTrendingUp,
 } from "react-icons/fi";
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: "easeOut", delay: Math.min(i, 8) * 0.035 },
+  }),
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
 
 export default function TaskReportsPage() {
   const { user } = useContext(AuthContext);
@@ -33,7 +58,7 @@ export default function TaskReportsPage() {
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState("all");
 
-  // Strictly display only active branches configured in Settings > Branches (http://localhost:3000/dashboard/settings/branches)
+  // Active branches configured in Settings
   const branchOptions = useMemo(() => {
     if (!branches || !Array.isArray(branches)) return [];
     return branches
@@ -42,7 +67,7 @@ export default function TaskReportsPage() {
       .filter(Boolean);
   }, [branches]);
 
-  // Dynamically generate last 12 months for total item / workload filtering
+  // Dynamically generate last 12 months
   const monthOptions = useMemo(() => {
     const months = [];
     const now = new Date();
@@ -61,7 +86,6 @@ export default function TaskReportsPage() {
     setLoading(true);
     try {
       const params = {};
-      // ONLY Staff Operational Workload has branch and month filters
       if (activeReport === "employee-wise") {
         if (selectedBranch && selectedBranch !== "all") {
           params.branch = selectedBranch;
@@ -85,7 +109,7 @@ export default function TaskReportsPage() {
     fetchReport();
   }, [fetchReport]);
 
-  // Filter report data based on selected branch (strictly for Staff Operational Workload)
+  // Filter report data based on selected branch for employee-wise
   const filteredData = useMemo(() => {
     if (activeReport !== "employee-wise") return reportData;
     if (!selectedBranch || selectedBranch === "all") return reportData;
@@ -106,6 +130,19 @@ export default function TaskReportsPage() {
       return rowBranch === target;
     });
   }, [reportData, selectedBranch, activeReport]);
+
+  // Aggregate KPI metrics
+  const stats = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) {
+      return { total: 0, completed: 0, inProgress: 0, overdue: 0, completionRate: 0 };
+    }
+    const total = filteredData.reduce((acc, r) => acc + (Number(r.totalTasks) || 0), 0);
+    const completed = filteredData.reduce((acc, r) => acc + (Number(r.completed) || 0), 0);
+    const inProgress = filteredData.reduce((acc, r) => acc + (Number(r.inProgress) || 0), 0);
+    const overdue = filteredData.reduce((acc, r) => acc + (Number(r.overdue) || 0), 0);
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, inProgress, overdue, completionRate };
+  }, [filteredData]);
 
   const handleExport = (type) => {
     if (!filteredData || filteredData.length === 0) {
@@ -191,127 +228,188 @@ export default function TaskReportsPage() {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-[1600px] mx-auto pb-16">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10">
       <Mtitle
         title="Directive & Task Analytics Reports"
         subtitle="Executive operational audit reports grouped by instruction source, branch operations, and staff completion metrics."
         rightcontent={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => handleExport("excel")}
-              className="px-3.5 py-2 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-bold hover:border-brand-gold flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white hover:border-brand-gold transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <FiDownload className="text-brand-gold" /> Excel
             </button>
             <button
               onClick={() => handleExport("csv")}
-              className="px-3.5 py-2 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-bold hover:border-brand-gold flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white hover:border-brand-gold transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <FiDownload className="text-brand-gold" /> CSV
             </button>
             <button
               onClick={() => handleExport("print")}
-              className="px-4 py-2 rounded-xl bg-brand-gold text-brand-black font-black text-xs shadow-md hover:bg-brand-gold-light flex items-center gap-1.5"
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
             >
-              <FiPrinter /> Print A4 Report
+              <FiPrinter className="text-sm" />
+              <span>Print A4 Report</span>
             </button>
           </div>
         }
       />
 
-      {/* Report Selector Tabs & Branch Filter */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-brand-white dark:bg-brand-charcoal p-2 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm">
+      {/* KPI Stats Cards */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-brand-gold/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                Total Directives
+              </span>
+              <span className="text-2xl font-black text-brand-black dark:text-brand-white mt-1 block">
+                {stats.total}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiLayers />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-emerald-500/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                Completed
+              </span>
+              <span className="text-2xl font-black text-emerald-500 mt-1 block">
+                {stats.completed}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiCheckCircle />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-blue-500/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                In Progress
+              </span>
+              <span className="text-2xl font-black text-blue-500 mt-1 block">
+                {stats.inProgress}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiClock />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className="bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm hover:border-brand-gold/50 transition-all duration-300 group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block">
+                Completion Rate
+              </span>
+              <span className="text-2xl font-black text-brand-gold mt-1 block">
+                {stats.completionRate}%
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+              <FiTrendingUp />
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* Report Selector Tabs & Filter Bar */}
+      <div className="bg-brand-white dark:bg-brand-charcoal p-4 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4">
         {/* Report Selector Tabs */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center gap-1 flex-wrap">
           <button
             onClick={() => setActiveReport("source-wise")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
               activeReport === "source-wise"
-                ? "bg-brand-gold text-brand-black shadow-sm"
-                : "text-brand-dark-grey hover:text-brand-gold"
+                ? "bg-brand-gold text-brand-midnight shadow-xs font-black"
+                : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"
             }`}
           >
-            <FiLayers /> Instruction Source Report
+            <FiLayers /> Instruction Source
           </button>
 
           <button
             onClick={() => setActiveReport("branch-wise")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
               activeReport === "branch-wise"
-                ? "bg-brand-gold text-brand-black shadow-sm"
-                : "text-brand-dark-grey hover:text-brand-gold"
+                ? "bg-brand-gold text-brand-midnight shadow-xs font-black"
+                : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"
             }`}
           >
-            <FiMapPin /> Branch Directive Report
+            <FiMapPin /> Branch Directive
           </button>
 
           <button
             onClick={() => setActiveReport("employee-wise")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
               activeReport === "employee-wise"
-                ? "bg-brand-gold text-brand-black shadow-sm"
-                : "text-brand-dark-grey hover:text-brand-gold"
+                ? "bg-brand-gold text-brand-midnight shadow-xs font-black"
+                : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"
             }`}
           >
             <FiUsers /> Staff Operational Workload
           </button>
         </div>
 
-        {/* Filter Controls (Branch & Month shown strictly for Staff Operational Workload) */}
-        <div className="flex items-center gap-2 flex-wrap self-start md:self-center">
+        {/* Filter Controls */}
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
           {activeReport === "employee-wise" && (
             <>
               {/* Branch Filter */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 text-xs shadow-inner">
-                <FiMapPin className="text-brand-gold shrink-0 text-sm" />
-                <span className="text-[11px] font-black uppercase tracking-wider text-brand-dark-grey">
-                  Branch:
-                </span>
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="bg-transparent font-extrabold text-xs text-brand-black dark:text-brand-white focus:outline-none cursor-pointer pr-1"
-                >
-                  <option value="all" className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white">
-                    All Branches
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer"
+              >
+                <option value="all">All Branches</option>
+                {branchOptions.map((bName) => (
+                  <option key={bName} value={bName}>
+                    {bName}
                   </option>
-                  {branchOptions.map((bName) => (
-                    <option
-                      key={bName}
-                      value={bName}
-                      className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white"
-                    >
-                      {bName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </select>
 
               {/* Month Filter */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 text-xs shadow-inner">
-                <FiCalendar className="text-brand-gold shrink-0 text-sm" />
-                <span className="text-[11px] font-black uppercase tracking-wider text-brand-dark-grey">
-                  Month:
-                </span>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="bg-transparent font-extrabold text-xs text-brand-black dark:text-brand-white focus:outline-none cursor-pointer pr-1"
-                >
-                  <option value="all" className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white">
-                    All Months
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer"
+              >
+                <option value="all">All Months</option>
+                {monthOptions.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label} {m.isCurrent ? "(Current)" : ""}
                   </option>
-                  {monthOptions.map((m) => (
-                    <option
-                      key={m.value}
-                      value={m.value}
-                      className="bg-white dark:bg-brand-charcoal text-brand-black dark:text-brand-white"
-                    >
-                      {m.label} {m.isCurrent ? "(Current)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </select>
 
               {(selectedBranch !== "all" || selectedMonth !== "all") && (
                 <button
@@ -319,7 +417,7 @@ export default function TaskReportsPage() {
                     setSelectedBranch("all");
                     setSelectedMonth("all");
                   }}
-                  className="px-2.5 py-1.5 rounded-xl bg-brand-red/10 text-brand-red font-bold text-xs hover:bg-brand-red/20 transition-all cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl bg-brand-red/10 text-brand-red font-bold text-xs hover:bg-brand-red hover:text-white transition-all cursor-pointer flex items-center gap-1"
                   title="Reset filters"
                 >
                   <FiX className="text-xs" /> Clear
@@ -331,97 +429,131 @@ export default function TaskReportsPage() {
           <button
             onClick={fetchReport}
             disabled={loading}
-            className="p-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 text-brand-dark-grey hover:text-brand-gold hover:border-brand-gold transition-colors text-xs"
+            className="p-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey/60 text-brand-dark-grey hover:text-brand-gold hover:border-brand-gold transition-colors text-xs cursor-pointer"
             title="Reload report data"
           >
-            <FiRefreshCw className={`text-xs ${loading ? "animate-spin" : ""}`} />
+            <FiRefreshCw className={`text-sm ${loading ? "animate-spin text-brand-gold" : ""}`} />
           </button>
         </div>
       </div>
 
       {/* Report Table */}
       {loading ? (
-        <SkeletonLoading count={6} />
+        <SkeletonLoading variant="table" rows={6} />
+      ) : filteredData.length === 0 ? (
+        <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl p-12 border border-brand-beige/50 dark:border-brand-dark-grey/50 text-center max-w-lg mx-auto shadow-sm">
+          <div className="w-16 h-16 bg-brand-gold/10 text-brand-gold rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+            <FiFileText />
+          </div>
+          <h3 className="text-lg font-black text-brand-black dark:text-brand-white mb-1">
+            No Report Records Found
+          </h3>
+          <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mb-4">
+            {activeReport === "employee-wise" && (selectedBranch !== "all" || selectedMonth !== "all")
+              ? "No workload records found for the selected branch / month filters."
+              : "No report records are currently available for this category."}
+          </p>
+        </div>
       ) : (
-        <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-lg shadow-black/5 overflow-hidden">
+          <ScrollHintX>
             <table className="w-full text-left border-collapse">
-              <thead className="bg-brand-offwhite dark:bg-brand-midnight uppercase text-[10px] font-black tracking-wider text-brand-dark-grey border-b border-brand-beige/60 dark:border-brand-dark-grey/60">
+              <thead className="bg-brand-offwhite dark:bg-brand-midnight uppercase text-[10px] font-black tracking-wider text-brand-dark-grey dark:text-brand-gold-light border-b border-brand-beige/60 dark:border-brand-dark-grey/60">
                 <tr>
-                  <th className="py-4 px-5 text-center w-12">SL</th>
-                  {activeReport === "source-wise" && <th className="py-4 px-5">Directive Source</th>}
-                  {activeReport === "branch-wise" && <th className="py-4 px-5">Branch Location</th>}
+                  <th className="py-4 px-6 text-center w-16">SL</th>
+                  {activeReport === "source-wise" && <th className="py-4 px-6">Directive Source</th>}
+                  {activeReport === "branch-wise" && <th className="py-4 px-6">Branch Location</th>}
                   {activeReport === "employee-wise" && (
                     <>
-                      <th className="py-4 px-5">Employee ID & Name</th>
-                      <th className="py-4 px-5">Department</th>
-                      <th className="py-4 px-5">Branch</th>
+                      <th className="py-4 px-6">Employee ID & Name</th>
+                      <th className="py-4 px-6">Department</th>
+                      <th className="py-4 px-6">Branch</th>
                     </>
                   )}
-                  <th className="py-4 px-5 text-center">Total Tasks</th>
-                  <th className="py-4 px-5 text-center">Completed</th>
-                  <th className="py-4 px-5 text-center">In Progress</th>
-                  <th className="py-4 px-5 text-center">Pending</th>
-                  <th className="py-4 px-5 text-center">Overdue</th>
-                  <th className="py-4 px-5 text-center">Completion Rate</th>
+                  <th className="py-4 px-6 text-center">Total Tasks</th>
+                  <th className="py-4 px-6 text-center">Completed</th>
+                  <th className="py-4 px-6 text-center">In Progress</th>
+                  <th className="py-4 px-6 text-center">Pending</th>
+                  <th className="py-4 px-6 text-center">Overdue</th>
+                  <th className="py-4 px-6 text-center w-32">Completion Rate</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-brand-beige/40 dark:divide-brand-dark-grey/40 text-xs">
-                {filteredData.length > 0 ? (
-                  filteredData.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-brand-offwhite/50 dark:hover:bg-brand-midnight/50">
-                      <td className="py-4 px-5 text-center font-bold text-brand-dark-grey">{idx + 1}</td>
+              <tbody className="divide-y divide-brand-beige/30 dark:divide-brand-dark-grey/30 text-xs">
+                <AnimatePresence initial={false}>
+                  {filteredData.map((row, idx) => (
+                    <motion.tr
+                      key={idx}
+                      custom={idx}
+                      variants={rowVariants}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
+                      layout
+                      className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10 transition-all duration-150"
+                    >
+                      <td className="py-4 px-6 text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-brand-gold/10 text-brand-gold font-black text-xs">
+                          #{idx + 1}
+                        </span>
+                      </td>
 
                       {activeReport === "source-wise" && (
-                        <td className="py-4 px-5 font-black text-brand-black dark:text-brand-white text-sm">
+                        <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white text-sm">
                           {row.source}
                         </td>
                       )}
 
                       {activeReport === "branch-wise" && (
-                        <td className="py-4 px-5 font-black text-brand-black dark:text-brand-white text-sm">
+                        <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white text-sm">
                           {row.branch}
                         </td>
                       )}
 
                       {activeReport === "employee-wise" && (
                         <>
-                          <td className="py-4 px-5 font-extrabold text-brand-black dark:text-brand-white">
-                            <div>{row.name}</div>
-                            <div className="text-[10px] text-brand-gold font-mono">{row.employeeId}</div>
+                          <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white">
+                            <div className="font-black text-sm">{row.name}</div>
+                            <div className="text-[10px] text-brand-gold font-mono font-bold mt-0.5">
+                              {row.employeeId}
+                            </div>
                           </td>
-                          <td className="py-4 px-5 font-semibold text-brand-dark-grey">{row.department}</td>
-                          <td className="py-4 px-5 font-semibold text-brand-dark-grey">{row.branch}</td>
+                          <td className="py-4 px-6 font-medium text-brand-dark-grey dark:text-brand-gold-light/90">
+                            {row.department}
+                          </td>
+                          <td className="py-4 px-6 font-medium text-brand-dark-grey dark:text-brand-gold-light/90">
+                            {row.branch}
+                          </td>
                         </>
                       )}
 
-                      <td className="py-4 px-5 text-center font-black text-sm">{row.totalTasks}</td>
-                      <td className="py-4 px-5 text-center font-bold text-emerald-500">{row.completed}</td>
-                      <td className="py-4 px-5 text-center font-bold text-blue-500">{row.inProgress}</td>
-                      <td className="py-4 px-5 text-center font-bold text-gray-500">{row.pending}</td>
-                      <td className="py-4 px-5 text-center font-black text-red-500">{row.overdue}</td>
-                      <td className="py-4 px-5 text-center">
-                        <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-gold/20 text-brand-gold font-mono">
+                      <td className="py-4 px-6 text-center font-black text-sm text-brand-black dark:text-brand-white">
+                        {row.totalTasks}
+                      </td>
+                      <td className="py-4 px-6 text-center font-bold text-emerald-500 text-sm">
+                        {row.completed}
+                      </td>
+                      <td className="py-4 px-6 text-center font-bold text-blue-500 text-sm">
+                        {row.inProgress}
+                      </td>
+                      <td className="py-4 px-6 text-center font-bold text-gray-500 text-sm">
+                        {row.pending}
+                      </td>
+                      <td className="py-4 px-6 text-center font-black text-rose-500 text-sm">
+                        {row.overdue}
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-brand-gold/15 text-brand-gold border border-brand-gold/30 font-mono">
                           {row.completionRate}%
                         </span>
                       </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={activeReport === "employee-wise" ? 10 : 8} className="py-12 text-center text-brand-dark-grey font-medium">
-                      {activeReport === "employee-wise" && (selectedBranch !== "all" || selectedMonth !== "all")
-                        ? "No workload records found for the selected branch / month filters."
-                        : "No report records available."}
-                    </td>
-                  </tr>
-                )}
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </tbody>
             </table>
-          </div>
+          </ScrollHintX>
         </div>
       )}
     </div>
   );
 }
-

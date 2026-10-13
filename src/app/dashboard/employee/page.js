@@ -18,6 +18,7 @@ import useShiftApi from "@/hooks/useShiftApi";
 import useRoleApi from "@/hooks/useRoleApi";
 import useLocationData from "@/hooks/useLocationData";
 import useAssetAssignmentApi from "@/hooks/useAssetAssignmentApi";
+import EmployeeLettersSection from "@/components/letters/EmployeeLettersSection";
 import Swal from "sweetalert2";
 import {
   FiUsers,
@@ -2167,6 +2168,8 @@ export default function EmployeePage() {
                 )}
 
                 <EmployeeAssetsSection employeeId={viewingEmployee._id} formatDate={formatDate} onViewAll={() => router.push("/dashboard/assets")} />
+
+                <EmployeeLettersSection employeeId={viewingEmployee._id} employeeData={viewingEmployee} />
               </div>
 
               <div className="p-4 bg-brand-offwhite dark:bg-brand-midnight border-t border-brand-beige/50 dark:border-brand-dark-grey/50 flex justify-end">

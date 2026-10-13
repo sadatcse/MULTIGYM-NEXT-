@@ -41,6 +41,7 @@ import {
   MdSupervisorAccount,
   MdBuild,
   MdHandyman,
+  MdDescription,
 } from "react-icons/md";
 
 const menuItems = () => {
@@ -267,6 +268,42 @@ const menuItems = () => {
           key: "employee-duty-time",
           description: "Configure and assign shifts and work schedules to employees",
           icon: <MdAccessTime className="text-base" />,
+        },
+      ],
+    },
+    {
+      title: "HR Letters & Docs",
+      path: "/dashboard/hr-letters",
+      key: "hr-letters-management",
+      icon: <MdDescription className="text-lg text-brand-primary" />,
+      children: [
+        {
+          title: "All HR Letters",
+          path: "/dashboard/hr-letters",
+          key: "hr-letters",
+          description: "View, search, filter, download, and print official employee HR letters",
+          icon: <MdFormatListBulleted className="text-base" />,
+        },
+        {
+          title: "Create HR Letter",
+          path: "/dashboard/hr-letters/create",
+          key: "hr-letters-create",
+          description: "Issue official appointment, confirmation, promotion, transfer, warning, and exit letters",
+          icon: <MdAddCircleOutline className="text-base" />,
+        },
+        {
+          title: "Letter Templates",
+          path: "/dashboard/hr-letters/templates",
+          key: "hr-letters-templates",
+          description: "Manage, customize, and preview standard HR letter templates",
+          icon: <MdCategory className="text-base" />,
+        },
+        {
+          title: "Letter History & Audit",
+          path: "/dashboard/hr-letters/history",
+          key: "hr-letters-history",
+          description: "Audit trail of all letter generation, views, downloads, and reissues",
+          icon: <MdAssessment className="text-base" />,
         },
       ],
     },

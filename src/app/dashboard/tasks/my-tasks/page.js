@@ -249,9 +249,35 @@ export default function MyTasksPage() {
 
   // Handle Direct Complete
   const handleDirectComplete = async (taskId) => {
+    const assignment = allAssignments.find((a) => a.task?._id === taskId);
+    const task = assignment?.task;
+    const isMaintenance = Boolean(task?.relatedMaintenanceRequest || task?.category === "Maintenance");
+    const proofsCount = assignment?.proofs?.length || 0;
+
+    if ((task?.completionProofRequired || isMaintenance) && proofsCount === 0) {
+      const uploadFirst = await Swal.fire({
+        title: "After Picture Required",
+        text: isMaintenance
+          ? "You must upload at least one after photo of the finished maintenance work before marking this task complete."
+          : "Completion proof is required before marking this task complete.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#D97706",
+        cancelButtonColor: "#3F3F46",
+        confirmButtonText: "Upload After Picture",
+        cancelButtonText: "Cancel",
+      });
+      if (uploadFirst.isConfirmed && assignment) {
+        setActiveTaskForProof(assignment);
+      }
+      return;
+    }
+
     const confirm = await Swal.fire({
       title: "Mark Task as Completed?",
-      text: "Confirm that all instructions for this directive have been fully completed.",
+      text: isMaintenance
+        ? "Confirm that maintenance work is finished and verified with after photos."
+        : "Confirm that all instructions for this directive have been fully completed.",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#10B981",

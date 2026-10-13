@@ -88,6 +88,9 @@ export default function MaintenanceAssignModal({ isOpen, onClose, onSubmit, isSu
                 <option key={e._id} value={e._id}>{e.name} {e.employeeId ? `(${e.employeeId})` : ""}</option>
               ))}
             </select>
+            <p className="text-[11px] text-brand-dark-grey dark:text-brand-gold-light/70 font-medium">
+              💡 This maintenance work order will automatically appear in the employee&apos;s <strong>My Tasks</strong> and track real-time progress.
+            </p>
           </div>
         ) : (
           <div className="space-y-1.5">
