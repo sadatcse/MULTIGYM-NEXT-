@@ -32,7 +32,7 @@ export default function CreateRequisitionPage() {
   };
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader icon={<MdAddShoppingCart />} title="New Requisition" subtitle="Request items or services for your branch. Admin verifies, management approves, then purchase proceeds." />
       <Card title="Details">
         <div className="grid md:grid-cols-2 gap-4">

@@ -32,12 +32,12 @@ export default function AttendanceReportPage() {
   const cells = (r) => [r.employeeCode, r.employeeName, r.designation, r.branch, r.present, r.late, r.lateMinutes, r.earlyLeave, r.halfDay, r.missingPunch, r.absent, r.leave, r.weekend + r.holiday, fmtMinutes(r.workedMinutes), fmtMinutes(r.overtimeMinutes)];
 
   return (
-    <div className="space-y-5 max-w-[1700px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<FiBarChart2 />}
         title="Monthly Attendance Report"
         subtitle="Per-employee summary for payroll and review — branch-wise or all branches combined."
-        actions={<input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-white [color-scheme:dark]" />}
+        actions={<input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-brand-gold/50 dark:[color-scheme:dark]" />}
       />
       <Card
         title={`${rows.length} employees · ${month}`}
@@ -65,7 +65,7 @@ export default function AttendanceReportPage() {
         ) : (
           <Table head={head}>
             {rows.map((r) => (
-              <tr key={r._id} className="hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30">
+              <tr key={r._id} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
                 {cells(r).map((c, i) => (
                   <Td key={i} className={`whitespace-nowrap ${i === 10 && c ? "text-red-500" : i === 5 && c ? "text-amber-500" : ""}`}>{c === 0 ? "0" : c || "—"}</Td>
                 ))}

@@ -29,7 +29,7 @@ export default function SalaryStructuresPage() {
   const missing = rows.filter((r) => !r.structure && !r.employee.grossSalary).length;
 
   return (
-    <div className="space-y-5 max-w-[1500px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader icon={<MdTune />} title="Salary Structures" subtitle="Basic salary, allowances and recurring deductions per employee. Every change is kept as an increment / revision in the employee history." />
       <Card
         title={`${rows.length} employees`}
@@ -54,7 +54,7 @@ export default function SalaryStructuresPage() {
         {loading ? <Loading /> : !rows.length ? <EmptyState title="No employees" /> : (
           <Table head={["Employee", "Branch", "Basic", "House rent", "Medical", "Conveyance", "Other", "Gross", "Fixed ded.", "Since", ""]}>
             {rows.map(({ employee: e, structure: s }) => (
-              <tr key={e._id} className="hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30">
+              <tr key={e._id} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
                 <Td>
                   <div className="flex items-center gap-2">
                     <Avatar name={e.name} photo={e.photo} size={30} />

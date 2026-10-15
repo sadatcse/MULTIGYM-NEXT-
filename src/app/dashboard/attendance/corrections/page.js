@@ -27,7 +27,7 @@ export default function AttendanceCorrectionsPage() {
   const rows = data?.data || [];
 
   return (
-    <div className="space-y-5 max-w-[1500px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader icon={<FiShield />} title="Attendance Correction Audit Log" subtitle="Every manual change to attendance — who edited it, when, what it was before and after, and why." />
       <Card
         title={`${data?.total ?? 0} corrections`}

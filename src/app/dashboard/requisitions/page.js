@@ -30,7 +30,7 @@ export default function RequisitionsPage() {
   const st = list.data?.stats || {};
 
   return (
-    <div className="space-y-5 max-w-[1600px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdShoppingCart />}
         title="Purchase & Requisition"
@@ -64,7 +64,7 @@ export default function RequisitionsPage() {
         {loading ? <Loading /> : !rows.length ? <EmptyState icon={<MdShoppingCart />} title="No requisitions" /> : (
           <Table head={["Requisition", "Branch", "Requested by", "Items", "Estimated", "Approved", "Vendor", "Progress", "Status"]}>
             {rows.map((r, i) => (
-              <motion.tr key={r._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30">
+              <motion.tr key={r._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
                 <Td>
                   <Link href={`/dashboard/requisitions/${r._id}`} className="font-black hover:text-brand-gold">{r.requisitionNo}</Link>
                   <div className="text-[11px] font-semibold">{r.title}</div>

@@ -15,7 +15,7 @@ export default function MyPayslipsPage() {
   const { data, loading } = useHrQuery("/payroll/my-payslips");
   const slips = data?.data || [];
   return (
-    <div className="space-y-5 max-w-5xl mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader icon={<FiFileText />} title="My Payslips" subtitle="Finalized salary slips. Print or save any month as PDF." />
       <Card bodyClassName="p-4">
         {loading ? <Loading /> : !slips.length ? <EmptyState title="No payslips yet" text="Payslips appear here once HR finalizes the month's payroll." /> : (

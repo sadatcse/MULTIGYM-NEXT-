@@ -66,7 +66,7 @@ function EmployeeHistoryInner() {
   }, [events]);
 
   return (
-    <div className="space-y-5 max-w-[1400px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdHistory />}
         title="Employee History"
@@ -148,7 +148,7 @@ function EmployeeHistoryInner() {
           {recent.loading ? <Loading /> : !recent.data?.data?.length ? <EmptyState title="No events" /> : (
             <Table head={["Date", "Employee", "Event", "Change", "Ref", "Recorded by"]}>
               {recent.data.data.map((e) => (
-                <tr key={e._id} className="cursor-pointer hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30" onClick={() => setEmpId(String(e.employee))}>
+                <tr key={e._id} className="cursor-pointer hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10" onClick={() => setEmpId(String(e.employee))}>
                   <Td className="whitespace-nowrap">{fmtDate(e.effectiveDate)}</Td>
                   <Td className="font-black">{e.employeeName}<div className="text-[10px] text-brand-dark-grey">{e.employeeCode}</div></Td>
                   <Td><Badge tone={EVENT_META[e.eventType]?.tone}>{EVENT_META[e.eventType]?.label}</Badge></Td>

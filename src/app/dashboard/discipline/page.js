@@ -29,7 +29,7 @@ export default function DisciplinePage() {
 
 
   return (
-    <div className="space-y-5 max-w-[1500px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdGavel />}
         title="Employee Discipline & Case Record"
@@ -55,7 +55,7 @@ export default function DisciplinePage() {
         {loading ? <Loading /> : !data?.data?.length ? <EmptyState icon={<MdGavel />} title="No cases" /> : (
           <Table head={["Case", "Employee", "Type", "Subject", "Severity", "Status", "Decision", "Opened"]}>
             {data.data.map((c, i) => (
-              <motion.tr key={c._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30">
+              <motion.tr key={c._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
                 <Td><Link href={`/dashboard/discipline/${c._id}`} className="font-black hover:text-brand-gold">{c.caseNo}</Link>{c.confidential && <div className="text-[9px] font-black text-red-500">CONFIDENTIAL</div>}</Td>
                 <Td>
                   <div className="flex items-center gap-2"><Avatar name={c.employeeName} photo={c.employeePhoto} size={28} /><div><div className="font-black">{c.employeeName}</div><div className="text-[10px] text-brand-dark-grey">{c.employeeCode} · {c.branch}</div></div></div>

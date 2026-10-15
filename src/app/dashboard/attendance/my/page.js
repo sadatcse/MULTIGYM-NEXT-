@@ -24,12 +24,12 @@ export default function MyAttendancePage() {
   const firstDow = new Date(y, m - 1, 1).getDay();
 
   return (
-    <div className="space-y-5 max-w-6xl mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<FiCalendar />}
         title="My Attendance"
         subtitle="Your punches as recorded by the biometric device, with late, early leave and overtime."
-        actions={<input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-white [color-scheme:dark]" />}
+        actions={<input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-brand-gold/50 dark:[color-scheme:dark]" />}
       />
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <StatCard icon={<FiCheckCircle />} label="Present" value={s.present ?? 0} tone="green" />

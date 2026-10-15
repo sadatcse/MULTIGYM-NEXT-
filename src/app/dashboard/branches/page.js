@@ -25,7 +25,7 @@ export default function BranchOverviewPage() {
   const strengthMap = useMemo(() => Object.fromEntries((strength.data?.data || []).map((b) => [b.branch, b])), [strength.data]);
 
   return (
-    <div className="space-y-5 max-w-[1600px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader icon={<MdDomain />} title="Branch Overview" subtitle={`All branches combined — staff strength, today's attendance and leave (${s?.date || ""}).`} />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard icon={<FiUsers />} label="Total staff" value={t.totalEmployees ?? "—"} />

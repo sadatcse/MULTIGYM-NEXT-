@@ -16,23 +16,27 @@ function CountUp({ value }) {
 }
 
 function Tile({ href, icon, label, value, tone, index }) {
+  // [icon tile, value colour, hover border]
   const tones = {
-    gold: "from-brand-gold/20 to-brand-gold/5 text-brand-gold border-brand-gold/30",
-    green: "from-emerald-500/20 to-emerald-500/5 text-emerald-500 border-emerald-500/30",
-    red: "from-red-500/20 to-red-500/5 text-red-500 border-red-500/30",
-    blue: "from-blue-500/20 to-blue-500/5 text-blue-500 border-blue-500/30",
-    amber: "from-amber-500/20 to-amber-500/5 text-amber-500 border-amber-500/30",
-    purple: "from-purple-500/20 to-purple-500/5 text-purple-500 border-purple-500/30",
-    slate: "from-zinc-500/20 to-zinc-500/5 text-zinc-500 border-zinc-500/30",
+    gold: ["bg-brand-gold/10 text-brand-gold", "text-brand-black dark:text-brand-white", "hover:border-brand-gold/50"],
+    green: ["bg-emerald-500/10 text-emerald-500", "text-emerald-500", "hover:border-emerald-500/50"],
+    red: ["bg-rose-500/10 text-rose-500", "text-rose-500", "hover:border-rose-500/50"],
+    blue: ["bg-blue-500/10 text-blue-500", "text-blue-500", "hover:border-blue-500/50"],
+    amber: ["bg-amber-500/10 text-amber-500", "text-amber-500", "hover:border-amber-500/50"],
+    purple: ["bg-purple-500/10 text-purple-500", "text-purple-500", "hover:border-purple-500/50"],
+    slate: ["bg-zinc-500/10 text-zinc-500", "text-brand-black dark:text-brand-white", "hover:border-zinc-500/50"],
   };
+  const [iconCls, valueCls, hoverCls] = tones[tone] || tones.gold;
   return (
-    <motion.div initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: index * 0.05 }} whileHover={{ y: -3 }}>
-      <Link href={href} className={`block p-4 rounded-3xl border bg-gradient-to-br ${tones[tone]} transition-shadow hover:shadow-lg`}>
-        <div className="flex items-center justify-between">
-          <span className="text-xl">{icon}</span>
-          <span className="text-3xl font-black text-brand-black dark:text-brand-white"><CountUp value={value} /></span>
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut", delay: index * 0.05 }}>
+      <Link href={href} className={`group block p-4 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 bg-brand-offwhite dark:bg-brand-midnight transition-all duration-300 ${hoverCls}`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block truncate">{label}</span>
+            <span className={`text-2xl font-black mt-1 block ${valueCls}`}><CountUp value={value} /></span>
+          </div>
+          <span className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform ${iconCls}`}>{icon}</span>
         </div>
-        <div className="mt-2 text-[11px] font-black uppercase tracking-wider">{label}</div>
       </Link>
     </motion.div>
   );
@@ -79,25 +83,25 @@ export default function HrSummaryWidget() {
       {!self && s.byBranch?.length > 0 && (
         <div className="overflow-x-auto rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50">
           <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-brand-offwhite dark:bg-brand-midnight/60 text-[10px] font-black uppercase text-brand-dark-grey dark:text-brand-gold-light">
-                {["Branch", "Staff", "Present", "Absent", "Leave", "Late", "Missing punch", "Pending leave", "Attendance"].map((h) => <th key={h} className="py-2.5 px-3">{h}</th>)}
+            <thead className="bg-brand-offwhite dark:bg-brand-midnight uppercase text-[10px] font-black tracking-wider text-brand-dark-grey dark:text-brand-gold-light border-b border-brand-beige/60 dark:border-brand-dark-grey/60">
+              <tr>
+                {["Branch", "Staff", "Present", "Absent", "Leave", "Late", "Missing punch", "Pending leave", "Attendance"].map((h) => <th key={h} className="py-4 px-4 whitespace-nowrap">{h}</th>)}
               </tr>
             </thead>
-            <tbody className="divide-y divide-brand-beige/40 dark:divide-brand-dark-grey/40 font-bold">
+            <tbody className="divide-y divide-brand-beige/30 dark:divide-brand-dark-grey/30 font-bold [&>tr:hover]:bg-brand-gold/5 dark:[&>tr:hover]:bg-brand-gold/10">
               {s.byBranch.map((b, i) => {
                 const pct = b.totalEmployees ? Math.round((b.present / b.totalEmployees) * 100) : 0;
                 return (
                   <motion.tr key={b.branch} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.05 }}>
-                    <td className="py-2.5 px-3 font-black">{b.branch}</td>
-                    <td className="px-3">{b.totalEmployees}</td>
-                    <td className="px-3 text-emerald-500">{b.present}</td>
-                    <td className="px-3 text-red-500">{b.absent}</td>
-                    <td className="px-3 text-blue-500">{b.onLeave}</td>
-                    <td className="px-3 text-amber-500">{b.late}</td>
-                    <td className="px-3">{b.missingPunch}</td>
-                    <td className="px-3">{b.pendingLeave}</td>
-                    <td className="px-3 w-40">
+                    <td className="py-3.5 px-4 font-black">{b.branch}</td>
+                    <td className="px-4">{b.totalEmployees}</td>
+                    <td className="px-4 text-emerald-500">{b.present}</td>
+                    <td className="px-4 text-red-500">{b.absent}</td>
+                    <td className="px-4 text-blue-500">{b.onLeave}</td>
+                    <td className="px-4 text-amber-500">{b.late}</td>
+                    <td className="px-4">{b.missingPunch}</td>
+                    <td className="px-4">{b.pendingLeave}</td>
+                    <td className="px-4 w-40">
                       <div className="h-2 rounded-full bg-brand-offwhite dark:bg-brand-midnight overflow-hidden">
                         <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.4 + i * 0.05 }} className="h-full bg-emerald-500" />
                       </div>

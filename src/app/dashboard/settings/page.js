@@ -8,7 +8,6 @@ import Mtitle from "@/components/Comon/Mtitle";
 import PhotoUpload from "@/components/Comon/PhotoUpload";
 import Swal from "sweetalert2";
 import {
-  FiSettings,
   FiGlobe,
   FiPrinter,
   FiBriefcase,
@@ -138,31 +137,13 @@ export default function SiteSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 pb-12 font-sans">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       {/* Title Bar */}
       <Mtitle
         title="Site & General HR Settings"
         subtitle="Manage company information, time zones, print header & footer margins, and global HR policies."
-      />
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* TOP HEADER TAB CARD */}
-        <div className="bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-md p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-xl font-bold">
-              <FiSettings />
-            </div>
-            <div>
-              <h2 className="text-lg font-extrabold text-brand-black dark:text-brand-white">
-                Global System Configuration
-              </h2>
-              <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light">
-                Configure organizational identity, print headers, and localization settings.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
+        rightcontent={
+          <>
             {!isUpdating && lastSavedAt && (
               <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
                 <FiCheckCircle className="text-xs shrink-0" />
@@ -172,8 +153,9 @@ export default function SiteSettingsPage() {
 
             <button
               type="submit"
+              form="site-settings-form"
               disabled={isUpdating}
-              className="px-6 py-2.5 rounded-2xl bg-brand-red hover:bg-brand-red-dark text-white font-black text-xs shadow-md shadow-brand-red/20 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs rounded-2xl shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:hover:scale-100"
             >
               {isUpdating ? (
                 <>
@@ -187,11 +169,14 @@ export default function SiteSettingsPage() {
                 </>
               )}
             </button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
+      <form id="site-settings-form" onSubmit={handleSubmit} className="space-y-6">
         {/* NAVIGATION TABS BAR */}
-        <div className="flex items-center gap-2 p-1.5 bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 overflow-x-auto">
+        <div className="bg-brand-white dark:bg-brand-charcoal p-4 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm">
+          <div className="bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50 flex items-center gap-1 overflow-x-auto w-fit max-w-full">
           {[
             { id: "company", label: "Company Information", icon: FiBriefcase },
             { id: "localization", label: "Time Zone & Localization", icon: FiGlobe },
@@ -204,8 +189,8 @@ export default function SiteSettingsPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === tab.id
-                    ? "bg-brand-red text-white shadow-md shadow-brand-red/20"
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === tab.id
+                    ? "bg-brand-gold text-brand-midnight shadow-xs"
                     : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"
                   }`}
               >
@@ -214,6 +199,7 @@ export default function SiteSettingsPage() {
               </button>
             );
           })}
+          </div>
         </div>
 
         {/* TAB CONTENT (animated on tab switch) */}
@@ -248,7 +234,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                     placeholder="e.g. Multigym HR"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                     required
                   />
                 </div>
@@ -263,7 +249,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, companyTagline: e.target.value })}
                     placeholder="e.g. Complete Enterprise HR System"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -277,7 +263,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="info@company.com"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -291,7 +277,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+8801700000000"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -305,7 +291,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     placeholder="https://company.com"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -319,7 +305,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
                     placeholder="e.g. BIN-123456789"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -335,7 +321,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     placeholder="Full office address..."
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -387,7 +373,7 @@ export default function SiteSettingsPage() {
                     value={formData.timeZone}
                     onChange={(e) => setFormData({ ...formData, timeZone: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {timezonesData.map((tz) => (
                       <option key={tz.value} value={tz.value}>
@@ -412,7 +398,7 @@ export default function SiteSettingsPage() {
                     value={formData.dateFormat}
                     onChange={(e) => setFormData({ ...formData, dateFormat: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="YYYY-MM-DD">YYYY-MM-DD (2026-08-16)</option>
                     <option value="YYYY/MM/DD">YYYY/MM/DD (2026/08/16)</option>
@@ -441,7 +427,7 @@ export default function SiteSettingsPage() {
                     value={formData.currencySymbol}
                     onChange={(e) => setFormData({ ...formData, currencySymbol: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="৳">৳ (Bangladeshi Taka - BDT)</option>
                     <option value="$">$ (US Dollar - USD)</option>
@@ -461,7 +447,7 @@ export default function SiteSettingsPage() {
                     value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="English">English</option>
                     <option value="Bengali">Bengali (বাংলা)</option>
@@ -500,7 +486,7 @@ export default function SiteSettingsPage() {
                     value={formData.enablePrintHeader}
                     onChange={(e) => setFormData({ ...formData, enablePrintHeader: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer uppercase disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer uppercase disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="yes">Yes (Enabled)</option>
                     <option value="no">No (Disabled)</option>
@@ -521,7 +507,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, printHeaderInch: e.target.value })}
                     placeholder="1.0"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -534,7 +520,7 @@ export default function SiteSettingsPage() {
                     value={formData.enablePrintFooter}
                     onChange={(e) => setFormData({ ...formData, enablePrintFooter: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer uppercase disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer uppercase disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="yes">Yes (Enabled)</option>
                     <option value="no">No (Disabled)</option>
@@ -555,7 +541,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, printFooterInch: e.target.value })}
                     placeholder="0.75"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -571,7 +557,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, printHeaderText: e.target.value })}
                     placeholder="MULTIGYM HR MANAGEMENT SYSTEM"
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -585,7 +571,7 @@ export default function SiteSettingsPage() {
                     onChange={(e) => setFormData({ ...formData, printFooterText: e.target.value })}
                     placeholder="This is a computer-generated document."
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -659,7 +645,7 @@ export default function SiteSettingsPage() {
                     value={formData.probationMonths}
                     onChange={(e) => setFormData({ ...formData, probationMonths: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -671,7 +657,7 @@ export default function SiteSettingsPage() {
                     value={formData.workingDaysPerWeek}
                     onChange={(e) => setFormData({ ...formData, workingDaysPerWeek: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value={5}>5 Days (Mon - Fri / Sun - Thu)</option>
                     <option value={6}>6 Days (Sat - Thu)</option>
@@ -689,7 +675,7 @@ export default function SiteSettingsPage() {
                     value={formData.dailyWorkHours}
                     onChange={(e) => setFormData({ ...formData, dailyWorkHours: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -701,7 +687,7 @@ export default function SiteSettingsPage() {
                     value={formData.overtimeRate}
                     onChange={(e) => setFormData({ ...formData, overtimeRate: e.target.value })}
                     disabled={isUpdating}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value={1.0}>1.0x (Regular Hourly Rate)</option>
                     <option value={1.25}>1.25x (125% Rate)</option>

@@ -30,7 +30,7 @@ export default function LeaveApplicationsPage() {
   const pending = (st.pending_branch || 0) + (st.pending_hr || 0) + (st.pending_director || 0);
 
   return (
-    <div className="space-y-5 max-w-[1600px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdEventNote />}
         title="Leave Applications"
@@ -72,7 +72,7 @@ export default function LeaveApplicationsPage() {
         ) : (
           <Table head={["Application", "Employee", "Leave", "Days", "Workflow", "Status", "Applied"]}>
             {rows.map((a) => (
-              <tr key={a._id} className="hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30">
+              <tr key={a._id} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
                 <Td><Link className="font-black hover:text-brand-gold" href={`/dashboard/leave/${a._id}`}>{a.applicationNo}</Link></Td>
                 <Td>
                   <div className="flex items-center gap-2">

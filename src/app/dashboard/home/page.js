@@ -69,13 +69,13 @@ export default function DashboardHomePage() {
   const criticalList = taskData?.criticalTasks || [];
 
   return (
-    <div className="space-y-6 w-full max-w-[1700px] mx-auto px-2 sm:px-4 lg:px-6 pb-12 font-sans">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       {/* TOP BANNER & WEATHER GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* Left Welcome Banner (2 cols) */}
-        <div className="lg:col-span-2 rounded-3xl bg-gradient-to-r from-brand-black via-brand-charcoal to-brand-midnight border border-brand-gold/30 p-6 sm:p-8 text-white shadow-xl flex flex-col justify-between relative overflow-hidden group">
+        <div className="lg:col-span-2 rounded-3xl bg-brand-white dark:bg-brand-charcoal border border-brand-beige/50 dark:border-brand-dark-grey/50 p-6 sm:p-8 shadow-sm hover:border-brand-gold/50 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group">
           {/* Subtle Background Glow */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-brand-gold/10 rounded-full blur-3xl group-hover:bg-brand-gold/20 transition-all pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-72 h-72 bg-brand-gold/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-4 relative z-10">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20 text-xs font-black uppercase tracking-wider">
@@ -83,34 +83,34 @@ export default function DashboardHomePage() {
               <span>{currentTimeZoneObj?.city || "System Zoned"}: {formatDateTime(new Date())}</span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-brand-black dark:text-brand-white leading-tight">
               Welcome Back, <span className="text-brand-gold">{userName}</span>!
             </h1>
 
-            <p className="text-xs sm:text-sm text-brand-gold-light max-w-xl leading-relaxed">
+            <p className="text-xs sm:text-sm font-medium text-brand-dark-grey dark:text-brand-gold-light max-w-xl leading-relaxed">
               Multigym Enterprise HR Portal is operating efficiently. Access employee directory, branch open/close schedules, system access roles, and general site settings below.
             </p>
           </div>
 
           {/* Quick Action Pills */}
-          <div className="pt-6 mt-6 border-t border-white/10 flex flex-wrap gap-3 relative z-10">
+          <div className="pt-6 mt-6 border-t border-brand-beige/50 dark:border-brand-dark-grey/50 flex flex-wrap gap-3 relative z-10">
             <Link
               href="/dashboard/employee"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-brand-gold text-brand-midnight font-extrabold text-xs hover:bg-brand-gold-light transition-all shadow-md shadow-brand-gold/20 scale-100 hover:scale-105"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-red hover:bg-brand-red-dark text-white font-bold text-xs transition-all duration-200 shadow-lg shadow-brand-red/20 scale-100 hover:scale-105 active:scale-95"
             >
               <FiUsers /> Employee Directory <FiArrowRight />
             </Link>
 
             <Link
               href="/dashboard/settings/branches"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs transition-all border border-white/20"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white font-bold text-xs hover:border-brand-gold transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
             >
               <FiMapPin className="text-brand-gold" /> Branch Locations
             </Link>
 
             <Link
               href="/dashboard/settings"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs transition-all border border-white/20"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white font-bold text-xs hover:border-brand-gold transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
             >
               <FiSettings className="text-brand-gold" /> Site Settings
             </Link>

@@ -24,7 +24,7 @@ export default function MyLeavePage() {
   };
 
   return (
-    <div className="space-y-5 max-w-6xl mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdEventAvailable />}
         title="My Leave"

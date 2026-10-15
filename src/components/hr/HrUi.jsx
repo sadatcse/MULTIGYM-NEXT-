@@ -6,35 +6,31 @@ import { FiInbox, FiLoader, FiPaperclip, FiSearch, FiX } from "react-icons/fi";
 import { useHrUpload, titleCase } from "@/hooks/useHr";
 
 // Small presentational kit shared by the HR operations pages so they match
-// the existing dashboard look (brand tokens, rounded-3xl cards, black-weight
-// labels) without every page re-declaring the same class strings.
+// the standard dashboard look used by the settings pages (Mtitle header,
+// rounded-3xl cards, gold segmented controls) without every page
+// re-declaring the same class strings.
+
+// Page wrapper used by every HR page; same container as the settings pages.
+export const pageCls = "space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans";
 
 export const inputCls =
-  "w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-base sm:text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-all disabled:opacity-60";
+  "w-full px-3.5 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-base sm:text-xs font-bold text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 transition-all disabled:opacity-60";
 
+// Compact inline control (month/date pickers, small selects) for header toolbars.
+export const controlCls =
+  "bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-brand-gold/50 dark:[color-scheme:dark]";
+
+// Same markup as components/Comon/Mtitle, but the action area wraps so
+// toolbars with several controls stay usable on phones.
 export function PageHeader({ icon, title, subtitle, actions }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-black via-brand-charcoal to-brand-midnight border border-brand-gold/30 p-5 sm:p-6 text-white shadow-xl"
-    >
-      <div className="absolute -top-16 -right-10 w-64 h-64 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-start gap-3.5 min-w-0">
-          {icon && (
-            <span className="w-12 h-12 shrink-0 rounded-2xl bg-brand-gold/15 border border-brand-gold/30 text-brand-gold flex items-center justify-center text-2xl">
-              {icon}
-            </span>
-          )}
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">{title}</h1>
-            {subtitle && <p className="text-xs sm:text-sm text-brand-gold-light/90 mt-1 max-w-2xl">{subtitle}</p>}
-          </div>
-        </div>
-        {actions && <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">{actions}</div>}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-brand-beige/50 dark:border-brand-dark-grey/50">
+      <div className="flex flex-col gap-1 min-w-0">
+        <h2 className="text-xl sm:text-2xl font-black tracking-tight text-brand-black dark:text-brand-white flex items-center gap-2">{title}</h2>
+        {subtitle && <p className="text-xs sm:text-sm font-medium text-brand-dark-grey dark:text-brand-gold-light">{subtitle}</p>}
       </div>
-    </motion.div>
+      {actions && <div className="flex flex-wrap items-center gap-3 sm:justify-end">{actions}</div>}
+    </div>
   );
 }
 
@@ -49,24 +45,47 @@ const TONES = {
   cyan: "bg-cyan-500/10 text-cyan-500",
 };
 
+const VALUE_TONE = {
+  gold: "text-brand-black dark:text-brand-white",
+  green: "text-emerald-500",
+  red: "text-rose-500",
+  amber: "text-amber-500",
+  blue: "text-blue-500",
+  purple: "text-purple-500",
+  slate: "text-brand-black dark:text-brand-white",
+  cyan: "text-cyan-500",
+};
+
+const HOVER_TONE = {
+  gold: "hover:border-brand-gold/50",
+  green: "hover:border-emerald-500/50",
+  red: "hover:border-rose-500/50",
+  amber: "hover:border-amber-500/50",
+  blue: "hover:border-blue-500/50",
+  purple: "hover:border-purple-500/50",
+  slate: "hover:border-zinc-500/50",
+  cyan: "hover:border-cyan-500/50",
+};
+
 export function StatCard({ icon, label, value, hint, tone = "gold", onClick, active, index = 0 }) {
   return (
     <motion.button
       type="button"
       onClick={onClick}
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
-      whileHover={{ y: -2 }}
-      className={`text-left bg-brand-white dark:bg-brand-charcoal p-4 rounded-3xl border shadow-sm flex items-center gap-3.5 transition-all ${
-        active ? "border-brand-gold ring-2 ring-brand-gold/30" : "border-brand-beige/50 dark:border-brand-dark-grey/50 hover:shadow-md"
+      transition={{ duration: 0.3, ease: "easeOut", delay: index * 0.08 }}
+      className={`text-left bg-brand-white dark:bg-brand-charcoal p-5 rounded-3xl border shadow-sm transition-all duration-300 group ${
+        active ? "border-brand-gold ring-2 ring-brand-gold/30" : `border-brand-beige/50 dark:border-brand-dark-grey/50 ${HOVER_TONE[tone] || HOVER_TONE.gold}`
       } ${onClick ? "cursor-pointer" : "cursor-default"}`}
     >
-      <span className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 ${TONES[tone] || TONES.gold}`}>{icon}</span>
-      <span className="min-w-0">
-        <span className="text-[10px] font-extrabold uppercase text-brand-dark-grey dark:text-brand-gold-light tracking-wider block truncate">{label}</span>
-        <span className="text-xl sm:text-2xl font-black text-brand-black dark:text-brand-white block leading-tight truncate">{value}</span>
-        {hint && <span className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light/70 font-semibold block truncate">{hint}</span>}
+      <span className="flex items-center justify-between gap-3">
+        <span className="min-w-0">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-dark-grey dark:text-brand-gold-light block truncate">{label}</span>
+          <span className={`text-2xl font-black mt-1 block truncate ${VALUE_TONE[tone] || VALUE_TONE.gold}`}>{value}</span>
+          {hint && <span className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light/70 font-semibold block truncate">{hint}</span>}
+        </span>
+        <span className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold shrink-0 group-hover:scale-110 transition-transform ${TONES[tone] || TONES.gold}`}>{icon}</span>
       </span>
     </motion.button>
   );
@@ -76,10 +95,10 @@ export function Card({ title, subtitle, actions, children, className = "", bodyC
   return (
     <section className={`bg-brand-white dark:bg-brand-charcoal rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm ${className}`}>
       {(title || actions) && (
-        <header className="px-5 pt-4 pb-3 border-b border-brand-beige/40 dark:border-brand-dark-grey/40 flex flex-wrap items-center justify-between gap-3">
+        <header className="p-4 sm:px-5 border-b border-brand-beige/40 dark:border-brand-dark-grey/40 flex flex-wrap items-center justify-between gap-3">
           <div>
-            {title && <h2 className="text-sm font-black text-brand-black dark:text-brand-white">{title}</h2>}
-            {subtitle && <p className="text-[11px] text-brand-dark-grey dark:text-brand-gold-light/80 mt-0.5">{subtitle}</p>}
+            {title && <h2 className="text-base font-black text-brand-black dark:text-brand-white">{title}</h2>}
+            {subtitle && <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mt-0.5">{subtitle}</p>}
           </div>
           {/* On phones every toolbar control takes a full row. */}
           {actions && <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto max-sm:*:w-full">{actions}</div>}
@@ -122,30 +141,38 @@ const STATUS_LABEL = {
   not_punched: "Not In",
 };
 
+const DOT = {
+  green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-red-500", blue: "bg-blue-500",
+  purple: "bg-purple-500", cyan: "bg-cyan-500", slate: "bg-zinc-500", gold: "bg-brand-gold",
+};
+
 export function Badge({ status, tone, children }) {
   const t = tone || STATUS_TONE[status] || "slate";
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wide whitespace-nowrap ${BADGE[t]}`}>
+    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[11px] font-extrabold capitalize whitespace-nowrap ${BADGE[t]}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${DOT[t]}`} />
       {children || STATUS_LABEL[status] || titleCase(status)}
     </span>
   );
 }
 
 export function Btn({ children, variant = "primary", size = "md", className = "", loading, ...props }) {
+  const ghost = "bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white hover:border-brand-gold";
   const v = {
-    primary: "bg-brand-red hover:bg-brand-red-dark text-white shadow-md shadow-brand-red/20",
-    gold: "bg-brand-gold hover:bg-brand-gold-light text-brand-black shadow-md shadow-brand-gold/20",
-    ghost: "bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige dark:border-brand-dark-grey text-brand-black dark:text-brand-white hover:border-brand-gold",
-    glass: "bg-white/10 hover:bg-white/20 border border-white/20 text-white",
+    primary: "bg-brand-red hover:bg-brand-red-dark text-white shadow-lg shadow-brand-red/20",
+    gold: "bg-brand-gold hover:bg-brand-gold-light text-brand-midnight shadow-md shadow-brand-gold/20",
+    ghost,
+    // Kept for older call sites; the header is no longer dark, so it renders as ghost.
+    glass: ghost,
     success: "bg-emerald-600 hover:bg-emerald-700 text-white",
     danger: "bg-red-600 hover:bg-red-700 text-white",
   }[variant];
-  const s = size === "sm" ? "px-3 py-1.5 text-[11px]" : "px-4 py-2.5 text-xs";
+  const s = size === "sm" ? "px-3 py-1.5 text-[11px] rounded-xl" : "px-5 py-2.5 text-xs rounded-2xl";
   return (
     <button
       type="button"
       disabled={loading || props.disabled}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-2xl font-black transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${v} ${s} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed cursor-pointer ${v} ${s} ${className}`}
       {...props}
     >
       {loading && <FiLoader className="animate-spin" />}
@@ -263,10 +290,10 @@ export function Avatar({ name = "", photo, size = 36 }) {
 
 export function EmptyState({ icon = <FiInbox />, title = "Nothing here yet", text, action }) {
   return (
-    <div className="py-14 text-center space-y-3">
-      <div className="w-14 h-14 mx-auto rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center text-2xl">{icon}</div>
-      <h3 className="text-sm font-black text-brand-black dark:text-brand-white">{title}</h3>
-      {text && <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light max-w-sm mx-auto">{text}</p>}
+    <div className="py-12 px-6 text-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-gold/10 text-brand-gold flex items-center justify-center text-2xl font-bold">{icon}</div>
+      <h3 className="text-lg font-black text-brand-black dark:text-brand-white mb-1">{title}</h3>
+      {text && <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light max-w-sm mx-auto mb-6">{text}</p>}
       {action}
     </div>
   );
@@ -286,16 +313,16 @@ export function Table({ head, children, footer }) {
   return (
     <div className="overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
       <table className="w-full min-w-max sm:min-w-0 text-left border-collapse">
-        <thead>
-          <tr className="bg-brand-offwhite dark:bg-brand-midnight/60 border-b border-brand-beige/50 dark:border-brand-dark-grey/50 text-[10px] font-black uppercase text-brand-dark-grey dark:text-brand-gold-light tracking-wider">
+        <thead className="bg-brand-offwhite dark:bg-brand-midnight uppercase text-[10px] font-black tracking-wider text-brand-dark-grey dark:text-brand-gold-light border-b border-brand-beige/60 dark:border-brand-dark-grey/60">
+          <tr>
             {head.map((h, i) => (
-              <th key={i} className={`py-3 px-3.5 whitespace-nowrap ${typeof h === "object" ? h.className : ""}`}>
+              <th key={i} className={`py-4 px-4 sm:px-5 whitespace-nowrap ${typeof h === "object" ? h.className : ""}`}>
                 {typeof h === "object" ? h.label : h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-brand-beige/40 dark:divide-brand-dark-grey/40 text-xs font-bold text-brand-black dark:text-brand-white">{children}</tbody>
+        <tbody className="divide-y divide-brand-beige/30 dark:divide-brand-dark-grey/30 text-xs font-bold text-brand-black dark:text-brand-white [&>tr]:transition-all [&>tr]:duration-150 [&>tr:hover]:bg-brand-gold/5 dark:[&>tr:hover]:bg-brand-gold/10">{children}</tbody>
         {footer}
       </table>
     </div>
@@ -303,7 +330,7 @@ export function Table({ head, children, footer }) {
 }
 
 export const Td = ({ children, className = "", ...props }) => (
-  <td className={`py-2.5 px-3 sm:py-3 sm:px-3.5 align-middle ${className}`} {...props}>
+  <td className={`py-3 px-4 sm:py-4 sm:px-5 align-middle ${className}`} {...props}>
     {children}
   </td>
 );
@@ -374,7 +401,7 @@ export function Timeline({ items }) {
 
 export function Tabs({ tabs, value, onChange }) {
   return (
-    <div className="inline-flex flex-wrap gap-1 bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige dark:border-brand-dark-grey">
+    <div className="inline-flex flex-wrap items-center gap-1 bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50">
       {tabs.map((t) => {
         const tab = typeof t === "string" ? { value: t, label: titleCase(t) } : t;
         const active = tab.value === value;
@@ -383,9 +410,9 @@ export function Tabs({ tabs, value, onChange }) {
             key={tab.value}
             type="button"
             onClick={() => onChange(tab.value)}
-            className={`relative px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-colors cursor-pointer ${active ? "text-brand-black" : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"}`}
+            className={`relative px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${active ? "text-brand-midnight" : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"}`}
           >
-            {active && <motion.span layoutId="hr-tab" className="absolute inset-0 rounded-xl bg-brand-gold" transition={{ type: "spring", duration: 0.35 }} />}
+            {active && <motion.span layoutId="hr-tab" className="absolute inset-0 rounded-xl bg-brand-gold shadow-xs" transition={{ type: "spring", duration: 0.35 }} />}
             <span className="relative">
               {tab.label}
               {tab.count !== undefined && <span className="ml-1.5 opacity-70">{tab.count}</span>}

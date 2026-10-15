@@ -73,16 +73,16 @@ export default function PayrollPage() {
   const branchOptions = me?.scope === "branch" ? me.branches : ["all", ...branches];
 
   return (
-    <div className="space-y-5 max-w-[1800px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdReceiptLong />}
         title="Payroll & Salary Sheet"
         subtitle="Attendance-driven salary: basic & allowances, overtime, bonus, late/absent deductions, advance & loan recovery, net salary — branch-wise or combined."
         actions={
           <>
-            <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-white [color-scheme:dark]" />
-            <select value={branch} onChange={(e) => setBranch(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-white">
-              {branchOptions.map((b) => <option key={b} value={b} className="text-black">{b === "all" ? "All branches (combined)" : b}</option>)}
+            <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-brand-gold/50 dark:[color-scheme:dark]" />
+            <select value={branch} onChange={(e) => setBranch(e.target.value)} className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-brand-gold/50">
+              {branchOptions.map((b) => <option key={b} value={b}>{b === "all" ? "All branches (combined)" : b}</option>)}
             </select>
             {canAdd && (!run || run.status === "draft") && <Btn variant="gold" size="sm" loading={busy} onClick={generate}><FiRefreshCw /> {run ? "Regenerate" : "Generate"} sheet</Btn>}
           </>
@@ -162,7 +162,7 @@ export default function PayrollPage() {
                   }
                 >
                   {slips.map((p, i) => (
-                    <motion.tr key={p._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.015, 0.4) }} className="hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30">
+                    <motion.tr key={p._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.015, 0.4) }} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
                       <Td>{p.employeeCode}</Td>
                       <Td className="font-black whitespace-nowrap">{p.employeeName}{p.manuallyAdjusted && <span className="ml-1 text-[9px] text-brand-gold">EDITED</span>}</Td>
                       <Td className="whitespace-nowrap">{p.designation}</Td>
@@ -196,7 +196,7 @@ export default function PayrollPage() {
         <Card bodyClassName="p-0">
           <Table head={["Month", "Scope", "Status", "Employees", "Gross", "Deductions", "Net", "Finalized"]}>
             {(runs.data?.data || []).map((r) => (
-              <tr key={r._id} className="cursor-pointer hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30" onClick={() => { setMonth(r.month); setBranch(r.branch); setRunId(r._id); setTab("sheet"); }}>
+              <tr key={r._id} className="cursor-pointer hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10" onClick={() => { setMonth(r.month); setBranch(r.branch); setRunId(r._id); setTab("sheet"); }}>
                 <Td className="font-black">{r.month}</Td>
                 <Td>{r.branch === "all" ? "Combined" : r.branch}</Td>
                 <Td><Badge status={r.status} /></Td>

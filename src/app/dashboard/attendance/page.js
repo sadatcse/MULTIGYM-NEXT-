@@ -98,7 +98,7 @@ export default function DailyAttendancePage() {
   };
 
   return (
-    <div className="space-y-5 max-w-[1700px] mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdFingerprint />}
         title="Daily Attendance"
@@ -106,7 +106,7 @@ export default function DailyAttendancePage() {
         actions={
           <>
             <Btn variant="glass" size="sm" onClick={() => setDate(addDaysISO(date, -1))}>‹ Prev</Btn>
-            <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-white [color-scheme:dark]" />
+            <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-brand-gold/50 dark:[color-scheme:dark]" />
             <Btn variant="glass" size="sm" disabled={date >= todayISO()} onClick={() => setDate(addDaysISO(date, 1))}>Next ›</Btn>
             {canEdit && (
               <Btn variant="gold" size="sm" loading={busy} onClick={processDay} title="Recalculate from punches and mark absentees">
@@ -144,7 +144,7 @@ export default function DailyAttendancePage() {
         ) : (
           <Table head={["Employee", "Branch", "Shift", "In", "Out", "Status", "Late", "Early", "Worked", "OT", "Remarks", ""]}>
             {rows.map((r, i) => (
-              <motion.tr key={r.employee._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.015, 0.4) }} className="hover:bg-brand-offwhite/60 dark:hover:bg-brand-midnight/30">
+              <motion.tr key={r.employee._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.015, 0.4) }} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
                 <Td>
                   <div className="flex items-center gap-2.5">
                     <Avatar name={r.employee.name} photo={r.employee.photo} size={32} />

@@ -13,7 +13,7 @@ export default function MyRosterPage() {
   const byDate = items.reduce((m, r) => ((m[r.date] ||= []).push(r), m), {});
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto pb-10">
+    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader icon={<FiCalendar />} title="My Duty Roster" subtitle="Your duties for the next three weeks, including temporary changes." />
       <Card bodyClassName="p-4">
         {loading ? (
