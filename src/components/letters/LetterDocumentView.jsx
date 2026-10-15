@@ -363,7 +363,7 @@ export default function LetterDocumentView({
               কর্মকর্তা/কর্মচারীর সম্মতি ও প্রাপ্তি স্বীকার
             </h4>
             <p className="text-slate-700 text-xs italic">
-              "আমি উপরোক্ত সকল শর্তাবলী মনোযোগসহকারে পড়েছি, বুঝেছি এবং স্বেচ্ছায় মেনে নিয়ে এই পত্রের অনুলিপি গ্রহণ করলাম।"
+              &quot;আমি উপরোক্ত সকল শর্তাবলী মনোযোগসহকারে পড়েছি, বুঝেছি এবং স্বেচ্ছায় মেনে নিয়ে এই পত্রের অনুলিপি গ্রহণ করলাম।&quot;
             </p>
             <div className="grid grid-cols-2 gap-3 pt-3 text-xs text-slate-800 border-t border-slate-200">
               <div>

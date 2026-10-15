@@ -162,7 +162,7 @@ export default function SubmissionHistoryModal({
                             <span className="text-[10px] font-bold text-brand-dark-grey uppercase block mb-0.5">
                               Employee Submission Note:
                             </span>
-                            <p className="italic">"{cycleItem.remark}"</p>
+                            <p className="italic">&quot;{cycleItem.remark}&quot;</p>
                           </div>
                         )}
 
@@ -244,7 +244,7 @@ export default function SubmissionHistoryModal({
                             </div>
                             {cycleItem.reviewComment && (
                               <p className="text-emerald-700 dark:text-emerald-400">
-                                "{cycleItem.reviewComment}"
+                                &quot;{cycleItem.reviewComment}&quot;
                               </p>
                             )}
                           </div>

@@ -3,6 +3,7 @@
 import React, { useContext, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import WeatherCard from "@/components/Comon/WeatherCard";
+import HrSummaryWidget from "@/components/hr/HrSummaryWidget";
 import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import { AuthContext } from "@/providers/AuthProvider";
 import useTaskApi from "@/hooks/useTaskApi";
@@ -123,6 +124,9 @@ export default function DashboardHomePage() {
           </div>
         </div>
       </div>
+
+      {/* HR SUMMARY: attendance, leave, tasks, maintenance, branch-wise */}
+      <HrSummaryWidget />
 
       {/* MANAGEMENT INSTRUCTIONS & TASKS WIDGET */}
       <div className="bg-brand-white dark:bg-brand-charcoal p-6 rounded-3xl border border-brand-beige/50 dark:border-brand-dark-grey/50 shadow-sm space-y-5">

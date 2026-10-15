@@ -7,6 +7,14 @@ import menuItems from "@/components/MenuItems";
 
 export const PermissionsContext = createContext(null);
 
+// Self-service pages every employee may open even when their role has no
+// explicit entry. Must match SELF_SERVICE_KEYS in the backend PermissionsGuard.
+export const SELF_SERVICE_KEYS = new Set([
+  "home", "chat", "my-attendance", "my-roster", "my-leave", "my-payslips", "my-notices", "my-tasks",
+  "my-assets", "my-obligations", "my-maintenance-requests", "my-requisitions", "maintenance-create",
+  "requisition-create", "requisition-details", "leave-details",
+]);
+
 export function PermissionsProvider({ children }) {
   const axiosSecure = useAxiosSecure();
   const auth = useContext(AuthContext);
@@ -14,6 +22,8 @@ export function PermissionsProvider({ children }) {
   const authLoading = auth?.loading ?? false;
 
   const [dbPermissions, setDbPermissions] = useState(null);
+  // Data scope from HR Workflow Settings: "all" | "branch" | "self".
+  const [scope, setScope] = useState("all");
   const [loading, setLoading] = useState(true);
 
   const role = currentAuth?.role ? currentAuth.role.toUpperCase() : "SUPER ADMIN";
@@ -51,13 +61,17 @@ export function PermissionsProvider({ children }) {
 
     setLoading(true);
     try {
-      const res = await axiosSecure.get(`/role-permission?role=${encodeURIComponent(role)}`);
-      if (res?.data?.data?.permissions) {
-        setDbPermissions(res.data.data.permissions);
-      }
-    } catch (err) {
-      if (currentAuth?.permissions) {
+      const [permRes, cfgRes] = await Promise.allSettled([
+        axiosSecure.get(`/role-permission?role=${encodeURIComponent(role)}`),
+        axiosSecure.get("/hr-config"),
+      ]);
+      if (cfgRes.status === "fulfilled" && cfgRes.value?.data?.me?.scope) setScope(cfgRes.value.data.me.scope);
+      if (permRes.status === "fulfilled" && permRes.value?.data?.data?.permissions) {
+        setDbPermissions(permRes.value.data.data.permissions);
+      } else if (currentAuth?.permissions) {
         setDbPermissions(currentAuth.permissions);
+      } else {
+        setDbPermissions(null);
       }
     } finally {
       setLoading(false);
@@ -85,10 +99,13 @@ export function PermissionsProvider({ children }) {
         return Boolean(dbPermissions[moduleKey][action]);
       }
 
-      // Default to allowed for newly added modules or unconfigured roles
+      // Not configured: management roles keep default-allow, employee-level
+      // ("own records") roles only get self-service pages — same rule the
+      // backend PermissionsGuard enforces.
+      if (scope === "self") return SELF_SERVICE_KEYS.has(moduleKey);
       return true;
     },
-    [currentAuth, role, dbPermissions]
+    [currentAuth, role, dbPermissions, scope]
   );
 
   const hasPermission = useCallback(
@@ -100,6 +117,16 @@ export function PermissionsProvider({ children }) {
       }
       if (!key && typeof pathOrKey === "string" && pathOrKey.startsWith("/dashboard/assets/") && !pathOrKey.endsWith("/types") && !pathOrKey.endsWith("/clearance")) {
         key = "asset-details";
+      }
+      if (!key && typeof pathOrKey === "string") {
+        // Generic dynamic-route match: "/dashboard/leave/[id]" in MenuItems
+        // covers "/dashboard/leave/<anything>" when no exact path exists.
+        const dyn = Object.keys(routeToKeyMap).find((p) => {
+          if (!p.includes("[")) return false;
+          const re = new RegExp("^" + p.replace(/\[[^\]]+\]/g, "[^/]+") + "$");
+          return re.test(pathOrKey);
+        });
+        if (dyn) key = routeToKeyMap[dyn];
       }
       if (!key) {
         key = pathOrKey.includes("/") ? pathOrKey.split("/").pop() : pathOrKey;
@@ -117,9 +144,10 @@ export function PermissionsProvider({ children }) {
       allowedRoutes: ["*"],
       loading,
       role,
+      scope,
       refreshPermissions: fetchPermissions,
     }),
-    [dbPermissions, can, hasPermission, loading, role, fetchPermissions]
+    [dbPermissions, can, hasPermission, loading, role, scope, fetchPermissions]
   );
 
   return <PermissionsContext.Provider value={value}>{children}</PermissionsContext.Provider>;

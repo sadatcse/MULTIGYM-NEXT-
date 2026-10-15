@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useContext, use } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import useTaskApi from "@/hooks/useTaskApi";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
@@ -41,7 +39,12 @@ import {
   FiTrash2,
   FiExternalLink,
 } from "react-icons/fi";
-import { MdAssignment, MdHistory, MdPriorityHigh, MdOutlineHistory } from "react-icons/md";
+import { MdHistory, MdOutlineHistory } from "react-icons/md";
+import TaskProgressModal from "@/components/modals/tasks/TaskProgressModal";
+import TaskProofUploadModal from "@/components/modals/tasks/TaskProofUploadModal";
+import TaskExtendDeadlineModal from "@/components/modals/tasks/TaskExtendDeadlineModal";
+import TaskRejectModal from "@/components/modals/tasks/TaskRejectModal";
+import TaskSubtaskModal from "@/components/modals/tasks/TaskSubtaskModal";
 
 const SOURCE_COLORS = {
   "MD Sir": "bg-purple-500/10 text-purple-600 border-purple-500/30",
@@ -1241,232 +1244,16 @@ export default function TaskDetailPage({ params }) {
       </div>
 
       {/* Progress Update Modal */}
-      {showProgressModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-brand-white dark:bg-brand-charcoal w-full max-w-md p-6 rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl space-y-5 animate-scale-in">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-sm text-brand-black dark:text-brand-white">
-                Update Progress ({progressVal}%)
-              </h4>
-              <button onClick={() => setShowProgressModal(false)} className="text-brand-dark-grey hover:text-brand-red">
-                <FiX />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={progressVal}
-                onChange={(e) => setProgressVal(parseInt(e.target.value, 10))}
-                className="range range-warning range-sm w-full"
-              />
-              <div className="flex items-center justify-between gap-1">
-                {[0, 25, 50, 75, 90, 100].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setProgressVal(v)}
-                    className="px-2 py-1 rounded-lg text-[10px] font-bold bg-brand-offwhite dark:bg-brand-midnight"
-                  >
-                    {v}%
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <textarea
-              rows={3}
-              value={progressRemark}
-              onChange={(e) => setProgressRemark(e.target.value)}
-              placeholder="Add remark or status update note..."
-              className="w-full p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs font-medium outline-none"
-            />
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowProgressModal(false)}
-                className="px-4 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-xs font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleSaveProgress}
-                className="px-5 py-2 rounded-xl bg-brand-gold text-brand-black text-xs font-black"
-              >
-                {actionLoading ? "Saving..." : "Save Progress"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TaskProgressModal actionLoading={actionLoading} handleSaveProgress={handleSaveProgress} progressRemark={progressRemark} progressVal={progressVal} setProgressRemark={setProgressRemark} setProgressVal={setProgressVal} setShowProgressModal={setShowProgressModal} showProgressModal={showProgressModal} />
 
       {/* Proof Upload Modal */}
-      {showProofModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-brand-white dark:bg-brand-charcoal w-full max-w-md p-6 rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl space-y-5 animate-scale-in">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-sm text-brand-black dark:text-brand-white">
-                Upload Completion Proof
-              </h4>
-              <button onClick={() => setShowProofModal(false)} className="text-brand-dark-grey hover:text-brand-red">
-                <FiX />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <label className="p-6 rounded-2xl border-2 border-dashed border-brand-gold/60 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-brand-gold/5 text-center">
-                <FiUploadCloud className="text-2xl text-brand-gold" />
-                <span className="text-xs font-extrabold text-brand-black dark:text-brand-white">
-                  {proofFile ? proofFile.name : "Select photo, PDF, or document"}
-                </span>
-                <input
-                  type="file"
-                  onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
-              </label>
-
-              <input
-                type="text"
-                value={proofRemark}
-                onChange={(e) => setProofRemark(e.target.value)}
-                placeholder="Proof description / note"
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs font-bold outline-none"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowProofModal(false)}
-                className="px-4 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-xs font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={uploadingProof || !proofFile}
-                onClick={handleSaveProof}
-                className="px-5 py-2 rounded-xl bg-brand-gold text-brand-black text-xs font-black"
-              >
-                {uploadingProof ? "Uploading..." : "Save Proof"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TaskProofUploadModal handleSaveProof={handleSaveProof} proofFile={proofFile} proofRemark={proofRemark} setProofFile={setProofFile} setProofRemark={setProofRemark} setShowProofModal={setShowProofModal} showProofModal={showProofModal} uploadingProof={uploadingProof} />
 
       {/* Extend Deadline Modal */}
-      {showExtendModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-brand-white dark:bg-brand-charcoal w-full max-w-md p-6 rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl space-y-5 animate-scale-in">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-sm text-brand-black dark:text-brand-white">
-                Extend Task Deadline
-              </h4>
-              <button onClick={() => setShowExtendModal(false)} className="text-brand-dark-grey hover:text-brand-red">
-                <FiX />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-black uppercase text-brand-dark-grey">New Deadline</label>
-                <input
-                  type="datetime-local"
-                  value={newDeadline}
-                  onChange={(e) => setNewDeadline(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-bold outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-black uppercase text-brand-dark-grey">
-                  Reason for Extension (Required)
-                </label>
-                <textarea
-                  rows={3}
-                  value={extendReason}
-                  onChange={(e) => setExtendReason(e.target.value)}
-                  placeholder="e.g. Supplier delayed delivery by 3 days; management approved extension."
-                  className="w-full p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-medium outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowExtendModal(false)}
-                className="px-4 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-xs font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleExtendConfirm}
-                className="px-5 py-2 rounded-xl bg-brand-red text-white text-xs font-black"
-              >
-                {actionLoading ? "Updating..." : "Confirm Extension"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TaskExtendDeadlineModal actionLoading={actionLoading} extendReason={extendReason} handleExtendConfirm={handleExtendConfirm} newDeadline={newDeadline} setExtendReason={setExtendReason} setNewDeadline={setNewDeadline} setShowExtendModal={setShowExtendModal} showExtendModal={showExtendModal} />
 
       {/* Rejection / Request Revision Modal */}
-      {showRejectModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-brand-white dark:bg-brand-charcoal w-full max-w-md p-6 rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl space-y-5 animate-scale-in">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-sm text-brand-black dark:text-brand-white">
-                Request Revision / Reject Submission
-              </h4>
-              <button onClick={() => setShowRejectModal(false)} className="text-brand-dark-grey hover:text-brand-red">
-                <FiX />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase text-brand-dark-grey">
-                Reason for Revision / Feedback (Required)
-              </label>
-              <textarea
-                rows={3}
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Explain what corrections or additional work is needed before approval..."
-                className="w-full p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-xs font-medium outline-none"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowRejectModal(false)}
-                className="px-4 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-xs font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleRejectConfirm}
-                className="px-5 py-2 rounded-xl bg-red-500 text-white text-xs font-black"
-              >
-                {actionLoading ? "Submitting..." : "Send Revision Feedback"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TaskRejectModal actionLoading={actionLoading} handleRejectConfirm={handleRejectConfirm} rejectReason={rejectReason} setRejectReason={setRejectReason} setShowRejectModal={setShowRejectModal} showRejectModal={showRejectModal} />
 
       {/* Multi-Proof Submission Modal (Requirement 2) */}
       <ProofSubmissionModal
@@ -1500,100 +1287,7 @@ export default function TaskDetailPage({ params }) {
       />
 
       {/* Add Subtask Modal (Requirement 1) */}
-      {showAddSubtaskModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-brand-white dark:bg-brand-charcoal w-full max-w-lg p-6 rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-sm text-brand-black dark:text-brand-white flex items-center gap-2">
-                <FiPlus className="text-brand-gold" /> Add Subtask Item
-              </h4>
-              <button
-                onClick={() => setShowAddSubtaskModal(false)}
-                className="text-brand-dark-grey hover:text-brand-red"
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateSubtask} className="space-y-4">
-              <div>
-                <label className="text-xs font-black uppercase text-brand-dark-grey block mb-1">
-                  Subtask Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newSubtask.title}
-                  onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                  placeholder="e.g. Audit initial documents"
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs font-bold outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-black uppercase text-brand-dark-grey block mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={newSubtask.description}
-                  onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
-                  placeholder="Specific instructions for this subtask..."
-                  className="w-full p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs outline-none resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-black uppercase text-brand-dark-grey block mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={newSubtask.priority}
-                    onChange={(e) => setNewSubtask({ ...newSubtask, priority: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs font-bold outline-none"
-                  >
-                    <option value="CRITICAL">Critical</option>
-                    <option value="URGENT">Urgent</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-black uppercase text-brand-dark-grey block mb-1">
-                    Deadline
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={newSubtask.deadline}
-                    onChange={(e) => setNewSubtask({ ...newSubtask, deadline: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50 text-xs font-bold outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddSubtaskModal(false)}
-                  className="px-4 py-2 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-xs font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2 rounded-xl bg-brand-gold text-brand-black text-xs font-black hover:bg-brand-gold-light cursor-pointer"
-                >
-                  {actionLoading ? "Adding..." : "Add Subtask"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <TaskSubtaskModal actionLoading={actionLoading} handleCreateSubtask={handleCreateSubtask} newSubtask={newSubtask} setNewSubtask={setNewSubtask} setShowAddSubtaskModal={setShowAddSubtaskModal} showAddSubtaskModal={showAddSubtaskModal} />
     </div>
   );
 }

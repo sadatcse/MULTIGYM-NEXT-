@@ -51,23 +51,23 @@ export default function ModalShell({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration }}
-          className={`fixed inset-0 ${zIndexClassName} flex items-center justify-center p-4 bg-brand-black/60 backdrop-blur-md ${className}`}
+          className={`fixed inset-0 ${zIndexClassName} flex items-end sm:items-center justify-center p-0 sm:p-4 bg-brand-black/60 backdrop-blur-md ${className}`}
           onMouseDown={(e) => {
             if (closeOnBackdrop && !disableClose && e.target === e.currentTarget) onClose?.();
           }}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            initial={{ opacity: 0, scale: 0.98, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            exit={{ opacity: 0, scale: 0.98, y: 24 }}
             transition={{ duration }}
             role="dialog"
             aria-modal="true"
             aria-label={typeof title === "string" ? title : undefined}
-            className={`bg-brand-white dark:bg-brand-charcoal w-full ${SIZE_CLASSES[size] || SIZE_CLASSES.md} rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${panelClassName}`}
+            className={`bg-brand-white dark:bg-brand-charcoal w-full ${SIZE_CLASSES[size] || SIZE_CLASSES.md} rounded-t-3xl sm:rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] ${panelClassName}`}
           >
             {title !== undefined && (
-              <div className="p-6 border-b border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-start justify-between bg-brand-offwhite/50 dark:bg-brand-midnight/50 shrink-0">
+              <div className="p-4 sm:p-6 border-b border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-start justify-between bg-brand-offwhite/50 dark:bg-brand-midnight/50 shrink-0">
                 <div className="pr-4 min-w-0">
                   {typeof title === "string" ? (
                     <h3 className="text-lg font-black text-brand-black dark:text-brand-white">{title}</h3>
@@ -91,7 +91,7 @@ export default function ModalShell({
             <div className="overflow-y-auto flex-1">{children}</div>
 
             {footer && (
-              <div className="p-5 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 bg-brand-offwhite/50 dark:bg-brand-midnight/50 shrink-0">
+              <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-brand-beige/40 dark:border-brand-dark-grey/40 bg-brand-offwhite/50 dark:bg-brand-midnight/50 shrink-0">
                 {footer}
               </div>
             )}

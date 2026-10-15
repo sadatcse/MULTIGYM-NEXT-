@@ -350,7 +350,7 @@ export default function TaskApprovalModal({
 
                           {sub.remark && (
                             <div className="text-[11px] text-brand-dark-grey italic">
-                              "{sub.remark}"
+                              &quot;{sub.remark}&quot;
                             </div>
                           )}
 

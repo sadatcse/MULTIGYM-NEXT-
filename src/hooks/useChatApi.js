@@ -13,7 +13,7 @@ export default function useChatApi() {
   // alongside existing conversations. Reuses the existing employee directory
   // endpoint instead of duplicating employee-listing logic.
   const getContacts = useCallback(async () => {
-    const res = await axiosSecure.get("/employee", { params: { limit: 1000 } });
+    const res = await axiosSecure.get("/employee/directory");
     const all = res?.data?.data || [];
     return all.filter((emp) => emp._id !== currentEmployeeId);
   }, [axiosSecure, currentEmployeeId]);
