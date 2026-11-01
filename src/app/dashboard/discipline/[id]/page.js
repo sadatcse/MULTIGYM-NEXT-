@@ -54,7 +54,7 @@ export default function CaseDetailPage() {
           <>
             <Btn variant="glass" size="sm" onClick={() => router.back()}><FiArrowLeft /> Back</Btn>
             <Btn variant="gold" size="sm" onClick={print}><FiPrinter /> Print</Btn>
-            <Link href="/dashboard/hr-letters/create"><Btn variant="glass" size="sm"><FiFileText /> Issue letter</Btn></Link>
+            <Link href={`/dashboard/hr-letters/create?employeeId=${c.employee}&type=${String(c.decision?.action || c.caseType || "").includes("warning") ? "warning" : "show_cause"}`}><Btn variant="glass" size="sm"><FiFileText /> Issue letter</Btn></Link>
           </>
         }
       />

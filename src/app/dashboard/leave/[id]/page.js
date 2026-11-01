@@ -7,8 +7,8 @@ import { FiArrowLeft, FiPrinter, FiXCircle } from "react-icons/fi";
 import { MdBeachAccess } from "react-icons/md";
 import { AuthContext } from "@/providers/AuthProvider";
 import { useHrConfig, useHrMutation, useHrQuery, fmtDate, fmtDateTime, titleCase } from "@/hooks/useHr";
-import { Attachments, Avatar, Badge, Btn, Card, Loading, PageHeader, Table, Td, Timeline } from "@/components/hr/HrUi";
-import { DECISION_TONE, LeaveDecisionPanel, LeaveStepper, printLeaveForm } from "@/components/hr/LeaveParts";
+import { Attachments, Avatar, Btn, Card, Loading, PageHeader, Table, Td, Timeline } from "@/components/hr/HrUi";
+import { DECISION_TONE, LeaveBadge, LeaveDecisionPanel, LeaveStepper, printLeaveForm } from "@/components/hr/LeaveParts";
 
 const STAGE_LABEL = { branch: "Floor In-Charge / Branch Verification", hr: "Manager (Admin & HR) Verification", director: "Director Approval" };
 
@@ -25,7 +25,7 @@ export default function LeaveDetailPage() {
   if (error || !a) return <Card><p className="text-sm font-bold text-red-500">{error || "Not found"}</p></Card>;
 
   const own = me?.id === String(a.employee);
-  const canCancel = (own && a.status.startsWith("pending")) || (me?.scope === "all" && ["pending_branch", "pending_hr", "pending_director", "approved"].includes(a.status));
+  const canCancel = (own && a.status.startsWith("pending")) || (me?.scope === "all" && (a.status.startsWith("pending") || a.status === "approved"));
   const rec = a.previousLeaveRecord;
 
   return (
@@ -58,7 +58,7 @@ export default function LeaveDetailPage() {
                 <Link href={`/dashboard/employee/history?employee=${a.employee}`} className="text-base font-black hover:text-brand-gold">{a.employeeName}</Link>
                 <div className="text-[11px] text-brand-dark-grey">{a.employeeCode} · {a.designation} · {a.department} · {a.branch}</div>
               </div>
-              <div className="ml-auto"><Badge status={a.status} /></div>
+              <div className="ml-auto"><LeaveBadge app={a} /></div>
             </div>
             <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-xs">
               {[
@@ -104,7 +104,7 @@ export default function LeaveDetailPage() {
               <Timeline
                 items={a.actions.map((x, i) => ({
                   key: i,
-                  title: STAGE_LABEL[x.stage],
+                  title: x.stepLabel ? `${x.stepLabel} — ${x.final ? "final decision" : "recommendation"}` : STAGE_LABEL[x.stage],
                   badge: <span className={`text-[10px] font-black ${DECISION_TONE[x.decision] || ""}`}>{titleCase(x.decision)}{x.recommendedDays && x.decision.startsWith("partially") ? ` · ${x.recommendedDays} days` : ""}</span>,
                   meta: `${x.actorName} (${x.actorRole}) · ${fmtDateTime(x.actedAt)}`,
                   body: x.remarks,

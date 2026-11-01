@@ -1,16 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FiEdit3 } from "react-icons/fi";
+import { FiClock, FiEdit3 } from "react-icons/fi";
 import { MdTune } from "react-icons/md";
 import usePagePermission from "@/hooks/usePagePermission";
 import { useHrConfig, useHrLookups, useHrQuery, money, fmtDate } from "@/hooks/useHr";
 import { Avatar, Badge, Btn, Card, EmptyState, Loading, PageHeader, SearchBox, Select, Table, Td } from "@/components/hr/HrUi";
 import SalaryStructureModal from "@/components/hr/modals/SalaryStructureModal";
+import SalaryHistoryModal from "@/components/hr/modals/SalaryHistoryModal";
 import ExportButtons from "@/components/Comon/ExportButtons";
 import { exportToExcel } from "@/lib/exportHelper";
 
 const sumList = (l = []) => l.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+// The action column stays visible while the salary figures scroll on narrower screens.
+const STICKY = "sticky right-0 shadow-[-10px_0_10px_-10px_rgba(0,0,0,0.18)]";
 
 export default function SalaryStructuresPage() {
   const permissions = usePagePermission();
@@ -21,6 +24,7 @@ export default function SalaryStructuresPage() {
   const [branch, setBranch] = useState("all");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
+  const [history, setHistory] = useState(null);
   const { data, loading, refetch } = useHrQuery("/payroll/structures", { branch });
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -52,31 +56,41 @@ export default function SalaryStructuresPage() {
         }
       >
         {loading ? <Loading /> : !rows.length ? <EmptyState title="No employees" /> : (
-          <Table head={["Employee", "Branch", "Basic", "House rent", "Medical", "Conveyance", "Other", "Gross", "Fixed ded.", "Since", ""]}>
+          <Table head={["Employee", "Branch", "Basic", "House rent", "Medical", "Conveyance", "Other", "Gross", "Fixed ded.", "Since", { label: "", className: `${STICKY} bg-brand-offwhite dark:bg-brand-midnight` }]}>
             {rows.map(({ employee: e, structure: s }) => (
               <tr key={e._id} className="hover:bg-brand-gold/5 dark:hover:bg-brand-gold/10">
-                <Td>
+                <Td className="whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <Avatar name={e.name} photo={e.photo} size={30} />
                     <div><div className="font-black">{e.name}</div><div className="text-[10px] text-brand-dark-grey">{e.employeeId} · {e.jobPosition || "—"}</div></div>
                   </div>
                 </Td>
-                <Td>{e.branches?.[0] || "—"}</Td>
+                <Td className="whitespace-nowrap">{e.branches?.[0] || "—"}</Td>
                 {s ? (
                   <>
                     <Td>{money(s.basic, symbol)}</Td><Td>{money(s.houseRent, symbol)}</Td><Td>{money(s.medical, symbol)}</Td><Td>{money(s.conveyance, symbol)}</Td>
                     <Td>{money(sumList(s.otherAllowances), symbol)}</Td><Td className="font-black text-emerald-600">{money(s.gross, symbol)}</Td><Td className="text-red-500">{money(sumList(s.fixedDeductions), symbol)}</Td>
-                    <Td className="text-[11px]">{fmtDate(s.effectiveFrom)}</Td>
+                    <Td className="text-[11px] whitespace-nowrap">{fmtDate(s.effectiveFrom)}</Td>
                   </>
                 ) : (
                   <Td colSpan={8}>{e.grossSalary ? <span className="text-[11px]">Profile only: basic {money(e.basicSalary, symbol)} / gross {money(e.grossSalary, symbol)} — no breakdown</span> : <Badge tone="amber">No salary set</Badge>}</Td>
                 )}
-                <Td className="text-right">{canEdit && <Btn size="sm" variant="ghost" onClick={() => setEditing({ employee: e, structure: s })}><FiEdit3 /> {s ? "Revise" : "Set"}</Btn>}</Td>
+                <Td className={`text-right ${STICKY} bg-brand-white dark:bg-brand-charcoal`}>
+                  <div className="flex justify-end gap-2 whitespace-nowrap">
+                    <Btn size="sm" variant="ghost" onClick={() => setHistory(e)} title="Salary history" aria-label="Salary history"><FiClock /> <span className="hidden 2xl:inline">History</span></Btn>
+                    {canEdit && (
+                      <Btn size="sm" variant="ghost" onClick={() => setEditing({ employee: e, structure: s })} title={s ? "Revise salary" : "Set salary"} aria-label={s ? "Revise salary" : "Set salary"}>
+                        <FiEdit3 /> <span className="hidden 2xl:inline">{s ? "Revise" : "Set"}</span>
+                      </Btn>
+                    )}
+                  </div>
+                </Td>
               </tr>
             ))}
           </Table>
         )}
       </Card>
+      <SalaryHistoryModal employee={history} symbol={symbol} onClose={() => setHistory(null)} />
       <SalaryStructureModal target={editing} symbol={symbol} permissions={permissions} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refetch(); }} />
     </div>
   );

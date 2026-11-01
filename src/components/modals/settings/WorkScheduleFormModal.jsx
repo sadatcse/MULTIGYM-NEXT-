@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { FiClock, FiX, FiPlus, FiMinus, FiLoader } from "react-icons/fi";
 import ReadOnlyNotice from "@/components/modals/ReadOnlyNotice";
+import WeeklySlotsEditor from "@/components/hr/WeeklySlotsEditor";
 
 const FULL_ACCESS = { canAdd: true, canEdit: true, canDelete: true };
 
@@ -116,45 +117,38 @@ export default function WorkScheduleFormModal({ availableShifts, editingItem, fo
 
                   <div>
                     <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
-                      Multi-Slot Split Shift?
+                      Duty Pattern
                     </label>
-                    <div className="flex items-center gap-4 mt-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="isMultiSlot"
-                          checked={!formData.isMultiSlot}
+                    <div className="flex flex-wrap items-center gap-1 mt-1.5 bg-brand-offwhite dark:bg-brand-midnight p-1 rounded-2xl border border-brand-beige/50 dark:border-brand-dark-grey/50">
+                      {[
+                        ["single", "Single shift"],
+                        ["multi", "Split slots"],
+                        ["weekly", "Different each day"],
+                      ].map(([m, label]) => (
+                        <button
+                          key={m}
+                          type="button"
                           disabled={isSubmitting}
-                          onChange={() => setFormData({ ...formData, isMultiSlot: false })}
-                          className="w-4 h-4 accent-brand-gold cursor-pointer"
-                        />
-                        <span className="text-xs font-bold">Standard Single Shift</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="isMultiSlot"
-                          checked={formData.isMultiSlot}
-                          disabled={isSubmitting}
-                          onChange={() => {
-                            const calc = recalculateMultiSlotHours(formData.timeSlots);
-                            setFormData({
-                              ...formData,
-                              isMultiSlot: true,
-                              workHoursPerDay: calc.workHoursPerDay,
-                              workHoursFormatted: calc.workHoursFormatted,
-                              workHoursInput: calc.workHoursInput,
-                            });
+                          onClick={() => {
+                            if (m === "multi") {
+                              const calc = recalculateMultiSlotHours(formData.timeSlots);
+                              setFormData({ ...formData, scheduleMode: m, isMultiSlot: true, workHoursPerDay: calc.workHoursPerDay, workHoursFormatted: calc.workHoursFormatted, workHoursInput: calc.workHoursInput });
+                            } else {
+                              setFormData({ ...formData, scheduleMode: m, isMultiSlot: false });
+                            }
                           }}
-                          className="w-4 h-4 accent-sky-500 cursor-pointer"
-                        />
-                        <span className="text-xs font-bold text-sky-500">Split-Shift Multi Slot</span>
-                      </label>
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${(formData.scheduleMode || (formData.isMultiSlot ? "multi" : "single")) === m ? "bg-brand-gold text-brand-midnight shadow-xs" : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
 
-                {!formData.isMultiSlot ? (
+                {formData.scheduleMode === "weekly" ? (
+                  <WeeklySlotsEditor value={formData.weeklySlots || {}} onChange={(v) => setFormData({ ...formData, weeklySlots: v })} disabled={isSubmitting || !allowed} />
+                ) : !formData.isMultiSlot ? (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey/50">
                     <div>
                       <label className="block text-[11px] font-extrabold text-brand-dark-grey dark:text-brand-gold-light uppercase tracking-wider mb-1">

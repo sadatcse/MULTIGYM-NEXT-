@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import useAxiosSecure from "./useAxiosSecure";
 
-export default function useAssetApi() {
+// `location` seeds the location filter, e.g. from /dashboard/assets?location=<id>.
+export default function useAssetApi({ location = "all" } = {}) {
   const axiosSecure = useAxiosSecure();
 
   const [assets, setAssets] = useState([]);
@@ -17,6 +18,7 @@ export default function useAssetApi() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [assetTypeFilter, setAssetTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState(location);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -39,6 +41,7 @@ export default function useAssetApi() {
         if (debouncedSearch) params.search = debouncedSearch;
         if (assetTypeFilter && assetTypeFilter !== "all") params.assetType = assetTypeFilter;
         if (statusFilter && statusFilter !== "all") params.status = statusFilter;
+        if (locationFilter && locationFilter !== "all") params.location = locationFilter;
 
         const res = await axiosSecure.get("/asset", { params });
 
@@ -53,7 +56,7 @@ export default function useAssetApi() {
         setIsFetching(false);
       }
     },
-    [axiosSecure, currentPage, itemsPerPage, debouncedSearch, assetTypeFilter, statusFilter]
+    [axiosSecure, currentPage, itemsPerPage, debouncedSearch, assetTypeFilter, statusFilter, locationFilter]
   );
 
   useEffect(() => {
@@ -117,6 +120,8 @@ export default function useAssetApi() {
       setAssetTypeFilter,
       statusFilter,
       setStatusFilter,
+      locationFilter,
+      setLocationFilter,
       currentPage,
       setCurrentPage,
       itemsPerPage,
@@ -136,6 +141,7 @@ export default function useAssetApi() {
       searchInput,
       assetTypeFilter,
       statusFilter,
+      locationFilter,
       currentPage,
       itemsPerPage,
       fetchAssets,

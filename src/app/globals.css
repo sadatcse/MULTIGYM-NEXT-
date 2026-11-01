@@ -120,3 +120,18 @@ body {
   -webkit-text-fill-color: #ffffff !important;
   transition: background-color 5000s ease-in-out 0s;
 }
+/* Sign-in inputs sit inside a styled frame: keep autofilled text on the
+   frame's colour instead of the browser's blue/yellow autofill fill. */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-brand-white) inset !important;
+  -webkit-text-fill-color: var(--color-brand-charcoal) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+.dark .login-input:-webkit-autofill,
+.dark .login-input:-webkit-autofill:hover,
+.dark .login-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-brand-charcoal) inset !important;
+  -webkit-text-fill-color: var(--color-brand-white) !important;
+}

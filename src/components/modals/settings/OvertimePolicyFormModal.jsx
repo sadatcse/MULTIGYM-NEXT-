@@ -115,6 +115,41 @@ export default function OvertimePolicyFormModal({ editingPolicy, handleSubmitPol
                   />
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Holiday / Day-off Rate (×)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      value={policyForm.offDayRate}
+                      disabled={isSubmitting}
+                      onChange={(e) => setPolicyForm((prev) => ({ ...prev, offDayRate: Number(e.target.value) }))}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    />
+                    <p className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light mt-1 font-semibold">0 = same as the normal rate</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Round Down To (Minutes)
+                    </label>
+                    <select
+                      value={policyForm.roundingMinutes}
+                      disabled={isSubmitting}
+                      onChange={(e) => setPolicyForm((prev) => ({ ...prev, roundingMinutes: Number(e.target.value) }))}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
+                    >
+                      <option value={0}>No rounding</option>
+                      <option value={15}>15 minutes</option>
+                      <option value={30}>30 minutes</option>
+                      <option value={60}>1 hour</option>
+                    </select>
+                    <p className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light mt-1 font-semibold">Applied to each day&apos;s overtime</p>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1.5">
                     Status

@@ -11,7 +11,7 @@ export const PermissionsContext = createContext(null);
 // explicit entry. Must match SELF_SERVICE_KEYS in the backend PermissionsGuard.
 export const SELF_SERVICE_KEYS = new Set([
   "home", "chat", "my-attendance", "my-roster", "my-leave", "my-payslips", "my-notices", "my-tasks",
-  "my-assets", "my-obligations", "my-maintenance-requests", "my-requisitions", "maintenance-create",
+  "my-assets", "my-obligations", "my-maintenance-requests", "my-requisitions", "my-letters", "maintenance-create",
   "requisition-create", "requisition-details", "leave-details",
 ]);
 

@@ -22,6 +22,7 @@ import {
   FiGrid,
   FiCheckCircle,
   FiAlertTriangle,
+  FiMapPin,
 } from "react-icons/fi";
 import ReturnAssetModal from "@/components/modals/assets/ReturnAssetModal";
 
@@ -152,12 +153,26 @@ export default function AssetDetailPage() {
                   </span>
                 )}
               </h1>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex flex-wrap items-center gap-2 mt-0.5">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-brand-beige/30 dark:bg-brand-midnight text-brand-black dark:text-brand-gold-light font-bold text-[10px] border border-brand-beige/40 dark:border-brand-dark-grey/50">
                   <FiTag className="text-brand-gold text-[10px]" />
                   {asset.assetType?.name}
                 </span>
                 {!isReturnable && <span className="text-[10px] font-bold text-brand-dark-grey">One-time issue item</span>}
+                {asset.location ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-brand-gold/10 text-brand-black dark:text-brand-gold-light font-bold text-[10px] border border-brand-gold/25" title={asset.location.details || undefined}>
+                    <FiMapPin className="text-brand-gold text-[10px]" />
+                    Stored at {[asset.location.name, asset.storageSpot, asset.location.branch].filter(Boolean).join(" · ")}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-brand-dark-grey">No store location set</span>
+                )}
+                {asset.location?.inCharge?.name && (
+                  <span className="text-[10px] font-bold text-brand-dark-grey">
+                    In charge: {asset.location.inCharge.name}
+                    {asset.location.inCharge.mobileNumber ? ` (${asset.location.inCharge.mobileNumber})` : ""}
+                  </span>
+                )}
               </div>
             </div>
           </div>

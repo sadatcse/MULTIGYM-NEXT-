@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { FiGift, FiX, FiLoader } from "react-icons/fi";
 import ReadOnlyNotice from "@/components/modals/ReadOnlyNotice";
+import AppliesToPicker from "@/components/hr/AppliesToPicker";
 
 const FULL_ACCESS = { canAdd: true, canEdit: true, canDelete: true };
 
@@ -21,7 +22,7 @@ export default function BonusPolicyFormModal({ MONTHS, currencySymbol, editingIt
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2 }}
-              className="bg-brand-white dark:bg-brand-charcoal w-full max-w-lg rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)] overflow-y-auto"
+              className="bg-brand-white dark:bg-brand-charcoal w-full max-w-2xl rounded-3xl border border-brand-beige/60 dark:border-brand-dark-grey/60 shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)] overflow-y-auto"
             >
               <div className="bg-brand-offwhite dark:bg-brand-midnight px-6 py-4 border-b border-brand-beige/60 dark:border-brand-dark-grey/60 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2.5">
@@ -85,7 +86,7 @@ export default function BonusPolicyFormModal({ MONTHS, currencySymbol, editingIt
                       <option value="Performance">Performance Bonus</option>
                       <option value="Attendance">Attendance Bonus</option>
                       <option value="Annual">Annual Bonus</option>
-                      <option value="Special">Special Incentive</option>
+                      <option value="Custom">Special Incentive</option>
                     </select>
                   </div>
 
@@ -140,6 +141,36 @@ export default function BonusPolicyFormModal({ MONTHS, currencySymbol, editingIt
                     />
                   </div>
                 </div>
+
+                <fieldset disabled={isSubmitting} className="rounded-2xl border border-brand-beige/60 dark:border-brand-dark-grey/60 p-4 space-y-4">
+                  <legend className="px-1.5 text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider">Who gets it</legend>
+                  <p className="text-[11px] font-semibold text-brand-dark-grey dark:text-brand-gold-light -mt-1">Checked when you run the bonus into a payroll month.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-brand-black dark:text-brand-white mb-1">Minimum service (months)</label>
+                      <input type="number" min={0} value={formData.minServiceMonths} onChange={(e) => setFormData((prev) => ({ ...prev, minServiceMonths: e.target.value }))} className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-brand-black dark:text-brand-white mb-1">Max absent days</label>
+                      <input type="number" min={0} value={formData.maxAbsentDays} placeholder="No limit" onChange={(e) => setFormData((prev) => ({ ...prev, maxAbsentDays: e.target.value }))} className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-brand-black dark:text-brand-white mb-1">Max late arrivals</label>
+                      <input type="number" min={0} value={formData.maxLateDays} placeholder="No limit" onChange={(e) => setFormData((prev) => ({ ...prev, maxLateDays: e.target.value }))} className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-brand-black dark:text-brand-white cursor-pointer">
+                      <input type="checkbox" checked={formData.proRata === "service_months"} onChange={(e) => setFormData((prev) => ({ ...prev, proRata: e.target.checked ? "service_months" : "none" }))} className="w-4 h-4 accent-[#E6BB60]" />
+                      Under a year of service gets months ÷ 12 of the bonus
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-bold text-brand-black dark:text-brand-white cursor-pointer">
+                      <input type="checkbox" checked={formData.excludeProbation === "yes"} onChange={(e) => setFormData((prev) => ({ ...prev, excludeProbation: e.target.checked ? "yes" : "no" }))} className="w-4 h-4 accent-[#E6BB60]" />
+                      Not for staff on probation
+                    </label>
+                  </div>
+                  <AppliesToPicker value={formData.appliesTo} onChange={(v) => setFormData((prev) => ({ ...prev, appliesTo: v }))} disabled={isSubmitting || !allowed} />
+                </fieldset>
 
                 <div>
                   <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1.5">

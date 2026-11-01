@@ -5,17 +5,17 @@ import { money } from "@/hooks/useHr";
 
 const monthLabel = (m) => new Date(`${m}-01T00:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
-export const SHEET_HEAD = ["#", "ID", "Name", "Designation", "Branch", "Present", "Absent", "Late", "Leave", "OT h", "Basic", "Gross", "OT Pay", "Bonus", "Other +", "Late Ded.", "Absent Ded.", "Advance", "Loan", "Fixed Ded.", "Other −", "Net Salary"];
+export const SHEET_HEAD = ["#", "ID", "Name", "Designation", "Branch", "Present", "Absent", "Late", "Leave", "OT h", "Basic", "Gross", "OT Pay", "Allowances", "Commission", "Bonus", "Other +", "Late/Early Ded.", "Absent Ded.", "Advance", "Loan", "Fixed Ded.", "Other −", "Net Salary"];
 
 export const sheetCells = (p, i) => [
   i + 1, p.employeeCode, p.employeeName, p.designation, p.branch,
   p.attendance?.present ?? 0, (p.attendance?.absent ?? 0) + (p.attendance?.unpaidLeave ?? 0), p.attendance?.late ?? 0, p.attendance?.leave ?? 0, p.attendance?.overtimeHours ?? 0,
-  p.basic, p.gross, p.overtimePay, p.bonus, p.otherEarnings, p.lateDeduction, p.absentDeduction, p.advanceDeduction, p.loanDeduction, p.fixedDeductions, p.otherDeductions, p.netSalary,
+  p.basic, p.gross, p.overtimePay, p.allowancePay || 0, p.commission || 0, p.bonus, p.otherEarnings, p.lateDeduction, p.absentDeduction, p.advanceDeduction, p.loanDeduction, p.fixedDeductions, p.otherDeductions, p.netSalary,
 ];
 
 export function printSalarySheet(run, payslips, company) {
   const t = run.totals || {};
-  const totals = ["", "", "TOTAL", "", "", "", "", "", "", "", "", t.gross, t.overtimePay, t.bonus, t.otherEarnings, t.lateDeduction, t.absentDeduction, t.advanceDeduction, t.loanDeduction, t.fixedDeductions, t.otherDeductions, t.netSalary];
+  const totals = ["", "", "TOTAL", "", "", "", "", "", "", "", "", t.gross, t.overtimePay, t.allowancePay || 0, t.commission || 0, t.bonus, t.otherEarnings, t.lateDeduction, t.absentDeduction, t.advanceDeduction, t.loanDeduction, t.fixedDeductions, t.otherDeductions, t.netSalary];
   printDocument({
     title: `Salary Sheet — ${monthLabel(run.month)}`,
     subtitle: `${run.branch === "all" ? "All branches (combined)" : run.branch} · ${payslips.length} employees · Status: ${run.status}`,
@@ -25,13 +25,25 @@ export function printSalarySheet(run, payslips, company) {
   });
 }
 
+// Itemized lines of one group (allowance / commission), or the summed figure
+// when the payslip has no matching lines (older payslips, manual edits).
+function itemized(p, group, label, total) {
+  const items = (p.lines || []).filter((l) => l.group === group && l.kind === "earning");
+  const sum = items.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+  if (items.length && Math.abs(sum - (total || 0)) < 0.5) return items.map((l) => [`${label}: ${l.label}`, l.amount]);
+  return [[label, total]];
+}
+
 export function printPayslip(p, company, symbol = "৳") {
   const earnings = [
     ["Basic", p.basic], ["House Rent", p.houseRent], ["Medical", p.medical], ["Conveyance", p.conveyance], ["Other Allowances", p.otherAllowances],
-    ["Overtime", p.overtimePay], ["Bonus", p.bonus], ["Other Earnings", p.otherEarnings],
+    ["Overtime", p.overtimePay],
+    ...(p.allowancePay ? itemized(p, "allowance", "Allowance", p.allowancePay) : []),
+    ...(p.commission ? itemized(p, "commission", "Commission", p.commission) : []),
+    ["Bonus", p.bonus], ["Other Earnings", p.otherEarnings],
   ].filter(([, v]) => v);
   const deductions = [
-    ["Late", p.lateDeduction], ["Absent / Unpaid", p.absentDeduction], ["Advance", p.advanceDeduction], ["Loan", p.loanDeduction], ["Fixed (PF etc.)", p.fixedDeductions], ["Other", p.otherDeductions],
+    ["Late / early exit", p.lateDeduction], ["Absent / Unpaid", p.absentDeduction], ["Advance", p.advanceDeduction], ["Loan", p.loanDeduction], ["Fixed (PF etc.)", p.fixedDeductions], ["Other", p.otherDeductions],
   ].filter(([, v]) => v);
   const rows = Math.max(earnings.length, deductions.length);
   const lines = Array.from({ length: rows }, (_, i) => [earnings[i]?.[0] || "", earnings[i] ? money(earnings[i][1], symbol) : "", deductions[i]?.[0] || "", deductions[i] ? money(deductions[i][1], symbol) : ""]);

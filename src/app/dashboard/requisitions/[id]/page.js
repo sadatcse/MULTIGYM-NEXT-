@@ -11,14 +11,9 @@ import { Attachments, Badge, Btn, Card, Loading, PageHeader, Table, Td, Timeline
 import RequisitionActionModal, { ACTION_LABEL } from "@/components/hr/modals/RequisitionActionModal";
 import QuotationModal from "@/components/hr/modals/QuotationModal";
 import { printDocument, tableHtml, escapeHtml as esc } from "@/lib/hrPrint";
+import { requisitionSteps } from "@/components/hr/requisitionFlow";
 
-const FLOW = [
-  { key: "submitted", label: "Requisition", icon: <FiPlus /> },
-  { key: "verified", label: "Admin Verification", icon: <FiCheck /> },
-  { key: "approved", label: "Management Approval", icon: <FiStar /> },
-  { key: "purchased", label: "Purchase", icon: <FiShoppingBag /> },
-  { key: "received", label: "Received", icon: <FiPackage /> },
-];
+const STEP_ICON = { request: <FiPlus />, verify: <FiCheck />, approve: <FiStar />, purchase: <FiShoppingBag />, receive: <FiPackage /> };
 
 export default function RequisitionDetailPage() {
   const { id } = useParams();
@@ -33,8 +28,8 @@ export default function RequisitionDetailPage() {
   if (loading) return <Loading rows={8} />;
   if (error || !r) return <Card><p className="text-sm font-bold text-red-500">{error || "Not found"}</p></Card>;
 
-  const idx = FLOW.findIndex((s) => s.key === r.status);
-  const bad = r.status === "rejected" || r.status === "cancelled";
+  const { steps, route, idx, bad, next } = requisitionSteps(r);
+  const actionTitle = (t) => (t.stepLabel ? `${titleCase(t.action)} — ${t.stepLabel}` : titleCase(t.action));
 
   const print = () =>
     printDocument({
@@ -45,8 +40,8 @@ export default function RequisitionDetailPage() {
       ${tableHtml(["Item", "Specification", "Qty", "Approved", "Unit", "Est. price", "Est. total"], r.items.map((i) => [i.name, i.specification, i.quantity, i.approvedQuantity ?? "", i.unit, i.estimatedUnitPrice, i.quantity * i.estimatedUnitPrice]), { totals: ["", "", "", "", "", "Estimated", r.estimatedTotal] })}
       ${r.quotations.length ? `<h2>Quotations</h2>${tableHtml(["Vendor", "Amount", "Delivery days", "Note", "Selected"], r.quotations.map((q) => [q.vendorName, q.amount, q.deliveryDays, q.note, q.selected ? "✓" : ""]))}` : ""}
       <div class="grid"><div><b>Approved amount:</b> ${esc(r.approvedAmount || "—")}</div><div><b>Vendor:</b> ${esc(r.vendorName || "—")}</div><div><b>Status:</b> ${esc(r.status)}</div><div><b>Delivery:</b> ${esc(r.deliveryStatus)}</div></div>
-      ${tableHtml(["Action", "By", "Remarks", "When"], r.timeline.map((t) => [titleCase(t.action), `${t.by?.name} (${t.by?.role})`, t.remarks, fmtDateTime(t.at)]))}
-      <div class="sign"><div>Requested by</div><div>Admin Verification</div><div>Management Approval</div><div>Received by</div></div>`,
+      ${tableHtml(["Action", "By", "Remarks", "When"], r.timeline.map((t) => [actionTitle(t), `${t.by?.name} (${t.by?.role})`, t.remarks, fmtDateTime(t.at)]))}
+      <div class="sign"><div>Requested by</div>${route.map((s) => `<div>${esc(s.label)}</div>`).join("")}<div>Received by</div></div>`,
     });
 
   return (
@@ -65,7 +60,7 @@ export default function RequisitionDetailPage() {
 
       <Card bodyClassName="p-5">
         <div className="flex items-start">
-          {FLOW.map((s, i) => {
+          {steps.map((s, i) => {
             const done = !bad && i <= idx;
             return (
               <div key={s.key} className="flex-1 flex flex-col items-center relative">
@@ -75,7 +70,7 @@ export default function RequisitionDetailPage() {
                   </div>
                 )}
                 <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ delay: i * 0.1 }} className={`relative z-10 w-10 h-10 rounded-2xl flex items-center justify-center text-lg ${done ? "bg-brand-gold text-brand-black" : "bg-brand-offwhite dark:bg-brand-midnight text-brand-dark-grey border border-brand-beige dark:border-brand-dark-grey"}`}>
-                  {s.icon}
+                  {STEP_ICON[s.kind]}
                 </motion.div>
                 <span className="text-[10px] font-black mt-1.5 text-center">{s.label}</span>
               </div>
@@ -83,6 +78,7 @@ export default function RequisitionDetailPage() {
           })}
         </div>
         {bad && <p className="text-center text-xs font-black text-red-500 mt-3">This requisition was {r.status}.</p>}
+        {next && <p className="text-center text-xs font-bold text-brand-dark-grey dark:text-brand-gold-light mt-3">Next: {next.label}</p>}
         {r.availableActions?.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2 mt-5">
             {r.availableActions.map((a) => (
@@ -137,7 +133,7 @@ export default function RequisitionDetailPage() {
           </Card>
         </div>
         <Card title="History">
-          <Timeline items={[...r.timeline].reverse().map((t, i) => ({ key: i, title: titleCase(t.action), meta: `${t.by?.name} · ${fmtDateTime(t.at)}`, body: t.remarks, dot: t.action === "rejected" || t.action === "reject" || t.action === "cancel" ? "bg-red-500" : "bg-brand-gold" }))} />
+          <Timeline items={[...r.timeline].reverse().map((t, i) => ({ key: i, title: actionTitle(t), meta: `${t.by?.name} · ${fmtDateTime(t.at)}`, body: t.remarks, dot: t.action === "rejected" || t.action === "reject" || t.action === "cancel" ? "bg-red-500" : "bg-brand-gold" }))} />
         </Card>
       </div>
 

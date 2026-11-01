@@ -11,6 +11,7 @@ import { Badge, Btn, Card, EmptyState, Loading, PageHeader, SearchBox, Select, T
 import Pagination from "@/components/Comon/Pagination";
 import ExportButtons from "@/components/Comon/ExportButtons";
 import { exportToExcel } from "@/lib/exportHelper";
+import { requisitionSteps } from "@/components/hr/requisitionFlow";
 
 const REQ_FLOW = ["submitted", "verified", "approved", "purchased", "received"];
 
@@ -34,7 +35,7 @@ export default function RequisitionsPage() {
       <PageHeader
         icon={<MdShoppingCart />}
         title="Purchase & Requisition"
-        subtitle="Employee / Branch → Requisition → Admin verification → Management approval → Purchase → Received"
+        subtitle="Requisitions go up the management chain for verification and approval, then on to purchase and receiving."
         actions={canAdd && <Link href="/dashboard/requisitions/create"><Btn variant="gold"><FiPlus /> New requisition</Btn></Link>}
       />
       <div className="flex flex-wrap items-center gap-3 justify-between">
@@ -76,7 +77,7 @@ export default function RequisitionsPage() {
                 <Td>{money(r.estimatedTotal)}</Td>
                 <Td className="font-black">{r.approvedAmount ? money(r.approvedAmount) : "—"}</Td>
                 <Td>{r.vendorName || "—"}</Td>
-                <Td><FlowDots status={r.status} /></Td>
+                <Td><FlowDots r={r} /></Td>
                 <Td><Badge status={r.status} />{r.deliveryStatus === "partial" && <div className="mt-1"><Badge tone="amber">Partial delivery</Badge></div>}</Td>
               </motion.tr>
             ))}
@@ -88,13 +89,12 @@ export default function RequisitionsPage() {
   );
 }
 
-function FlowDots({ status }) {
-  const idx = REQ_FLOW.indexOf(status);
-  const bad = status === "rejected" || status === "cancelled";
+function FlowDots({ r }) {
+  const { steps, idx, bad, next } = requisitionSteps(r);
   return (
-    <div className="flex items-center gap-1">
-      {REQ_FLOW.map((s, i) => (
-        <span key={s} title={s} className={`h-1.5 w-5 rounded-full ${bad ? "bg-red-400/40" : i <= idx ? "bg-brand-gold" : "bg-brand-beige/60 dark:bg-brand-dark-grey"}`} />
+    <div className="flex items-center gap-1" title={next ? `Next: ${next.label}` : undefined}>
+      {steps.map((s, i) => (
+        <span key={s.key} title={s.label} className={`h-1.5 w-5 rounded-full ${bad ? "bg-red-400/40" : i <= idx ? "bg-brand-gold" : "bg-brand-beige/60 dark:bg-brand-dark-grey"}`} />
       ))}
     </div>
   );

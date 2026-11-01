@@ -8,6 +8,8 @@ import ModalFooter, { NO_PERMISSIONS } from "./ModalFooter";
 
 const FIELDS = [
   ["overtimePay", "Overtime pay"],
+  ["allowancePay", "Allowances & duty pay"],
+  ["commission", "Commission"],
   ["bonus", "Bonus"],
   ["otherEarnings", "Other earnings"],
   ["lateDeduction", "Late deduction"],

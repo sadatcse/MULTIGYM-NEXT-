@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
@@ -13,6 +13,7 @@ import useAssetTypeApi from "@/hooks/useAssetTypeApi";
 import useAssetAssignmentApi from "@/hooks/useAssetAssignmentApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import useAxiosSecure from "@/hooks/useAxiosSecure";
+import { useHrQuery } from "@/hooks/useHr";
 import Swal from "sweetalert2";
 import {
   FiBox,
@@ -36,6 +37,7 @@ import {
   FiLayers,
   FiSliders,
   FiZap,
+  FiMapPin,
 } from "react-icons/fi";
 import AssetFormModal from "@/components/modals/assets/AssetFormModal";
 
@@ -75,6 +77,8 @@ const EMPTY_ASSET_FORM = {
   condition: "New",
   status: "available",
   notes: "",
+  location: "",
+  storageSpot: "",
   useAttributes: false,
   useVariants: false,
   attributes: [
@@ -89,8 +93,18 @@ const EMPTY_ASSET_FORM = {
 
 const EMPTY_ISSUE_FORM = { employee: "", asset: "", size: "", quantity: 1, issueDate: new Date().toISOString().split("T")[0], issueCondition: "New", issuedBy: "", issueNotes: "" };
 
+// useSearchParams needs a Suspense boundary; ?location=<id|none> opens the list filtered.
 export default function AssetDirectoryPage() {
+  return (
+    <Suspense fallback={<SkeletonLoading variant="table" rows={5} />}>
+      <AssetDirectory />
+    </Suspense>
+  );
+}
+
+function AssetDirectory() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const axiosSecure = useAxiosSecure();
 
   const { can } = useUserPermissions();
@@ -108,6 +122,8 @@ export default function AssetDirectoryPage() {
     setAssetTypeFilter,
     statusFilter,
     setStatusFilter,
+    locationFilter,
+    setLocationFilter,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -116,7 +132,10 @@ export default function AssetDirectoryPage() {
     createAsset,
     updateAsset,
     deleteAsset,
-  } = useAssetApi();
+  } = useAssetApi({ location: searchParams.get("location") || "all" });
+
+  const locationsQuery = useHrQuery("/asset-location");
+  const locations = useMemo(() => locationsQuery.data?.data || [], [locationsQuery.data]);
 
   const { assetTypes } = useAssetTypeApi(100);
   const activeAssetTypes = assetTypes.filter((t) => t.status === "active");
@@ -196,6 +215,8 @@ export default function AssetDirectoryPage() {
       condition: asset.condition || "New",
       status: asset.status || "available",
       notes: asset.notes || "",
+      location: asset.location?._id || asset.location || "",
+      storageSpot: asset.storageSpot || "",
       useAttributes: hasAttr,
       useVariants: hasVar,
       attributes: hasAttr
@@ -392,6 +413,8 @@ export default function AssetDirectoryPage() {
         condition: formData.condition || undefined,
         status: formData.status,
         notes: formData.notes || undefined,
+        location: formData.location || null,
+        storageSpot: formData.storageSpot.trim(),
         attributes: validAttributes,
         sizeVariants: isVariable ? validVariants : [],
       };
@@ -569,6 +592,14 @@ export default function AssetDirectoryPage() {
             ))}
           </select>
 
+          <select value={locationFilter} onChange={(e) => { setLocationFilter(e.target.value); setCurrentPage(1); }} aria-label="Store location" className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer max-w-[200px]">
+            <option value="all">All Locations</option>
+            <option value="none">No location set</option>
+            {locations.map((l) => (
+              <option key={l._id} value={l._id}>{l.name}{l.branch ? ` — ${l.branch}` : ""}</option>
+            ))}
+          </select>
+
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer capitalize">
             <option value="all">All Statuses</option>
             {["available", "assigned", "damaged", "lost", "repair", "disposed", "low_stock"].map((s) => (
@@ -602,7 +633,7 @@ export default function AssetDirectoryPage() {
           </div>
           <h3 className="text-lg font-black text-brand-black dark:text-brand-white mb-1">No Assets Found</h3>
           <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light mb-6">
-            {searchInput || statusFilter !== "all" || assetTypeFilter !== "all" ? "No assets match your active filters." : "No assets have been added yet."}
+            {searchInput || statusFilter !== "all" || assetTypeFilter !== "all" || locationFilter !== "all" ? "No assets match your active filters." : "No assets have been added yet."}
           </p>
           {canAdd && (
             <button onClick={handleOpenAdd} className="px-5 py-2.5 bg-brand-red text-white text-xs font-bold rounded-2xl shadow-md hover:bg-brand-red-dark transition-all cursor-pointer">
@@ -620,6 +651,7 @@ export default function AssetDirectoryPage() {
                     <tr>
                       <th className="py-4 px-6">Asset & Dynamic Attributes</th>
                       <th className="py-4 px-6">Type</th>
+                      <th className="py-4 px-6">Stored At</th>
                       <th className="py-4 px-6 text-center">Available / Total</th>
                       <th className="py-4 px-6 text-center w-28">Status</th>
                       <th className="py-4 px-6 text-center w-36">Actions</th>
@@ -678,6 +710,19 @@ export default function AssetDirectoryPage() {
                                 <FiTag className="text-brand-gold text-xs" />
                                 {asset.assetType?.name || "—"}
                               </span>
+                            </td>
+                            <td className="py-4 px-6">
+                              {asset.location ? (
+                                <span className="inline-flex items-start gap-1.5">
+                                  <FiMapPin className="text-brand-gold text-xs mt-0.5 shrink-0" />
+                                  <span>
+                                    <span className="block font-bold text-brand-black dark:text-brand-white whitespace-nowrap">{asset.location.name}</span>
+                                    <span className="block text-[10px] text-brand-dark-grey">{[asset.storageSpot, asset.location.branch].filter(Boolean).join(" · ")}</span>
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-bold text-brand-dark-grey/70">Not set</span>
+                              )}
                             </td>
                             <td className="py-4 px-6 text-center font-bold text-brand-black dark:text-brand-white">
                               {isInventory ? `${asset.quantityAvailable} / ${asset.quantityTotal}` : asset.quantityAvailable > 0 ? "Available" : "Assigned"}
@@ -766,6 +811,10 @@ export default function AssetDirectoryPage() {
                         <p className="text-xs font-bold text-brand-black dark:text-brand-white">
                           {isInventory ? `${asset.quantityAvailable} / ${asset.quantityTotal} available` : asset.quantityAvailable > 0 ? "Available" : "Currently assigned"}
                         </p>
+                        <p className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-brand-dark-grey dark:text-brand-gold-light/90">
+                          <FiMapPin className="text-brand-gold shrink-0" />
+                          {asset.location ? [asset.location.name, asset.storageSpot].filter(Boolean).join(" · ") : "No store location set"}
+                        </p>
                       </div>
                       <div className="pt-4 mt-3 border-t border-brand-beige/40 dark:border-brand-dark-grey/40 flex items-center justify-between">
                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold capitalize border ${STATUS_BADGE[asset.status] || "bg-brand-beige/30 text-brand-dark-grey border-brand-beige/40"}`}>{asset.status}</span>
@@ -799,7 +848,7 @@ export default function AssetDirectoryPage() {
       )}
 
       {/* Add / Edit Asset Modal */}
-      <AssetFormModal activeAssetTypes={activeAssetTypes} editingAsset={editingAsset} formData={formData} formErrors={formErrors} handleAddAttributeRow={handleAddAttributeRow} handleAddPresetAttribute={handleAddPresetAttribute} handleAddVariantRow={handleAddVariantRow} handleAttributeChange={handleAttributeChange} handleAutoGenerateVariants={handleAutoGenerateVariants} handleRemoveAttributeRow={handleRemoveAttributeRow} handleRemoveVariantRow={handleRemoveVariantRow} handleSubmit={handleSubmit} handleVariantChange={handleVariantChange} isModalOpen={isModalOpen} isSubmitting={isSubmitting} setFormData={setFormData} setIsModalOpen={setIsModalOpen} permissions={{ canAdd, canEdit, canDelete }} />
+      <AssetFormModal activeAssetTypes={activeAssetTypes} locations={locations.filter((l) => l.status === "active" || l._id === formData.location)} editingAsset={editingAsset} formData={formData} formErrors={formErrors} handleAddAttributeRow={handleAddAttributeRow} handleAddPresetAttribute={handleAddPresetAttribute} handleAddVariantRow={handleAddVariantRow} handleAttributeChange={handleAttributeChange} handleAutoGenerateVariants={handleAutoGenerateVariants} handleRemoveAttributeRow={handleRemoveAttributeRow} handleRemoveVariantRow={handleRemoveVariantRow} handleSubmit={handleSubmit} handleVariantChange={handleVariantChange} isModalOpen={isModalOpen} isSubmitting={isSubmitting} setFormData={setFormData} setIsModalOpen={setIsModalOpen} permissions={{ canAdd, canEdit, canDelete }} />
 
       {/* Issue Asset Modal Component */}
       <IssueAssetModal

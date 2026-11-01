@@ -156,7 +156,7 @@ export function Badge({ status, tone, children }) {
   );
 }
 
-export function Btn({ children, variant = "primary", size = "md", className = "", loading, ...props }) {
+export function Btn({ children, variant = "primary", size = "md", className = "", loading, disabled, ...props }) {
   const ghost = "bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white hover:border-brand-gold";
   const v = {
     primary: "bg-brand-red hover:bg-brand-red-dark text-white shadow-lg shadow-brand-red/20",
@@ -171,9 +171,10 @@ export function Btn({ children, variant = "primary", size = "md", className = ""
   return (
     <button
       type="button"
-      disabled={loading || props.disabled}
       className={`inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed cursor-pointer ${v} ${s} ${className}`}
       {...props}
+      // After the spread: a caller's `disabled={undefined}` must not re-enable a loading button.
+      disabled={!!(loading || disabled)}
     >
       {loading && <FiLoader className="animate-spin" />}
       {children}
@@ -194,8 +195,11 @@ export function Field({ label, required, hint, children, className = "" }) {
 }
 
 export function Select({ value, onChange, options, placeholder, className = "", ...props }) {
+  // A width in className (e.g. "w-44") replaces the default full width;
+  // otherwise both classes apply and w-full wins.
+  const base = /(^|\s)!?w-/.test(className) ? inputCls.replace("w-full ", "") : inputCls;
   return (
-    <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} className={`${inputCls} cursor-pointer ${className}`} {...props}>
+    <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} className={`${base} cursor-pointer ${className}`} {...props}>
       {placeholder !== undefined && <option value="">{placeholder}</option>}
       {options.map((o) => {
         const opt = typeof o === "string" ? { value: o, label: o } : o;

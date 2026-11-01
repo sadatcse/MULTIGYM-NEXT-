@@ -42,6 +42,7 @@ const INITIAL_FORM = {
   earlyExitTolerance: 15,
   maxEarlyExitsAllowedPerMonth: 3,
   compensatedEarlyExit: "yes",
+  earlyExitDeduction: "no",
   status: "active",
 };
 
@@ -157,6 +158,7 @@ export default function LatePolicyPage() {
       earlyExitTolerance: item.earlyExitTolerance !== undefined ? item.earlyExitTolerance : 15,
       maxEarlyExitsAllowedPerMonth: item.maxEarlyExitsAllowedPerMonth !== undefined ? item.maxEarlyExitsAllowedPerMonth : 3,
       compensatedEarlyExit: item.compensatedEarlyExit || "yes",
+      earlyExitDeduction: item.earlyExitDeduction || "no",
       status: item.status || "active",
     });
     setFormErrors({});

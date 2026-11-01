@@ -11,7 +11,8 @@ import ModalFooter, { NO_PERMISSIONS } from "./ModalFooter";
 const dayLabel = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", timeZone: "UTC" });
 
 // Assign (needs canAdd) / change (canEdit) / remove (canDelete) a roster duty.
-// `cell` = { employee, date, item | null }.
+// `cell` = { employee, date, item | null, preset? } — `preset` starts a new
+// entry from the person's usual duty time for that day.
 export default function RosterDutyModal({ cell, branch, onClose, onSaved, permissions = NO_PERMISSIONS }) {
   const key = cell ? `${cell.employee._id}|${cell.date}|${cell.item?._id || "new"}` : "";
   return (
@@ -24,11 +25,12 @@ export default function RosterDutyModal({ cell, branch, onClose, onSaved, permis
 function Body({ cell, branch, onClose, onSaved, permissions }) {
   const { run, busy } = useHrMutation();
   const it = cell.item;
+  const pre = cell.preset || {};
   const allowed = it ? permissions.canEdit : permissions.canAdd;
   const [f, setF] = useState({
-    dutyType: it?.dutyType || "morning",
-    startTime: it?.startTime ?? DUTY_STYLE.morning.times[0],
-    endTime: it?.endTime ?? DUTY_STYLE.morning.times[1],
+    dutyType: it?.dutyType || pre.dutyType || "morning",
+    startTime: it?.startTime ?? pre.startTime ?? DUTY_STYLE.morning.times[0],
+    endTime: it?.endTime ?? pre.endTime ?? DUTY_STYLE.morning.times[1],
     isTemporary: it?.isTemporary || false,
     note: it?.note || "",
     reason: "",
@@ -55,7 +57,10 @@ function Body({ cell, branch, onClose, onSaved, permissions }) {
   return (
     <>
       <fieldset disabled={!allowed} className="p-5 sm:p-6 space-y-4">
-        <p className="text-xs font-bold text-brand-dark-grey">{dayLabel(cell.date)} · {branch}</p>
+        <p className="text-xs font-bold text-brand-dark-grey">
+          {dayLabel(cell.date)} · {branch}
+          {pre.usual && <span className="block mt-0.5 font-semibold">Usual duty time {pre.usual}. A roster entry replaces it for this day.</span>}
+        </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {Object.entries(DUTY_STYLE).map(([k, v]) => (
             <button

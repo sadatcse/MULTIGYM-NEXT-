@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import useAdvancePolicyApi from "@/hooks/useAdvancePolicyApi";
 import useUserPermissions from "@/hooks/useUserPermissions";
+import useSystemTimeZone from "@/hooks/useSystemTimeZone";
 import Mtitle from "@/components/Comon/Mtitle";
 import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
@@ -32,6 +33,10 @@ const INITIAL_FORM = {
   maxAdvanceCount: 2,
   defaultDeductionType: "salary_deduction",
   minServiceMonths: 3,
+  maxInstallments: 3,
+  maxAmount: 0,
+  allowConcurrent: "no",
+  allowDuringProbation: "no",
   status: "active",
 };
 
@@ -55,6 +60,8 @@ const rowVariants = {
 };
 
 export default function AdvancePolicyPage() {
+  const { settings } = useSystemTimeZone();
+  const currencySymbol = settings.currencySymbol || "৳";
   const { hasPermission } = useUserPermissions();
   const canView = hasPermission("/dashboard/settings/advance-policy", "view");
   const canAdd = hasPermission("/dashboard/settings/advance-policy", "add");
@@ -136,6 +143,10 @@ export default function AdvancePolicyPage() {
       maxAdvanceCount: item.maxAdvanceCount !== undefined ? item.maxAdvanceCount : 2,
       defaultDeductionType: item.defaultDeductionType || "salary_deduction",
       minServiceMonths: item.minServiceMonths !== undefined ? item.minServiceMonths : 3,
+      maxInstallments: item.maxInstallments !== undefined ? item.maxInstallments : 3,
+      maxAmount: item.maxAmount || 0,
+      allowConcurrent: item.allowConcurrent || "no",
+      allowDuringProbation: item.allowDuringProbation || "no",
       status: item.status || "active",
     });
     setFormErrors({});
@@ -517,9 +528,15 @@ export default function AdvancePolicyPage() {
                             </td>
                             <td className="py-4 px-6 font-bold text-sky-500">
                               {policy.maxAdvancePercent}% of Basic
+                              {policy.maxAmount > 0 && <span className="block text-[10px] text-brand-dark-grey dark:text-brand-gold-light">up to {currencySymbol}{policy.maxAmount.toLocaleString()}</span>}
                             </td>
                             <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium">
                               {policy.maxAdvanceCount} times / year
+                              <span className="block text-[10px]">
+                                {policy.maxInstallments > 0 ? `repaid within ${policy.maxInstallments} month${policy.maxInstallments === 1 ? "" : "s"}` : "no repayment limit"}
+                                {policy.allowConcurrent === "yes" ? ", can overlap" : ", one at a time"}
+                                {policy.allowDuringProbation === "yes" ? ", probation OK" : ""}
+                              </span>
                             </td>
                             <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium capitalize">
                               <span className="px-2.5 py-1 rounded-xl bg-brand-offwhite dark:bg-brand-midnight text-brand-black dark:text-brand-white font-bold text-[11px]">
@@ -623,11 +640,11 @@ export default function AdvancePolicyPage() {
                         <div className="grid grid-cols-2 gap-2 my-4 text-[11px] font-bold">
                           <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                             <span className="text-[9px] text-brand-dark-grey block uppercase">Max Advance</span>
-                            <span className="text-sky-500">{policy.maxAdvancePercent}% of Basic</span>
+                            <span className="text-sky-500">{policy.maxAdvancePercent}% of Basic{policy.maxAmount > 0 ? `, max ${currencySymbol}${policy.maxAmount.toLocaleString()}` : ""}</span>
                           </div>
                           <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                             <span className="text-[9px] text-brand-dark-grey block uppercase">Requests / Yr</span>
-                            <span>{policy.maxAdvanceCount} times</span>
+                            <span>{policy.maxAdvanceCount} times{policy.maxInstallments > 0 ? `, ${policy.maxInstallments} mo repay` : ""}</span>
                           </div>
                           <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                             <span className="text-[9px] text-brand-dark-grey block uppercase">Deduction</span>
@@ -694,7 +711,7 @@ export default function AdvancePolicyPage() {
       )}
 
       {/* ADD / EDIT MODAL */}
-      <AdvancePolicyFormModal editingItem={editingItem} formData={formData} formErrors={formErrors} handleCloseModal={handleCloseModal} handleSubmit={handleSubmit} isModalOpen={isModalOpen} isSubmitting={isSubmitting} setFormData={setFormData} permissions={{ canAdd, canEdit, canDelete }} />
+      <AdvancePolicyFormModal currencySymbol={currencySymbol} editingItem={editingItem} formData={formData} formErrors={formErrors} handleCloseModal={handleCloseModal} handleSubmit={handleSubmit} isModalOpen={isModalOpen} isSubmitting={isSubmitting} setFormData={setFormData} permissions={{ canAdd, canEdit, canDelete }} />
 
       <ConfirmDeleteModal
         isOpen={isDeleteModalOpen}

@@ -6,8 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FiCheckCircle, FiPaperclip } from "react-icons/fi";
 import { MdApproval } from "react-icons/md";
 import { useHrQuery, fmtDate, titleCase } from "@/hooks/useHr";
-import { Avatar, Badge, Btn, Card, EmptyState, Loading, PageHeader, Tabs } from "@/components/hr/HrUi";
-import { LeaveStepper } from "@/components/hr/LeaveParts";
+import { Avatar, Btn, Card, EmptyState, Loading, PageHeader, Tabs } from "@/components/hr/HrUi";
+import { LeaveBadge, LeaveStepper } from "@/components/hr/LeaveParts";
 import LeaveDecisionModal from "@/components/hr/modals/LeaveDecisionModal";
 
 const STAGE_LABEL = { branch: "Floor In-Charge / Branch", hr: "Manager (Admin & HR)", director: "Director" };
@@ -17,19 +17,26 @@ export default function LeaveApprovalsPage() {
   const [filter, setFilter] = useState("all");
   const [acting, setActing] = useState(null);
   const stages = data?.stages || [];
-  const items = (data?.data || []).filter((a) => filter === "all" || a.status === `pending_${filter}`);
+  const approvesFor = data?.approvesFor || [];
+  const all = data?.data || [];
+  const items = all.filter((a) => filter === "all" || (filter === "final" ? a.actingFinal : !a.actingFinal));
+  const roleText = approvesFor.length ? `You review leave for: ${approvesFor.join(", ")}` : stages.length ? `You can act as: ${stages.map((s) => STAGE_LABEL[s]).join(", ")}` : "";
 
   return (
     <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
       <PageHeader
         icon={<MdApproval />}
         title="Leave Approvals"
-        subtitle={stages.length ? `You can act as: ${stages.map((s) => STAGE_LABEL[s]).join(", ")}` : "Your role is not configured for any leave approval stage."}
+        subtitle={roleText || "Leave applications waiting for your recommendation or decision appear here."}
       />
       <Tabs
         value={filter}
         onChange={setFilter}
-        tabs={[{ value: "all", label: "All", count: data?.data?.length || 0 }, ...["branch", "hr", "director"].map((s) => ({ value: s, label: STAGE_LABEL[s], count: (data?.data || []).filter((a) => a.status === `pending_${s}`).length }))]}
+        tabs={[
+          { value: "all", label: "All", count: all.length },
+          { value: "final", label: "My final decision", count: all.filter((a) => a.actingFinal).length },
+          { value: "recommend", label: "My recommendation", count: all.filter((a) => !a.actingFinal).length },
+        ]}
       />
       <Card bodyClassName="p-4">
         {loading ? (
@@ -49,7 +56,7 @@ export default function LeaveApprovalsPage() {
                         <div className="text-[10px] text-brand-dark-grey">{a.designation} · {a.branch}</div>
                       </div>
                     </div>
-                    <Badge status={a.status} />
+                    <LeaveBadge app={a} />
                   </div>
                   <div className="text-xs font-bold">
                     {a.leaveTypeName} · <span className="text-brand-gold">{a.totalDays} day{a.totalDays === 1 ? "" : "s"}</span> · {fmtDate(a.fromDate)} → {fmtDate(a.toDate)}
@@ -58,7 +65,7 @@ export default function LeaveApprovalsPage() {
                   <div className="flex flex-wrap gap-2 text-[10px] font-bold text-brand-dark-grey">
                     <span>Taken this year: {a.previousLeaveRecord?.totalTakenThisYear ?? 0} days</span>
                     {a.attachments?.length > 0 && <span className="flex items-center gap-1"><FiPaperclip /> {a.attachments.length} attachment(s)</span>}
-                    {a.actions?.map((x) => <span key={x.stage}>{STAGE_LABEL[x.stage]}: {titleCase(x.decision)}</span>)}
+                    {a.actions?.map((x, i) => <span key={i}>{x.stepLabel || STAGE_LABEL[x.stage]}: {titleCase(x.decision)}</span>)}
                   </div>
                   <LeaveStepper app={a} compact />
                   <div className="flex gap-2 justify-end">

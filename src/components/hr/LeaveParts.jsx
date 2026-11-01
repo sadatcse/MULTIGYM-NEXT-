@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { FiCheck, FiX } from "react-icons/fi";
+import { FiCheck, FiMinus, FiX } from "react-icons/fi";
 import { useHrMutation, fmtDate, fmtDateTime, titleCase } from "@/hooks/useHr";
-import { Btn, Field, inputCls } from "@/components/hr/HrUi";
+import { Badge, Btn, Field, inputCls } from "@/components/hr/HrUi";
 import { printDocument, tableHtml, escapeHtml as esc } from "@/lib/hrPrint";
 
 export const STAGES = [
@@ -15,6 +15,41 @@ export const STAGES = [
 ];
 
 const STAGE_INDEX = { pending_branch: 1, pending_hr: 2, pending_director: 3, approved: 4, rejected: 4, cancelled: 4 };
+// Fixed stages on the printed form: [table row, signature box].
+const PRINT_STAGE = { branch: ["Floor In-Charge / Branch", "Floor In-Charge"], hr: ["Manager (Admin & HR)", "Manager (Admin & HR)"], director: ["Director (Final Approval)", "Director"] };
+
+// Steps shown for an application: its own route from the decision-maker
+// tree, or the original fixed stages for older applications.
+export function leaveSteps(app) {
+  const chain = app.approvalChain || [];
+  if (!chain.length) {
+    return STAGES.map((s, i) => ({ ...s, action: i === 0 ? null : (app.actions || []).find((a) => a.stage === s.key) }));
+  }
+  return [
+    { key: "applied", label: "Applied", action: null },
+    ...chain.map((s, i) => ({
+      key: `step${i}`,
+      label: s.label,
+      final: i === chain.length - 1,
+      action: (app.actions || []).find((a) => a.stage === "step" && a.step === i),
+    })),
+  ];
+}
+
+function currentIndex(app, steps) {
+  if (["approved", "rejected", "cancelled"].includes(app.status)) return steps.length;
+  if (app.status === "pending") return (app.currentStep || 0) + 1;
+  return STAGE_INDEX[app.status] ?? 1;
+}
+
+// Status badge that names the level a pending application is waiting on.
+export function LeaveBadge({ app }) {
+  if (app.status === "pending") {
+    const step = (app.approvalChain || [])[app.currentStep || 0];
+    return <Badge tone="amber">{step ? `Awaiting ${step.label}` : "Pending"}</Badge>;
+  }
+  return <Badge status={app.status} />;
+}
 
 export const DECISION_TONE = {
   recommended: "text-emerald-500",
@@ -25,16 +60,17 @@ export const DECISION_TONE = {
   rejected: "text-red-500",
 };
 
-// Horizontal 4-step progress for a leave application.
+// Horizontal progress through the application's approval route.
 export function LeaveStepper({ app, compact }) {
-  const current = STAGE_INDEX[app.status] ?? 1;
-  const actionFor = (k) => (app.actions || []).find((a) => a.stage === k);
+  const steps = leaveSteps(app);
+  const current = currentIndex(app, steps);
   const failed = app.status === "rejected" || app.status === "cancelled";
   return (
     <div className="flex items-start w-full">
-      {STAGES.map((s, i) => {
-        const act = s.key === "applied" ? null : actionFor(s.key);
-        const done = i === 0 || !!act || current > i;
+      {steps.map((s, i) => {
+        const act = s.action;
+        const done = i === 0 || !!act;
+        const skipped = !done && current > i; // passed without a review (fast-track, cancelled)
         const isCurrent = current === i && !failed;
         const negative = act && /not_|rejected/.test(act.decision);
         return (
@@ -52,11 +88,11 @@ export function LeaveStepper({ app, compact }) {
                 negative ? "bg-red-500 border-red-500 text-white" : done ? "bg-brand-gold border-brand-gold text-brand-black" : isCurrent ? "bg-brand-white dark:bg-brand-charcoal border-brand-gold text-brand-gold" : "bg-brand-white dark:bg-brand-charcoal border-brand-beige dark:border-brand-dark-grey text-brand-dark-grey"
               }`}
             >
-              {negative ? <FiX /> : done ? <FiCheck /> : i + 1}
+              {negative ? <FiX /> : done ? <FiCheck /> : skipped ? <FiMinus title="Not reviewed" /> : i + 1}
             </motion.div>
             {!compact && (
               <div className="mt-1.5 text-center px-1">
-                <div className="text-[10px] font-black leading-tight">{s.label}</div>
+                <div className="text-[10px] font-black leading-tight">{s.label}{s.final ? " (final)" : ""}</div>
                 {act && <div className={`text-[9px] font-bold ${DECISION_TONE[act.decision] || ""}`}>{titleCase(act.decision)}</div>}
                 {act && <div className="text-[9px] text-brand-dark-grey truncate max-w-[110px]">{act.actorName}</div>}
               </div>
@@ -94,7 +130,7 @@ export function BalanceStrip({ balances = [] }) {
 // Recommendation / approval form for the actor's current stage.
 export function LeaveDecisionPanel({ app, onDone }) {
   const { run, busy } = useHrMutation();
-  const isDirector = app.actingStage === "director";
+  const isDirector = app.actingFinal ?? app.actingStage === "director";
   const [decision, setDecision] = useState(isDirector ? "approved" : "recommended");
   const [remarks, setRemarks] = useState("");
   const [days, setDays] = useState(Math.max(1, Math.floor(app.totalDays) - 1));
@@ -121,12 +157,15 @@ export function LeaveDecisionPanel({ app, onDone }) {
     if (res) onDone?.();
   };
 
-  const stageName = STAGES.find((s) => s.key === app.actingStage)?.label;
+  const stageName = app.actingLabel || STAGES.find((s) => s.key === app.actingStage)?.label;
+  const chainLast = (app.approvalChain || []).length - 1;
+  const fastTrack = app.status === "pending" ? isDirector && (app.currentStep || 0) < chainLast : app.actingStage === "director" && app.status !== "pending_director";
   return (
     <div className="space-y-4">
       <p className="text-xs font-bold text-brand-dark-grey">
         You are acting as <span className="text-brand-gold">{stageName}</span>
-        {app.actingStage === "director" && app.status !== "pending_director" ? " (fast-track final decision)" : ""}
+        {isDirector ? " — final decision" : " — recommendation"}
+        {fastTrack ? " (fast-track, before the levels below have reviewed it)" : ""}
       </p>
       <div className="grid grid-cols-3 gap-2">
         {options.map((o) => (
@@ -155,10 +194,11 @@ export function LeaveDecisionPanel({ app, onDone }) {
 // Paper-style leave form for print / PDF.
 export function printLeaveForm(app, company) {
   const rec = app.previousLeaveRecord;
-  const stageRow = (key, label) => {
-    const a = (app.actions || []).find((x) => x.stage === key);
-    return [label, a ? titleCase(a.decision) : "—", a?.recommendedDays ?? "", a?.remarks || "", a ? `${a.actorName} (${a.actorRole})` : "", a ? fmtDateTime(a.actedAt) : ""];
-  };
+  const row = (label, a) => [label, a ? titleCase(a.decision) : "—", a?.recommendedDays ?? "", a?.remarks || "", a ? `${a.actorName} (${a.actorRole})` : "", a ? fmtDateTime(a.actedAt) : ""];
+  // Older applications print the original stage names.
+  const steps = leaveSteps(app)
+    .slice(1)
+    .map((s) => ({ ...s, row: PRINT_STAGE[s.key]?.[0] || (s.final ? `${s.label} (Final Approval)` : s.label), sign: PRINT_STAGE[s.key]?.[1] || s.label }));
   const body = `
     <div class="grid">
       <div><b>Application No:</b> ${esc(app.applicationNo)}</div><div><b>Applied on:</b> ${esc(fmtDateTime(app.createdAt))}</div>
@@ -173,12 +213,12 @@ export function printLeaveForm(app, company) {
     ${tableHtml(["Leave Type", "Allowed", "Taken", "Remaining"], (rec?.balances || []).map((b) => [b.leaveTypeName, b.allowed, b.taken, b.remaining]))}
     <p class="sub">Last leave: ${rec?.lastLeave ? esc(`${fmtDate(rec.lastLeave.fromDate)} – ${fmtDate(rec.lastLeave.toDate)} (${rec.lastLeave.days} days, ${rec.lastLeave.leaveTypeName})`) : "None"}</p>
     <h2>Remarks & Recommendation</h2>
-    ${tableHtml(["Stage", "Recommendation / Decision", "Days", "Remarks", "By", "Date"], [stageRow("branch", "Floor In-Charge / Branch"), stageRow("hr", "Manager (Admin & HR)"), stageRow("director", "Director (Final Approval)")])}
+    ${tableHtml(["Stage", "Recommendation / Decision", "Days", "Remarks", "By", "Date"], steps.map((s) => row(s.row, s.action)))}
     <div class="grid">
       <div><b>Final Status:</b> ${esc(titleCase(app.status))}</div>
       <div><b>Approved Days:</b> ${esc(app.approvedDays || 0)} ${app.approvedFromDate ? esc(`(${fmtDate(app.approvedFromDate)} – ${fmtDate(app.approvedToDate)})`) : ""}</div>
     </div>
-    <div class="sign"><div>Applicant</div><div>Floor In-Charge</div><div>Manager (Admin & HR)</div><div>Director</div></div>`;
+    <div class="sign"><div>Applicant</div>${steps.map((s) => `<div>${esc(s.sign)}</div>`).join("")}</div>`;
   printDocument({ title: "Leave Application Form", subtitle: app.applicationNo, company, bodyHtml: body });
 }
 

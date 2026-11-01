@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FiCopy, FiKey, FiSave, FiX } from "react-icons/fi";
-import { MdTune } from "react-icons/md";
 import { toast } from "react-toastify";
 import usePagePermission from "@/hooks/usePagePermission";
-import { useHrConfig, useHrMutation, useHrQuery } from "@/hooks/useHr";
-import { Btn, Card, Field, inputCls, Loading, PageHeader, Select } from "@/components/hr/HrUi";
+import { useHrConfig, useHrLookups, useHrMutation, useHrQuery } from "@/hooks/useHr";
+import { Badge, Btn, Card, Field, inputCls, Loading, PageHeader, Select, pageCls } from "@/components/hr/HrUi";
+import RoleTreeEditor from "@/components/hr/RoleTreeEditor";
+import ManagementPersonsCard from "@/components/hr/ManagementPersonsCard";
+import { roleKey, suggestTree } from "@/components/hr/roleTree";
+
+const LEAVE_WORDS = { top: "Final decision", middle: "Recommends", bottom: "Applies", requests: "leave requests" };
+const REQ_WORDS = { top: "Final approval", middle: "Verifies", bottom: "Requests", requests: "requisitions" };
 
 // Chip editor for a list of role names, with suggestions from the Roles table.
-function RoleList({ value = [], onChange, suggestions = [] }) {
+function RoleList({ value = [], onChange, suggestions = [], disabled }) {
   const [draft, setDraft] = useState("");
   const add = (r) => {
     const v = r.trim();
@@ -23,86 +28,167 @@ function RoleList({ value = [], onChange, suggestions = [] }) {
         {value.map((r) => (
           <span key={r} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-brand-gold/15 border border-brand-gold/30 text-[11px] font-black">
             {r}
-            <button type="button" onClick={() => onChange(value.filter((x) => x !== r))} className="hover:text-brand-red cursor-pointer"><FiX /></button>
+            {!disabled && (
+              <button type="button" onClick={() => onChange(value.filter((x) => x !== r))} className="hover:text-brand-red cursor-pointer" aria-label={`Remove ${r}`}>
+                <FiX />
+              </button>
+            )}
           </span>
         ))}
       </div>
-      <div className="flex gap-2">
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), add(draft))} placeholder="Type a role and press Enter" className={inputCls} />
-        {remaining.length > 0 && <Select value="" onChange={(v) => v && add(v)} placeholder="+ from roles" options={remaining} className="w-40" />}
-      </div>
+      {!disabled && (
+        <div className="flex gap-2">
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), add(draft))} placeholder="Type a role and press Enter" className={inputCls} />
+          {remaining.length > 0 && <Select value="" onChange={(v) => v && add(v)} placeholder="+ from roles" options={remaining} className="w-40" />}
+        </div>
+      )}
     </div>
   );
+}
+
+function TreeStatus({ saved, current }) {
+  const changed = JSON.stringify(saved || []) !== JSON.stringify(current || []);
+  if (changed) return <Badge tone="amber">Not saved yet</Badge>;
+  return saved?.length ? <Badge tone="green">Active</Badge> : <Badge tone="slate">Using fixed stages</Badge>;
 }
 
 export default function HrWorkflowPage() {
   const { canEdit } = usePagePermission();
   const { config, me, loading, refetch } = useHrConfig();
-  const roles = useHrQuery("/role", { limit: 200 });
-  const roleNames = (roles.data?.data || roles.data?.roles || []).map((r) => r.name);
+  const rolesQuery = useHrQuery("/role", { limit: 200 });
+  const roleNames = useMemo(() => (rolesQuery.data?.data || rolesQuery.data?.roles || []).filter((r) => r.status !== "inactive").map((r) => r.name), [rolesQuery.data]);
+  const { staff } = useHrLookups();
+  const staffByRole = useMemo(() => {
+    const out = {};
+    for (const e of staff) if (e.role) out[roleKey(e.role)] = (out[roleKey(e.role)] || 0) + 1;
+    return out;
+  }, [staff]);
   const { run, busy } = useHrMutation();
   const [f, setF] = useState(null);
+  const [savedJson, setSavedJson] = useState("");
+
   useEffect(() => {
     // Syncing a default from data that arrives asynchronously is intentional.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (config && !f) setF(JSON.parse(JSON.stringify(config)));
+    if (config && !f) {
+      const copy = JSON.parse(JSON.stringify(config));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setF(copy);
+      setSavedJson(JSON.stringify(copy));
+    }
   }, [config, f]);
+
+  const dirty = !!f && JSON.stringify(f) !== savedJson;
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const warn = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   if (loading || !f) return <Loading rows={8} />;
   const editable = canEdit && me?.scope === "all";
+  const saved = JSON.parse(savedJson || "{}");
   const setA = (k, v) => setF({ ...f, attendance: { ...f.attendance, [k]: v } });
   const setP = (k, v) => setF({ ...f, payroll: { ...f.payroll, [k]: v } });
   const num = (v) => (v === "" ? "" : Number(v));
 
   const save = async () => {
     const res = await run("put", "/hr-config", {
+      decisionTree: f.decisionTree,
+      managementTree: f.managementTree,
       branchScopedRoles: f.branchScopedRoles,
       selfOnlyRoles: f.selfOnlyRoles,
-      leaveStages: f.leaveStages,
-      leaveSkipBranchStage: f.leaveSkipBranchStage,
       requisitionStages: f.requisitionStages,
       attendance: f.attendance,
       payroll: f.payroll,
     });
-    if (res) refetch();
+    if (res?.data) {
+      // An older backend build ignores the trees; keep them unsaved and say so.
+      if (!Array.isArray(res.data.decisionTree) || !Array.isArray(res.data.managementTree)) {
+        toast.error("The server did not store the approval trees. Restart the backend so it runs the latest code, then save again.");
+        return;
+      }
+      // Take the server's cleaned copy (it removes duplicates and loops).
+      const copy = JSON.parse(JSON.stringify({ ...f, ...res.data }));
+      setF(copy);
+      setSavedJson(JSON.stringify(copy));
+      refetch();
+    }
   };
 
   return (
-    <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
+    <div className={pageCls}>
       <PageHeader
-        icon={<MdTune />}
         title="HR Workflow Settings"
-        subtitle="Who approves at each stage, who sees only their own branch or own records, and the attendance & payroll rules."
-        actions={editable && <Btn variant="gold" loading={busy} onClick={save}><FiSave /> Save settings</Btn>}
+        subtitle="Draw who approves whom, choose who sees only their own branch or own records, and set the attendance & payroll rules."
+        actions={
+          editable && (
+            <>
+              {dirty && <Badge tone="amber">Unsaved changes</Badge>}
+              <Btn onClick={save} loading={busy} disabled={!dirty}>
+                <FiSave /> Save settings
+              </Btn>
+            </>
+          )
+        }
       />
+
+      <Card
+        title="Leave approvals — decision makers"
+        subtitle="A leave request goes up the tree from the applicant's role: every level above recommends, and the top gives the final decision."
+        actions={<TreeStatus saved={saved.decisionTree} current={f.decisionTree} />}
+      >
+        <RoleTreeEditor
+          tree={f.decisionTree || []}
+          onChange={(t) => setF({ ...f, decisionTree: t })}
+          roles={roleNames}
+          staffByRole={staffByRole}
+          editable={editable}
+          words={LEAVE_WORDS}
+          onSuggest={() => setF({ ...f, decisionTree: suggestTree(roleNames, [f.leaveStages?.director, f.leaveStages?.hr, f.leaveStages?.branch]) })}
+        />
+      </Card>
+
+      <Card
+        title="Requisition approvals — management"
+        subtitle="A requisition goes up the tree from the requester's role: every level above verifies, the top gives the final approval, then the purchase team buys it."
+        actions={<TreeStatus saved={saved.managementTree} current={f.managementTree} />}
+      >
+        <RoleTreeEditor
+          tree={f.managementTree || []}
+          onChange={(t) => setF({ ...f, managementTree: t })}
+          roles={roleNames}
+          staffByRole={staffByRole}
+          editable={editable}
+          words={REQ_WORDS}
+          onSuggest={() => setF({ ...f, managementTree: suggestTree(roleNames, [f.requisitionStages?.management, f.requisitionStages?.admin, f.branchScopedRoles]) })}
+        />
+        <div className="mt-6 border-t border-brand-beige/40 pt-5 dark:border-brand-dark-grey/40">
+          <Field label="Purchase team" hint="After final approval these roles add quotations, place the order and record the purchase.">
+            <RoleList value={f.requisitionStages?.purchase || []} onChange={(v) => setF({ ...f, requisitionStages: { ...f.requisitionStages, purchase: v } })} suggestions={roleNames} disabled={!editable} />
+          </Field>
+        </div>
+      </Card>
+
+      <ManagementPersonsCard staff={staff} editable={editable} />
 
       <Card title="Data access scope" subtitle="Roles not listed in either box (e.g. MD, Director, HR, Admin) see all branches. Super Admin always sees everything. Page access itself is set in Role Access Control.">
         <div className="grid md:grid-cols-2 gap-5">
-          <Field label="Own branch only (Branch / Floor In-Charge, Front Desk)"><RoleList value={f.branchScopedRoles} onChange={(v) => setF({ ...f, branchScopedRoles: v })} suggestions={roleNames} /></Field>
-          <Field label="Own records only (Employee / Staff)"><RoleList value={f.selfOnlyRoles} onChange={(v) => setF({ ...f, selfOnlyRoles: v })} suggestions={roleNames} /></Field>
-        </div>
-      </Card>
-
-      <Card title="Leave approval workflow" subtitle="Employee → Floor In-Charge / Branch → Manager (Admin & HR) → Director. One person can act at only one stage of an application.">
-        <div className="grid md:grid-cols-3 gap-5">
-          <Field label="1 · Branch verification"><RoleList value={f.leaveStages.branch} onChange={(v) => setF({ ...f, leaveStages: { ...f.leaveStages, branch: v } })} suggestions={roleNames} /></Field>
-          <Field label="2 · Manager (Admin & HR) verification"><RoleList value={f.leaveStages.hr} onChange={(v) => setF({ ...f, leaveStages: { ...f.leaveStages, hr: v } })} suggestions={roleNames} /></Field>
-          <Field label="3 · Director approval (final)"><RoleList value={f.leaveStages.director} onChange={(v) => setF({ ...f, leaveStages: { ...f.leaveStages, director: v } })} suggestions={roleNames} /></Field>
-        </div>
-        <label className="flex items-center gap-2 text-xs font-bold mt-4 cursor-pointer"><input type="checkbox" checked={f.leaveSkipBranchStage} onChange={(e) => setF({ ...f, leaveSkipBranchStage: e.target.checked })} /> Skip branch verification (new applications go straight to HR)</label>
-      </Card>
-
-      <Card title="Requisition workflow" subtitle="Requisition → Admin verification → Management approval → Purchase → Received">
-        <div className="grid md:grid-cols-3 gap-5">
-          <Field label="Admin verification"><RoleList value={f.requisitionStages.admin} onChange={(v) => setF({ ...f, requisitionStages: { ...f.requisitionStages, admin: v } })} suggestions={roleNames} /></Field>
-          <Field label="Management approval"><RoleList value={f.requisitionStages.management} onChange={(v) => setF({ ...f, requisitionStages: { ...f.requisitionStages, management: v } })} suggestions={roleNames} /></Field>
-          <Field label="Purchase"><RoleList value={f.requisitionStages.purchase} onChange={(v) => setF({ ...f, requisitionStages: { ...f.requisitionStages, purchase: v } })} suggestions={roleNames} /></Field>
+          <Field label="Own branch only (Branch / Floor In-Charge, Front Desk)">
+            <RoleList value={f.branchScopedRoles} onChange={(v) => setF({ ...f, branchScopedRoles: v })} suggestions={roleNames} disabled={!editable} />
+          </Field>
+          <Field label="Own records only (Employee / Staff)">
+            <RoleList value={f.selfOnlyRoles} onChange={(v) => setF({ ...f, selfOnlyRoles: v })} suggestions={roleNames} disabled={!editable} />
+          </Field>
         </div>
       </Card>
 
       <div className="grid md:grid-cols-2 gap-5">
         <Card title="Attendance rules" subtitle="Used when a punch has no roster/profile shift; grace and thresholds apply always.">
-          <div className="grid grid-cols-2 gap-3">
+          <fieldset disabled={!editable} className="grid grid-cols-2 gap-3">
             <Field label="Default in time"><input type="time" value={f.attendance.defaultInTime} onChange={(e) => setA("defaultInTime", e.target.value)} className={inputCls} /></Field>
             <Field label="Default out time"><input type="time" value={f.attendance.defaultOutTime} onChange={(e) => setA("defaultOutTime", e.target.value)} className={inputCls} /></Field>
             <Field label="Late grace (min)"><input type="number" value={f.attendance.graceMinutes} onChange={(e) => setA("graceMinutes", num(e.target.value))} className={inputCls} /></Field>
@@ -111,15 +197,15 @@ export default function HrWorkflowPage() {
             <Field label="Overtime counts after (min)"><input type="number" value={f.attendance.overtimeAfterMinutes} onChange={(e) => setA("overtimeAfterMinutes", num(e.target.value))} className={inputCls} /></Field>
             <Field label="Min gap between in & out (min)"><input type="number" value={f.attendance.minPunchGapMinutes} onChange={(e) => setA("minPunchGapMinutes", num(e.target.value))} className={inputCls} /></Field>
             <Field label="UTC offset (min)" hint="Dhaka = 360"><input type="number" value={f.attendance.timezoneOffsetMinutes} onChange={(e) => setA("timezoneOffsetMinutes", num(e.target.value))} className={inputCls} /></Field>
-          </div>
+          </fieldset>
         </Card>
         <Card title="Payroll rules" subtitle="Late/overtime rates come from the active Late Policy and Overtime Policy.">
-          <div className="grid grid-cols-2 gap-3">
+          <fieldset disabled={!editable} className="grid grid-cols-2 gap-3">
             <Field label="Per-day salary based on"><Select value={f.payroll.perDayBasis} onChange={(v) => setP("perDayBasis", v)} options={[{ value: "gross", label: "Gross salary" }, { value: "basic", label: "Basic salary" }]} /></Field>
             <Field label="Days in month"><Select value={f.payroll.daysBasis} onChange={(v) => setP("daysBasis", v)} options={[{ value: "calendar", label: "Calendar days" }, { value: "fixed30", label: "Fixed 30" }]} /></Field>
             <Field label="Standard hours / day" hint="For overtime hourly rate"><input type="number" value={f.payroll.standardHoursPerDay} onChange={(e) => setP("standardHoursPerDay", num(e.target.value))} className={inputCls} /></Field>
             <Field label="Currency symbol"><input value={f.payroll.currency} onChange={(e) => setP("currency", e.target.value)} className={inputCls} /></Field>
-          </div>
+          </fieldset>
         </Card>
       </div>
 

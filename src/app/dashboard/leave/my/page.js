@@ -7,7 +7,7 @@ import { FiPlus, FiXCircle } from "react-icons/fi";
 import { MdEventAvailable } from "react-icons/md";
 import { useHrLookups, useHrMutation, useHrQuery, fmtDate } from "@/hooks/useHr";
 import { Badge, Btn, Card, EmptyState, Loading, PageHeader } from "@/components/hr/HrUi";
-import { BalanceStrip, LeaveStepper } from "@/components/hr/LeaveParts";
+import { BalanceStrip, LeaveBadge, LeaveStepper } from "@/components/hr/LeaveParts";
 import LeaveApplyModal from "@/components/hr/modals/LeaveApplyModal";
 
 export default function MyLeavePage() {
@@ -48,7 +48,7 @@ export default function MyLeavePage() {
                     <div className="text-[11px] text-brand-dark-grey">{a.applicationNo} · {fmtDate(a.fromDate)} → {fmtDate(a.toDate)}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge status={a.status} />
+                    <LeaveBadge app={a} />
                     {a.status === "approved" && a.approvedDays !== a.totalDays && <Badge tone="amber">{a.approvedDays} days approved</Badge>}
                     {a.status.startsWith("pending") && (
                       <Btn size="sm" variant="ghost" onClick={async () => { if (confirm("Withdraw this application?") && (await run("post", `/leave/${a._id}/cancel`, { reason: "Withdrawn by employee" }))) refresh(); }}>

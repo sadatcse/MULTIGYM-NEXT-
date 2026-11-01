@@ -7,6 +7,7 @@ import SkeletonLoading from "@/components/Comon/SkeletonLoading";
 import Pagination from "@/components/Comon/Pagination";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import useRoleApi from "@/hooks/useRoleApi";
+import { useHrLookups } from "@/hooks/useHr";
 import useUserPermissions from "@/hooks/useUserPermissions";
 import Swal from "sweetalert2";
 import {
@@ -24,6 +25,7 @@ import {
   FiList,
   FiLoader,
   FiUserCheck,
+  FiUsers,
 } from "react-icons/fi";
 import RoleFormModal from "@/components/modals/settings/RoleFormModal";
 
@@ -79,6 +81,12 @@ export default function UserRolesPage() {
     updateRole,
     deleteRole,
   } = useRoleApi();
+
+  // Current staff per role (from the employee directory), matched ignoring case/spaces.
+  const { staff } = useHrLookups();
+  const roleKey = (r) => String(r || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const usersByRole = staff.reduce((m, e) => ({ ...m, [roleKey(e.role)]: (m[roleKey(e.role)] || 0) + 1 }), {});
+  const usersOf = (role) => usersByRole[roleKey(role.name)] || 0;
 
   const [viewMode, setViewMode] = useState("table"); // 'table' | 'cards'
 
@@ -533,6 +541,7 @@ export default function UserRolesPage() {
                           <FiUserCheck className="text-brand-gold" /> User Role Name
                         </span>
                       </th>
+                      <th className="py-4 px-6 font-extrabold text-center">Users</th>
                       <th className="py-4 px-6 font-extrabold text-center">Status</th>
                       {(canEdit || canDelete) && <th className="py-4 px-6 font-extrabold text-right">Actions</th>}
                     </tr>
@@ -579,6 +588,13 @@ export default function UserRolesPage() {
                                     </span>
                                   </div>
                                 </div>
+                              </td>
+
+                              {/* Users holding the role */}
+                              <td className="py-4 px-6 text-center">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black ${usersOf(role) ? "bg-blue-500/10 text-blue-600 dark:text-blue-300" : "bg-brand-offwhite dark:bg-brand-midnight text-brand-dark-grey"}`} title="Current employees with this role">
+                                  <FiUsers /> {usersOf(role)}
+                                </span>
                               </td>
 
                               {/* Status Pill */}
@@ -639,7 +655,7 @@ export default function UserRolesPage() {
                       </AnimatePresence>
                     ) : (
                       <tr>
-                        <td colSpan="4" className="py-12 text-center text-brand-dark-grey dark:text-brand-gold-light font-medium">
+                        <td colSpan="5" className="py-12 text-center text-brand-dark-grey dark:text-brand-gold-light font-medium">
                           No user roles found matching criteria.
                         </td>
                       </tr>
@@ -701,6 +717,9 @@ export default function UserRolesPage() {
                             </h4>
                             <p className="text-xs text-brand-dark-grey dark:text-brand-gold-light line-clamp-2 mt-0.5">
                               {role.description || "System authority role"}
+                            </p>
+                            <p className="text-[11px] font-black text-blue-600 dark:text-blue-300 mt-1 inline-flex items-center gap-1">
+                              <FiUsers /> {usersOf(role)} {usersOf(role) === 1 ? "user" : "users"}
                             </p>
                           </div>
                         </div>

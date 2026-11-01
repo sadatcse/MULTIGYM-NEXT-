@@ -9,7 +9,7 @@ const FULL_ACCESS = { canAdd: true, canEdit: true, canDelete: true };
 // Extracted from app/dashboard/settings/advance-policy/page.js.
 // Receives page state/handlers as props; `permissions` (RBAC from the page)
 // decides whether the form can be submitted.
-export default function AdvancePolicyFormModal({ editingItem, formData, formErrors, handleCloseModal, handleSubmit, isModalOpen, isSubmitting, setFormData, permissions = FULL_ACCESS }) {
+export default function AdvancePolicyFormModal({ currencySymbol = "৳", editingItem, formData, formErrors, handleCloseModal, handleSubmit, isModalOpen, isSubmitting, setFormData, permissions = FULL_ACCESS }) {
   const allowed = editingItem ? permissions.canEdit : permissions.canAdd;
   return (
     <>
@@ -132,6 +132,53 @@ export default function AdvancePolicyFormModal({ editingItem, formData, formErro
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Max Installments (Months)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formData.maxInstallments}
+                      disabled={isSubmitting}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, maxInstallments: Number(e.target.value) }))}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    />
+                    <p className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light mt-1 font-semibold">0 = no limit</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                      Max Amount ({currencySymbol})
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formData.maxAmount}
+                      disabled={isSubmitting}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, maxAmount: Number(e.target.value) }))}
+                      className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    />
+                    <p className="text-[10px] text-brand-dark-grey dark:text-brand-gold-light mt-1 font-semibold">0 = only the % of basic applies</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-xs font-bold text-brand-black dark:text-brand-white cursor-pointer">
+                    <input type="checkbox" checked={formData.allowConcurrent === "yes"} disabled={isSubmitting} onChange={(e) => setFormData((prev) => ({ ...prev, allowConcurrent: e.target.checked ? "yes" : "no" }))} className="w-4 h-4 accent-[#E6BB60]" />
+                    Allow a new advance while another is still being recovered
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-bold text-brand-black dark:text-brand-white cursor-pointer">
+                    <input type="checkbox" checked={formData.allowDuringProbation === "yes"} disabled={isSubmitting} onChange={(e) => setFormData((prev) => ({ ...prev, allowDuringProbation: e.target.checked ? "yes" : "no" }))} className="w-4 h-4 accent-[#E6BB60]" />
+                    Allow staff on probation
+                  </label>
+                </div>
+
+                <p className="text-[11px] font-semibold text-brand-dark-grey dark:text-brand-gold-light p-3 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
+                  The active policy is checked whenever an advance is recorded in Advance &amp; Loans. HR can still grant one outside it, with a reason that is kept on the record.
+                </p>
 
                 <div>
                   <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1.5">

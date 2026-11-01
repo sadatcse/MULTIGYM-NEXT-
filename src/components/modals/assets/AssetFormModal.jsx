@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiBox, FiX, FiPackage, FiLayers, FiSliders, FiPlus, FiTrash2, FiZap, FiLoader } from "react-icons/fi";
+import { FiBox, FiX, FiPackage, FiLayers, FiSliders, FiPlus, FiTrash2, FiZap, FiLoader, FiMapPin } from "react-icons/fi";
 import ReadOnlyNotice from "@/components/modals/ReadOnlyNotice";
 
 const FULL_ACCESS = { canAdd: true, canEdit: true, canDelete: true };
@@ -9,7 +10,7 @@ const FULL_ACCESS = { canAdd: true, canEdit: true, canDelete: true };
 // Extracted from app/dashboard/assets/page.js.
 // Receives page state/handlers as props; `permissions` (RBAC from the page)
 // decides whether the form can be submitted.
-export default function AssetFormModal({ activeAssetTypes, editingAsset, formData, formErrors, handleAddAttributeRow, handleAddPresetAttribute, handleAddVariantRow, handleAttributeChange, handleAutoGenerateVariants, handleRemoveAttributeRow, handleRemoveVariantRow, handleSubmit, handleVariantChange, isModalOpen, isSubmitting, setFormData, setIsModalOpen, permissions = FULL_ACCESS }) {
+export default function AssetFormModal({ activeAssetTypes, locations = [], editingAsset, formData, formErrors, handleAddAttributeRow, handleAddPresetAttribute, handleAddVariantRow, handleAttributeChange, handleAutoGenerateVariants, handleRemoveAttributeRow, handleRemoveVariantRow, handleSubmit, handleVariantChange, isModalOpen, isSubmitting, setFormData, setIsModalOpen, permissions = FULL_ACCESS }) {
   const allowed = editingAsset ? permissions.canEdit : permissions.canAdd;
   return (
     <>
@@ -158,6 +159,34 @@ export default function AssetFormModal({ activeAssetTypes, editingAsset, formDat
                     <label className="block text-[10px] font-extrabold uppercase tracking-wider text-brand-dark-grey mb-1">Condition</label>
                     <input type="text" value={formData.condition} disabled={isSubmitting} onChange={(e) => setFormData((f) => ({ ...f, condition: e.target.value }))} placeholder="New / Good / Used" className="w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50" />
                   </div>
+                </div>
+
+                {/* Store location: where this stock is kept */}
+                <div className="p-4 rounded-2xl bg-brand-offwhite/50 dark:bg-brand-midnight/50 border border-brand-beige/40 dark:border-brand-dark-grey/40 space-y-3">
+                  <span className="text-xs font-black text-brand-black dark:text-brand-white flex items-center gap-1.5">
+                    <FiMapPin className="text-brand-gold text-sm" /> Where is it stored?
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-extrabold uppercase tracking-wider text-brand-dark-grey mb-1">Store Location</label>
+                      <select value={formData.location} disabled={isSubmitting} onChange={(e) => setFormData((f) => ({ ...f, location: e.target.value }))} className="w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer">
+                        <option value="">Not set</option>
+                        {locations.map((l) => (
+                          <option key={l._id} value={l._id}>{l.name}{l.branch ? ` — ${l.branch}` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold uppercase tracking-wider text-brand-dark-grey mb-1">Shelf / Rack / Box</label>
+                      <input type="text" value={formData.storageSpot} disabled={isSubmitting} onChange={(e) => setFormData((f) => ({ ...f, storageSpot: e.target.value }))} placeholder="e.g. Rack B, shelf 2" className="w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50" />
+                    </div>
+                  </div>
+                  {!locations.length && (
+                    <p className="text-[10px] text-brand-dark-grey font-medium">
+                      No store locations yet. Add your store rooms on the{" "}
+                      <Link href="/dashboard/assets/locations" className="font-bold text-brand-gold hover:underline">Asset Locations</Link> page.
+                    </p>
+                  )}
                 </div>
 
                 {/* DYNAMIC ATTRIBUTES MANAGER WITH TICK MARK CHECKBOX */}

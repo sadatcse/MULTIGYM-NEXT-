@@ -24,8 +24,11 @@ import {
   FiLoader,
   FiShield,
   FiAward,
+  FiSend,
 } from "react-icons/fi";
 import BonusPolicyFormModal from "@/components/modals/settings/BonusPolicyFormModal";
+import BonusRunModal from "@/components/hr/modals/BonusRunModal";
+import { appliesToText } from "@/components/hr/AppliesToPicker";
 
 const INITIAL_FORM = {
   policyName: "",
@@ -34,6 +37,34 @@ const INITIAL_FORM = {
   bonusRate: 50,
   applicableMonth: "March",
   status: "active",
+  minServiceMonths: 0,
+  proRata: "none",
+  excludeProbation: "no",
+  maxAbsentDays: "",
+  maxLateDays: "",
+  appliesTo: {},
+};
+
+// Form values → API body ("" limits mean no limit).
+const toPayload = (f) => ({
+  ...f,
+  bonusRate: Number(f.bonusRate) || 0,
+  minServiceMonths: Math.max(0, Number(f.minServiceMonths) || 0),
+  maxAbsentDays: f.maxAbsentDays === "" || f.maxAbsentDays === null ? -1 : Math.max(0, Number(f.maxAbsentDays) || 0),
+  maxLateDays: f.maxLateDays === "" || f.maxLateDays === null ? -1 : Math.max(0, Number(f.maxLateDays) || 0),
+});
+
+// Short eligibility summary for the list, e.g. "6+ months, pro-rata under a year, Designations: Trainer".
+const eligibilityText = (p) => {
+  const bits = [];
+  if (p.minServiceMonths > 0) bits.push(`${p.minServiceMonths}+ months`);
+  if (p.proRata === "service_months") bits.push("pro-rata under a year");
+  if (p.excludeProbation === "yes") bits.push("no probation");
+  if (p.maxAbsentDays >= 0) bits.push(`max ${p.maxAbsentDays} absent`);
+  if (p.maxLateDays >= 0) bits.push(`max ${p.maxLateDays} late`);
+  const who = appliesToText(p.appliesTo);
+  if (who !== "Everyone") bits.push(who);
+  return bits.length ? bits.join(", ") : "Everyone";
 };
 
 const MONTHS = [
@@ -115,6 +146,7 @@ export default function BonusPolicyPage() {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [runPolicy, setRunPolicy] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingItem, setDeletingItem] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -154,6 +186,12 @@ export default function BonusPolicyPage() {
       bonusRate: item.bonusRate !== undefined ? item.bonusRate : 50,
       applicableMonth: item.applicableMonth || "March",
       status: item.status || "active",
+      minServiceMonths: item.minServiceMonths ?? 0,
+      proRata: item.proRata || "none",
+      excludeProbation: item.excludeProbation || "no",
+      maxAbsentDays: item.maxAbsentDays >= 0 ? item.maxAbsentDays : "",
+      maxLateDays: item.maxLateDays >= 0 ? item.maxLateDays : "",
+      appliesTo: item.appliesTo || {},
     });
     setFormErrors({});
     setIsModalOpen(true);
@@ -192,7 +230,7 @@ export default function BonusPolicyPage() {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        await updateBonusPolicy(editingItem._id, formData);
+        await updateBonusPolicy(editingItem._id, toPayload(formData));
         Swal.fire({
           title: "Updated!",
           text: `Bonus policy "${formData.policyName}" updated successfully.`,
@@ -201,7 +239,7 @@ export default function BonusPolicyPage() {
           timer: 2000,
         });
       } else {
-        await createBonusPolicy(formData);
+        await createBonusPolicy(toPayload(formData));
         Swal.fire({
           title: "Created!",
           text: `Bonus policy "${formData.policyName}" created successfully.`,
@@ -503,6 +541,7 @@ export default function BonusPolicyPage() {
                       <th className="py-4 px-6">Calculation Method</th>
                       <th className="py-4 px-6">Rate / Amount</th>
                       <th className="py-4 px-6">Payout Month</th>
+                      <th className="py-4 px-6">Who gets it</th>
                       <th className="py-4 px-6 text-center w-28">Status</th>
                       <th className="py-4 px-6 text-center w-28">Actions</th>
                     </tr>
@@ -529,7 +568,7 @@ export default function BonusPolicyPage() {
                                 #{idx + 1 + (page - 1) * limit}
                               </span>
                             </td>
-                            <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white text-sm">
+                            <td className="py-4 px-6 font-extrabold text-brand-black dark:text-brand-white text-sm min-w-[160px]">
                               {policy.policyName}
                             </td>
                             <td className="py-4 px-6">
@@ -547,6 +586,9 @@ export default function BonusPolicyPage() {
                             </td>
                             <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium">
                               {policy.applicableMonth || "All Months"}
+                            </td>
+                            <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium min-w-[150px] max-w-[220px]">
+                              {eligibilityText(policy)}
                             </td>
                             <td className="py-4 px-6 text-center">
                               <span
@@ -566,6 +608,14 @@ export default function BonusPolicyPage() {
                             </td>
                             <td className="py-4 px-6 text-center">
                               <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => setRunPolicy(policy)}
+                                  disabled={rowBusy}
+                                  className="p-2 rounded-xl text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Run this bonus into a payroll month"
+                                >
+                                  <FiSend className="text-sm" />
+                                </button>
                                 {canEdit && (
                                   <button
                                     onClick={() => handleOpenEdit(policy)}
@@ -662,6 +712,10 @@ export default function BonusPolicyPage() {
                               {policy.calculationType?.replace(/_/g, " ")}
                             </span>
                           </div>
+                          <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight col-span-2">
+                            <span className="text-[9px] text-brand-dark-grey block uppercase">Who gets it</span>
+                            <span className="block">{eligibilityText(policy)}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -681,6 +735,14 @@ export default function BonusPolicyPage() {
                           {policy.status}
                         </span>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setRunPolicy(policy)}
+                            disabled={rowBusy}
+                            className="p-2 rounded-xl text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Run this bonus into a payroll month"
+                          >
+                            <FiSend className="text-sm" />
+                          </button>
                           {canEdit && (
                             <button
                               onClick={() => handleOpenEdit(policy)}
@@ -720,6 +782,8 @@ export default function BonusPolicyPage() {
 
       {/* ADD / EDIT MODAL */}
       <BonusPolicyFormModal MONTHS={MONTHS} currencySymbol={currencySymbol} editingItem={editingItem} formData={formData} formErrors={formErrors} handleCloseModal={handleCloseModal} handleSubmit={handleSubmit} isModalOpen={isModalOpen} isSubmitting={isSubmitting} setFormData={setFormData} permissions={{ canAdd, canEdit, canDelete }} />
+
+      <BonusRunModal policy={runPolicy} canPost={canEdit} onClose={() => setRunPolicy(null)} />
 
       <ConfirmDeleteModal
         isOpen={isDeleteModalOpen}

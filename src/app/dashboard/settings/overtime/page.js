@@ -101,6 +101,8 @@ export default function OvertimePage() {
     ratePerHour: 1.5,
     maxHoursPerMonth: 40,
     minOvertimeMinutes: 30,
+    offDayRate: 0,
+    roundingMinutes: 0,
     status: "active",
   });
   const [policyErrors, setPolicyErrors] = useState({});
@@ -151,6 +153,8 @@ export default function OvertimePage() {
       ratePerHour: 1.5,
       maxHoursPerMonth: 40,
       minOvertimeMinutes: 30,
+      offDayRate: 0,
+      roundingMinutes: 0,
       status: "active",
     });
     setPolicyErrors({});
@@ -165,6 +169,8 @@ export default function OvertimePage() {
       ratePerHour: p.ratePerHour !== undefined ? p.ratePerHour : 1.5,
       maxHoursPerMonth: p.maxHoursPerMonth !== undefined ? p.maxHoursPerMonth : 40,
       minOvertimeMinutes: p.minOvertimeMinutes !== undefined ? p.minOvertimeMinutes : 30,
+      offDayRate: p.offDayRate || 0,
+      roundingMinutes: p.roundingMinutes || 0,
       status: p.status || "active",
     });
     setPolicyErrors({});
@@ -511,19 +517,6 @@ export default function OvertimePage() {
             >
               Overtime Policies
             </button>
-            <button
-              onClick={() => {
-                setActiveTab("records");
-                setStatusFilter("all");
-              }}
-              className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                activeTab === "records"
-                  ? "bg-brand-gold text-brand-midnight shadow-xs"
-                  : "text-brand-dark-grey dark:text-brand-gold-light hover:text-brand-black dark:hover:text-white"
-              }`}
-            >
-              Overtime Records
-            </button>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -678,12 +671,14 @@ export default function OvertimePage() {
                               </td>
                               <td className="py-4 px-6 font-bold text-amber-500">
                                 {policy.ratePerHour}x Normal Hourly Rate
+                                {policy.offDayRate > 0 && <span className="block text-[10px] text-brand-dark-grey dark:text-brand-gold-light">{policy.offDayRate}x on holidays / days off</span>}
                               </td>
                               <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium">
                                 {policy.maxHoursPerMonth} Hours / Month
                               </td>
                               <td className="py-4 px-6 text-brand-dark-grey dark:text-brand-gold-light/90 font-medium">
                                 {policy.minOvertimeMinutes} Minutes
+                                {policy.roundingMinutes > 0 && <span className="block text-[10px]">rounded down to {policy.roundingMinutes} min</span>}
                               </td>
                               <td className="py-4 px-6 text-center">
                                 <span
@@ -779,7 +774,7 @@ export default function OvertimePage() {
                           <div className="grid grid-cols-2 gap-2 my-4 text-[11px] font-bold">
                             <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                               <span className="text-[9px] text-brand-dark-grey block uppercase">Rate Multiplier</span>
-                              <span className="text-amber-500">{policy.ratePerHour}x</span>
+                              <span className="text-amber-500">{policy.ratePerHour}x{policy.offDayRate > 0 ? ` (${policy.offDayRate}x off days)` : ""}</span>
                             </div>
                             <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight">
                               <span className="text-[9px] text-brand-dark-grey block uppercase">Max / Month</span>
@@ -787,7 +782,7 @@ export default function OvertimePage() {
                             </div>
                             <div className="p-2.5 rounded-2xl bg-brand-offwhite dark:bg-brand-midnight col-span-2">
                               <span className="text-[9px] text-brand-dark-grey block uppercase">Min Threshold</span>
-                              <span>{policy.minOvertimeMinutes} Minutes</span>
+                              <span>{policy.minOvertimeMinutes} Minutes{policy.roundingMinutes > 0 ? `, rounded down to ${policy.roundingMinutes} min` : ""}</span>
                             </div>
                           </div>
                         </div>

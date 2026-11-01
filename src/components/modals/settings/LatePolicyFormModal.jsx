@@ -228,6 +228,37 @@ export default function LatePolicyFormModal({ currencySymbol, editingItem, formD
                   </div>
                 </div>
 
+                <div className="rounded-2xl border border-brand-beige/60 dark:border-brand-dark-grey/60 p-4 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <div>
+                      <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1">
+                        Early Exits Allowed / Month
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formData.maxEarlyExitsAllowedPerMonth}
+                        disabled={isSubmitting}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, maxEarlyExitsAllowedPerMonth: Number(e.target.value) }))}
+                        className="w-full px-4 py-2.5 rounded-2xl text-xs font-bold bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/60 dark:border-brand-dark-grey text-brand-black dark:text-brand-white outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-brand-black dark:text-brand-white cursor-pointer pb-2.5">
+                      <input
+                        type="checkbox"
+                        checked={formData.earlyExitDeduction === "yes"}
+                        disabled={isSubmitting}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, earlyExitDeduction: e.target.checked ? "yes" : "no" }))}
+                        className="w-4 h-4 accent-[#E6BB60]"
+                      />
+                      Deduct early exits in payroll
+                    </label>
+                  </div>
+                  <p className="text-[11px] font-semibold text-brand-dark-grey dark:text-brand-gold-light">
+                    Early exits beyond the allowance are deducted the same way as late arrivals (the deduction method and rate above). The minutes that make someone late or an early leaver are set in HR Workflow Settings → Attendance rules.
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-xs font-extrabold text-brand-black dark:text-brand-white uppercase tracking-wider mb-1.5">
                     Status

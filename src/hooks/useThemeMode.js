@@ -29,13 +29,15 @@ export default function useThemeMode() {
   }, []);
 
   // Effect: Handles state -> side effects (Save to storage and apply CSS class)
+  // Waits until the saved preference has been read: otherwise the first run
+  // stores the initial "light" over the user's saved theme (and React's
+  // double-run of effects in development then reads that back).
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(THEME_KEY, mode);
-      localStorage.setItem(MANUAL_KEY, isManual ? "true" : "false");
-      document.documentElement.classList.toggle("dark", mode === "dark");
-    }
-  }, [mode, isManual]);
+    if (loading || typeof window === "undefined") return;
+    localStorage.setItem(THEME_KEY, mode);
+    localStorage.setItem(MANUAL_KEY, isManual ? "true" : "false");
+    document.documentElement.classList.toggle("dark", mode === "dark");
+  }, [mode, isManual, loading]);
 
   // Effect: Handles external events -> state change (Real-time sync)
   useEffect(() => {

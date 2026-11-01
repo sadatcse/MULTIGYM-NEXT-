@@ -6,8 +6,8 @@ import { FiPlus } from "react-icons/fi";
 import { MdEventNote } from "react-icons/md";
 import usePagePermission from "@/hooks/usePagePermission";
 import { useHrConfig, useHrLookups, useHrQuery, fmtDate, fmtDateTime } from "@/hooks/useHr";
-import { Avatar, Badge, Btn, Card, EmptyState, Loading, PageHeader, SearchBox, Select, StatCard, Table, Td } from "@/components/hr/HrUi";
-import { LeaveStepper } from "@/components/hr/LeaveParts";
+import { Avatar, Btn, Card, EmptyState, Loading, PageHeader, SearchBox, Select, StatCard, Table, Td } from "@/components/hr/HrUi";
+import { LeaveBadge, LeaveStepper } from "@/components/hr/LeaveParts";
 import LeaveApplyModal from "@/components/hr/modals/LeaveApplyModal";
 import Pagination from "@/components/Comon/Pagination";
 import ExportButtons from "@/components/Comon/ExportButtons";
@@ -27,7 +27,7 @@ export default function LeaveApplicationsPage() {
   const { data, loading, refetch } = useHrQuery("/leave", { status, branch, leaveType, search: search || undefined, page, limit: 20 });
   const rows = data?.data || [];
   const st = data?.stats || {};
-  const pending = (st.pending_branch || 0) + (st.pending_hr || 0) + (st.pending_director || 0);
+  const pending = (st.pending || 0) + (st.pending_branch || 0) + (st.pending_hr || 0) + (st.pending_director || 0);
 
   return (
     <div className="space-y-6 w-full max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-6 pb-10 font-sans">
@@ -37,12 +37,11 @@ export default function LeaveApplicationsPage() {
         subtitle="All applications across branches with their position in the approval workflow."
         actions={canAdd && <Btn variant="gold" onClick={() => setOpen(true)}><FiPlus /> Apply on behalf</Btn>}
       />
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label="Pending (all stages)" value={pending} tone="amber" icon="⏳" onClick={() => setStatus("pending")} active={status === "pending"} />
-        <StatCard label="At Branch" value={st.pending_branch || 0} tone="amber" icon="1" onClick={() => setStatus("pending_branch")} active={status === "pending_branch"} index={1} />
-        <StatCard label="At HR" value={st.pending_hr || 0} tone="blue" icon="2" onClick={() => setStatus("pending_hr")} active={status === "pending_hr"} index={2} />
-        <StatCard label="At Director" value={st.pending_director || 0} tone="purple" icon="3" onClick={() => setStatus("pending_director")} active={status === "pending_director"} index={3} />
-        <StatCard label="Approved" value={st.approved || 0} tone="green" icon="✓" onClick={() => setStatus("approved")} active={status === "approved"} index={4} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Pending approval" value={pending} tone="amber" icon="⏳" onClick={() => setStatus("pending")} active={status === "pending"} />
+        <StatCard label="Approved" value={st.approved || 0} tone="green" icon="✓" onClick={() => setStatus("approved")} active={status === "approved"} index={1} />
+        <StatCard label="Rejected" value={st.rejected || 0} tone="red" icon="✕" onClick={() => setStatus("rejected")} active={status === "rejected"} index={2} />
+        <StatCard label="Cancelled" value={st.cancelled || 0} tone="slate" icon="–" onClick={() => setStatus("cancelled")} active={status === "cancelled"} index={3} />
       </div>
       <Card
         title={`${data?.total ?? 0} applications`}
@@ -83,7 +82,7 @@ export default function LeaveApplicationsPage() {
                 <Td>{a.leaveTypeName}<div className="text-[10px] text-brand-dark-grey">{fmtDate(a.fromDate)} → {fmtDate(a.toDate)}</div></Td>
                 <Td>{a.totalDays}{a.status === "approved" && a.approvedDays !== a.totalDays ? <span className="text-amber-500"> ({a.approvedDays})</span> : ""}</Td>
                 <Td className="min-w-[200px]"><LeaveStepper app={a} compact /></Td>
-                <Td><Badge status={a.status} /></Td>
+                <Td><LeaveBadge app={a} /></Td>
                 <Td className="whitespace-nowrap text-[11px]">{fmtDateTime(a.createdAt)}</Td>
               </tr>
             ))}

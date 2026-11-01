@@ -77,7 +77,7 @@ export default function PayrollPage() {
       <PageHeader
         icon={<MdReceiptLong />}
         title="Payroll & Salary Sheet"
-        subtitle="Attendance-driven salary: basic & allowances, overtime, bonus, late/absent deductions, advance & loan recovery, net salary — branch-wise or combined."
+        subtitle="Attendance-driven salary: basic & allowances, overtime, duty allowances, commission, bonus, late/absent deductions, advance & loan recovery — branch-wise or combined."
         actions={
           <>
             <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="bg-brand-offwhite dark:bg-brand-midnight border border-brand-beige/50 dark:border-brand-dark-grey text-brand-black dark:text-brand-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-brand-gold/50 dark:[color-scheme:dark]" />
@@ -116,7 +116,7 @@ export default function PayrollPage() {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <StatCard icon={<FiUsers />} label="Employees" value={run.employeeCount} />
                 <StatCard icon={<FiDollarSign />} label="Gross" value={money(t.gross, symbol)} tone="blue" index={1} />
-                <StatCard icon={<FiPlus />} label="Earnings add-ons" value={money((t.overtimePay || 0) + (t.bonus || 0) + (t.otherEarnings || 0), symbol)} tone="cyan" index={2} />
+                <StatCard icon={<FiPlus />} label="Earnings add-ons" value={money((t.overtimePay || 0) + (t.allowancePay || 0) + (t.commission || 0) + (t.bonus || 0) + (t.otherEarnings || 0), symbol)} hint={t.allowancePay || t.commission ? `Allowances ${money(t.allowancePay || 0, symbol)} · Commission ${money(t.commission || 0, symbol)}` : undefined} tone="cyan" index={2} />
                 <StatCard icon={<FiTrash2 />} label="Deductions" value={money(t.totalDeductions, symbol)} tone="red" index={3} />
                 <StatCard icon={<FiCheckCircle />} label="Net payable" value={money(t.netSalary, symbol)} tone="green" index={4} />
               </div>
@@ -143,13 +143,15 @@ export default function PayrollPage() {
                 }
               >
                 <Table
-                  head={[...SHEET_HEAD.slice(1, 5), "Att. (P/A/L/Lv)", "OT h", "Gross", "+ OT", "+ Bonus/Other", "− Late", "− Absent", "− Adv/Loan", "− Fixed/Other", { label: "Net", className: "text-right" }, ""]}
+                  head={[...SHEET_HEAD.slice(1, 5), "Att. (P/A/L/Lv)", "OT h", "Gross", "+ OT", "+ Allowances", "+ Commission", "+ Bonus/Other", "− Late/Early", "− Absent", "− Adv/Loan", "− Fixed/Other", { label: "Net", className: "text-right" }, ""]}
                   footer={
                     <tfoot>
                       <tr className="bg-brand-gold/10 text-xs font-black">
                         <Td colSpan={6}>TOTAL</Td>
                         <Td>{money(t.gross, symbol)}</Td>
                         <Td>{money(t.overtimePay, symbol)}</Td>
+                        <Td>{money(t.allowancePay || 0, symbol)}</Td>
+                        <Td>{money(t.commission || 0, symbol)}</Td>
                         <Td>{money((t.bonus || 0) + (t.otherEarnings || 0), symbol)}</Td>
                         <Td>{money(t.lateDeduction, symbol)}</Td>
                         <Td>{money(t.absentDeduction, symbol)}</Td>
@@ -171,6 +173,8 @@ export default function PayrollPage() {
                       <Td>{p.attendance?.overtimeHours || 0}</Td>
                       <Td>{money(p.gross, symbol)}</Td>
                       <Td>{money(p.overtimePay, symbol)}</Td>
+                      <Td title={(p.lines || []).filter((l) => l.group === "allowance").map((l) => l.label).join("\n") || undefined}>{money(p.allowancePay || 0, symbol)}</Td>
+                      <Td title={(p.lines || []).filter((l) => l.group === "commission").map((l) => l.label).join("\n") || undefined}>{money(p.commission || 0, symbol)}</Td>
                       <Td>{money(p.bonus + p.otherEarnings, symbol)}</Td>
                       <Td className={p.lateDeduction ? "text-amber-500" : ""}>{money(p.lateDeduction, symbol)}</Td>
                       <Td className={p.absentDeduction ? "text-red-500" : ""}>{money(p.absentDeduction, symbol)}</Td>
